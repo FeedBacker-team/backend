@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: feedbacker-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: feedbacker
+      POSTGRES_USER: feedbacker
+      POSTGRES_PASSWORD: feedbacker_local_password
+      TZ: Asia/Seoul
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U feedbacker -d feedbacker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: feedbacker-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@feedbacker.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+volumes:
+  postgres-data:
+  pgadmin-data:
