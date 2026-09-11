@@ -2,7 +2,6 @@ package com.feedbacker.feedback.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
 
 @Entity
 @Table(name = "question_answers")
