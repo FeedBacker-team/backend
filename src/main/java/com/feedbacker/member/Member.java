@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -12,13 +13,14 @@ import java.time.LocalDateTime;
 public class Member {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    private String password; // 카카오 로그인 사용자는 null
+    private String password;
 
     @Column(unique = true)
     private String nickname;
@@ -33,7 +35,7 @@ public class Member {
     private String profileImage;
     private String portfolioLink;
 
-    private double humidity = 0.0; // 습도(%)
+    private double humidity = 0.0;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
