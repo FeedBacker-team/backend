@@ -55,12 +55,14 @@ public class Feedback extends BaseTimeEntity {
     @Builder
     public Feedback(
             UUID feedbackPostId,
+            UUID testerId,
             FeedbackStatus status,
             LocalDateTime submitAt,
             LocalDateTime expireAt,
             List<QuestionAnswer> answers
     ) {
         this.feedbackPostId = feedbackPostId;
+        this.testerId = testerId;
         this.status = status != null ? status : FeedbackStatus.SUBMITTED;
         this.submitAt = submitAt != null ? submitAt : LocalDateTime.now();
         this.expireAt = expireAt;

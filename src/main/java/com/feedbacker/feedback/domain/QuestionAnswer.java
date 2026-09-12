@@ -7,7 +7,7 @@ import lombok.*;
 @Table(name = "question_answers")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-class QuestionAnswer {
+public class QuestionAnswer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
