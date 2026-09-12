@@ -35,3 +35,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### macOS ###
+.DS_Store
+**/.DS_Store
+
+### Logs / JVM dumps ###
+*.log
+*.hprof
+hs_err_pid*
+replay_pid*
