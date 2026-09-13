@@ -2,13 +2,12 @@ package com.feedbacker.feedback.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
 
 @Entity
 @Table(name = "question_answers")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-class QuestionAnswer {
+public class QuestionAnswer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
