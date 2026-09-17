@@ -1,6 +1,7 @@
 package com.feedbacker.feedbackpost.domain;
 
 import com.feedbacker.feedbackpost.domain.type.QuestionType;
+import com.feedbacker.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -14,7 +15,7 @@ import java.util.List;
 @Table(name = "questions")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Question {
+public class Question extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
