@@ -1,8 +1,6 @@
 package com.feedbacker.member;
 
-import com.feedbacker.member.dto.AuthResponse;
-import com.feedbacker.member.dto.LoginRequest;
-import com.feedbacker.member.dto.SignUpRequest;
+import com.feedbacker.member.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +26,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/kakao")
+    public ResponseEntity<KakaoAuthResponse> loginKakao(@Valid @RequestBody KakaoLoginRequest request) {
+        KakaoAuthResponse response = authService.loginKakao(request);
         return ResponseEntity.ok(response);
     }
 }
