@@ -57,12 +57,15 @@ public class Member extends BaseTimeEntity {
         this.interestField = interestField;
     }
 
-    // 도토리 지갑 연관관계 편의 메서드 (회원 생성 시 자동 연계)
     public void assignWallet(AcornWallet wallet) {
         this.acornWallet = wallet;
     }
 
-    // 프로필 정보 수정 편의 메서드
+    public void setInitialProfile(String nickname, Role role) {
+        this.nickname = nickname;
+        this.role = role;
+    }
+
     public void updateProfile(String nickname, String profileImageUrl, String interestField) {
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname;
