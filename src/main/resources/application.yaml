@@ -15,6 +15,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        jdbc:
-          time_zone: UTC
+      jdbc:
+        time_zone: UTC
 
+# JWT 설정 (Access Token: 1시간, Refresh Token: 14일)
+jwt:
+  secret: c3dpcC1mZWVkYmFja2VyLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1hdXRoZW50aWNhdGlvbi0yMDI2
+  access-token-expiration: 3600000
+  refresh-token-expiration: 1209600000
