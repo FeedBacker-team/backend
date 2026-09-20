@@ -2,6 +2,7 @@ package com.feedbacker.project.service;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.member.Member;
+import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.domain.Project;
 import com.feedbacker.project.domain.ProjectStatus;
 import com.feedbacker.project.domain.ProjectTag;
@@ -38,14 +39,21 @@ public class ProjectService {
                     FeedbackPostStatus.CLOSED
             );
     private final ProjectRepository projectRepository;
+    private final MemberRepository memberRepository;
     private final Validator validator;
 
     //프로젝트 등록
     @Transactional
-    public ProjectCreateResponse createProject(Member owner, ProjectCreateRequest request) {
-        validateLogin(owner == null ? null : owner.getId());
+    public ProjectCreateResponse createProject(UUID memberId, ProjectCreateRequest request) {
+        validateLogin(memberId);
         validateRequest(request);
         validateProjectInfo(request.tags(), request.serviceLink(), request.thumbnailImage());
+
+        Member owner = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "인증된 회원을 찾을 수 없습니다."
+                ));
 
         Project project = Project.create(
                 owner,

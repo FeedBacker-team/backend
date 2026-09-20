@@ -2,6 +2,7 @@ package com.feedbacker.project.service;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.member.Member;
+import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.domain.Project;
 import com.feedbacker.project.domain.ProjectStatus;
 import com.feedbacker.project.domain.ProjectTag;
@@ -40,6 +41,9 @@ class ProjectServiceTest {
     @Mock
     private ProjectRepository projectRepository;
 
+    @Mock
+    private MemberRepository memberRepository;
+
     private ProjectService projectService;
 
     private Validator validator;
@@ -52,6 +56,7 @@ class ProjectServiceTest {
 
         projectService = new ProjectService(
                 projectRepository,
+                memberRepository,
                 validator
         );
     }
@@ -73,14 +78,14 @@ class ProjectServiceTest {
             ProjectCreateRequest request =
                     createValidCreateRequest();
 
-            when(owner.getId()).thenReturn(ownerId);
+            when(memberRepository.findById(ownerId)).thenReturn(Optional.of(owner));
             when(savedProject.getId()).thenReturn(projectId);
             when(projectRepository.save(any(Project.class)))
                     .thenReturn(savedProject);
 
             // when
             ProjectCreateResponse response =
-                    projectService.createProject(owner, request);
+                    projectService.createProject(ownerId, request);
 
             // then
             assertThat(response.projectId())
@@ -95,9 +100,6 @@ class ProjectServiceTest {
             // given
             UUID ownerId = UUID.randomUUID();
 
-            Member owner = mock(Member.class);
-            when(owner.getId()).thenReturn(ownerId);
-
             ProjectCreateRequest request =
                     new ProjectCreateRequest(
                             "",
@@ -110,7 +112,7 @@ class ProjectServiceTest {
             // when
             ResponseStatusException exception = assertThrows(
                     ResponseStatusException.class,
-                    () -> projectService.createProject(owner, request)
+                    () -> projectService.createProject(ownerId, request)
             );
 
             // then
@@ -146,8 +148,7 @@ class ProjectServiceTest {
         @DisplayName("중복 태그가 있으면 400 예외가 발생한다")
         void createProjectWithDuplicatedTags() {
             // given
-            Member owner = mock(Member.class);
-            when(owner.getId()).thenReturn(UUID.randomUUID());
+            UUID ownerId = UUID.randomUUID();
 
             ProjectCreateRequest request =
                     new ProjectCreateRequest(
@@ -161,7 +162,7 @@ class ProjectServiceTest {
             // when
             ResponseStatusException exception = assertThrows(
                     ResponseStatusException.class,
-                    () -> projectService.createProject(owner, request)
+                    () -> projectService.createProject(ownerId, request)
             );
 
             // then
