@@ -9,15 +9,20 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Project extends BaseTimeEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "project_id")
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(
+            name = "project_id",
+            columnDefinition = "uuid",
+            updatable = false,
+            nullable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
@@ -30,7 +35,7 @@ public class Project extends BaseTimeEntity {
     @Column(length = 100, nullable = false)
     private String title;
 
-    @Column(length = 300, nullable = false)
+    @Column(length = 2048, nullable = false)
     private String description;
 
     @ElementCollection
