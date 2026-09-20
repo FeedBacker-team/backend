@@ -1,4 +1,11 @@
 package com.feedbacker.project.domain.dto.response;
 
-public record ProjectCreateResponse() {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.UUID;
+
+public record ProjectCreateResponse(
+        @JsonProperty("project_id")
+        UUID projectId
+) {
 }

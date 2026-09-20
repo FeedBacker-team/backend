@@ -3,6 +3,7 @@ package com.feedbacker.feedbackpost.domain;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.project.domain.Project;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -69,9 +70,9 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false)
     private LocalDateTime endAt;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "project_id", nullable = false)
-//    private Project project;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @Builder
     public FeedbackPost(
@@ -87,8 +88,8 @@ public class FeedbackPost extends BaseTimeEntity {
             Integer depositAcorn,
             Integer rewardAcorn,
             LocalDateTime startAt,
-            LocalDateTime endAt
-//            Project project
+            LocalDateTime endAt,
+            Project project
     ) {
         this.title = title;
         this.status = status != null ? status : FeedbackPostStatus.RECRUITING;
@@ -103,7 +104,7 @@ public class FeedbackPost extends BaseTimeEntity {
         this.rewardAcorn = rewardAcorn;
         this.startAt = startAt;
         this.endAt = endAt;
-//        this.project = project;
+        this.project = project;
     }
 
 }
