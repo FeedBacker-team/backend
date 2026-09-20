@@ -15,8 +15,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        jdbc:
-          time_zone: UTC
+      jdbc:
+        time_zone: UTC
 
 server:
   port: ${PORT:8080}
@@ -26,3 +26,14 @@ supabase:
   storage:
     secret-key: ${SUPABASE_SECRET_KEY:}
     bucket: ${SUPABASE_STORAGE_BUCKET:}
+
+# JWT 설정 (Access Token: 1시간, Refresh Token: 14일)
+jwt:
+  secret: c3dpcC1mZWVkYmFja2VyLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1hdXRoZW50aWNhdGlvbi0yMDI2
+  access-token-expiration: 3600000
+  refresh-token-expiration: 1209600000
+
+# 카카오 OAuth 2.0 설정
+kakao:
+  client-id: ${KAKAO_CLIENT_ID:your_kakao_rest_api_key}
+  redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/oauth/callback/kakao}
