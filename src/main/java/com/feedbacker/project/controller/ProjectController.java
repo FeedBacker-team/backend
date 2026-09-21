@@ -3,6 +3,7 @@ package com.feedbacker.project.controller;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
+import com.feedbacker.project.domain.dto.response.MyProjectResponse;
 import com.feedbacker.project.domain.dto.response.ProjectCreateResponse;
 import com.feedbacker.project.domain.dto.response.ProjectDetailResponse;
 import com.feedbacker.project.domain.dto.response.ProjectSummaryResponse;
@@ -58,6 +59,21 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
 
+    //마이페이지 -> 내 프로젝트 조회
+    @GetMapping("/api/users/me/projects")
+    public ResponseEntity<List<MyProjectResponse>> getMyProjects(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        List<MyProjectResponse> response =
+                projectService.getMyProjects(
+                        userDetails.getMemberId()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+
+
     @PutMapping("/api/projects/{projectId}")
     public ResponseEntity<Void> updateProject(
             @PathVariable UUID projectId,
@@ -76,4 +92,6 @@ public class ProjectController {
         projectService.deleteProject(projectId, userDetails.getMemberId());
         return ResponseEntity.noContent().build();
     }
+
+
 }

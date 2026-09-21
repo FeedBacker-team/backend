@@ -1,5 +1,6 @@
 package com.feedbacker.project.service;
 
+import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberRepository;
@@ -8,10 +9,7 @@ import com.feedbacker.project.domain.ProjectStatus;
 import com.feedbacker.project.domain.ProjectTag;
 import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
-import com.feedbacker.project.domain.dto.response.ActiveQaResponse;
-import com.feedbacker.project.domain.dto.response.ProjectCreateResponse;
-import com.feedbacker.project.domain.dto.response.ProjectDetailResponse;
-import com.feedbacker.project.domain.dto.response.ProjectSummaryResponse;
+import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.repository.ProjectRepository;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -24,9 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -136,6 +132,44 @@ public class ProjectService {
         }
 
         project.delete();
+    }
+
+    public List<MyProjectResponse> getMyProjects(UUID memberId) {
+        validateLogin(memberId);
+
+        List<Project> projects =
+                projectRepository
+                        .findByOwner_IdAndStatusOrderByCreatedAtDesc(
+                                memberId,
+                                ProjectStatus.PUBLISHED
+                        );
+
+        List<FeedbackPost> activeQaPosts =
+                projectRepository.findActiveQaByOwner(
+                        memberId,
+                        ProjectStatus.PUBLISHED,
+                        ACTIVE_QA_STATUSES
+                );
+
+        Map<UUID, UUID> activeQaIdByProjectId =
+                new HashMap<>();
+
+        for (FeedbackPost feedbackPost : activeQaPosts) {
+            UUID projectId =
+                    feedbackPost.getProject().getId();
+
+            activeQaIdByProjectId.putIfAbsent(
+                    projectId,
+                    feedbackPost.getId()
+            );
+        }
+
+        return projects.stream()
+                .map(project -> MyProjectResponse.from(
+                        project,
+                        activeQaIdByProjectId.get(project.getId())
+                ))
+                .toList();
     }
 
     private boolean hasActiveQa(UUID projectId) {

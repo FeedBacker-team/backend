@@ -97,4 +97,24 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             @Param("statuses")
             Collection<FeedbackPostStatus> statuses
     );
+
+    @Query("""
+        select fp
+        from FeedbackPost fp
+        join fetch fp.project p
+        where p.owner.id = :memberId
+          and p.status = :projectStatus
+          and fp.status in :activeStatuses
+        order by fp.createdAt desc, fp.id desc
+        """)
+    List<FeedbackPost> findActiveQaByOwner(
+            @Param("memberId")
+            UUID memberId,
+
+            @Param("projectStatus")
+            ProjectStatus projectStatus,
+
+            @Param("activeStatuses")
+            Collection<FeedbackPostStatus> activeStatuses
+    );
 }
