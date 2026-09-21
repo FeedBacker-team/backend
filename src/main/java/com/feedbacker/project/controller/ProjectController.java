@@ -74,6 +74,7 @@ public class ProjectController {
 
 
 
+    //프로젝트 수정git commit -m "feat: 마이페이지 내 프로젝트 목록 조회 구현"
     @PutMapping("/api/projects/{projectId}")
     public ResponseEntity<Void> updateProject(
             @PathVariable UUID projectId,
@@ -84,6 +85,7 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
+    //프로젝트 삭제
     @DeleteMapping("/api/projects/{projectId}")
     public ResponseEntity<Void> deleteProject(
             @PathVariable UUID projectId,
