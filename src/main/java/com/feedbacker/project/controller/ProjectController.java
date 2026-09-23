@@ -1,12 +1,11 @@
 package com.feedbacker.project.controller;
 
 import com.feedbacker.global.security.CustomUserDetails;
+import com.feedbacker.project.domain.ProjectSort;
+import com.feedbacker.project.domain.ProjectTag;
 import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
-import com.feedbacker.project.domain.dto.response.MyProjectResponse;
-import com.feedbacker.project.domain.dto.response.ProjectCreateResponse;
-import com.feedbacker.project.domain.dto.response.ProjectDetailResponse;
-import com.feedbacker.project.domain.dto.response.ProjectSummaryResponse;
+import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,25 @@ import java.util.UUID;
 public class ProjectController {
 
     private final ProjectService projectService;
+
+    @GetMapping("/api/projects")
+    public ResponseEntity<ProjectListResponse> getProjects(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<ProjectTag> tags,
+            @RequestParam(defaultValue = "LATEST") ProjectSort sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size
+    ) {
+        ProjectListResponse response = projectService.getProjects(
+                keyword,
+                tags,
+                sort,
+                page,
+                size
+        );
+
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/api/projects")
     public ResponseEntity<ProjectCreateResponse> createProject(
