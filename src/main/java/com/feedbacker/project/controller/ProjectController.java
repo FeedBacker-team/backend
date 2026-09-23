@@ -74,7 +74,7 @@ public class ProjectController {
 
 
 
-    //프로젝트 수정git commit -m "feat: 마이페이지 내 프로젝트 목록 조회 구현"
+    //프로젝트 수정
     @PutMapping("/api/projects/{projectId}")
     public ResponseEntity<Void> updateProject(
             @PathVariable UUID projectId,
