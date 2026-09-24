@@ -9,12 +9,15 @@ import com.feedbacker.feedback.domain.dto.request.SubjectiveQuestionAnswerReques
 import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResultResponse;
+import com.feedbacker.feedback.service.mapper.FeedbackDetailMapper;
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.repository.QuestionAnswerRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Question;
 import com.feedbacker.feedbackpost.repository.QuestionRepository;
+import com.feedbacker.member.Member;
+import com.feedbacker.member.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,10 +37,14 @@ public class FeedbackService {
     private final FeedbackRepository feedbackRepository;
     private final QuestionRepository questionRepository;
     private final QuestionAnswerRepository questionAnswerRepository;
+    private final MemberRepository memberRepository;
+    private final FeedbackDetailMapper feedbackDetailMapper;
 
     @Transactional
     public UUID submit(FeedbackSubmitRequest request) {
         UUID memberId = UUID.randomUUID(); // 멤버 아이디 찾기
+        Member tester = memberRepository.findById(memberId)
+                .orElseThrow(RuntimeException::new);
 
 //        FeedbackPost feedbackPost = feedbackPostRepository.findById(feedback.getFeedbackPostId())
 //                .orElseThrow(RuntimeException::new);
@@ -48,6 +55,7 @@ public class FeedbackService {
         Feedback feedback = Feedback.builder()
                 .feedbackPostId(request.feedbackPostId())
                 .testerId(memberId)
+                .testerName(tester.getNickname())
                 .postTitle(feedbackPost.getTitle())
                 .status(FeedbackStatus.SUBMITTED)
                 .answers(answers)
@@ -66,6 +74,7 @@ public class FeedbackService {
         return FeedbackResponse.fromAll(feedbacks);
     }
 
+    @Transactional(readOnly = true)
     public FeedbackDetailResponse getDetail(UUID feedbackId) {
         Feedback feedback = feedbackRepository.findById(feedbackId)
                 .orElseThrow(RuntimeException::new);
@@ -73,7 +82,7 @@ public class FeedbackService {
         List<Question> questions = questionRepository.findAllByFeedbackPostIdOrderByOrderAsc(feedback.getFeedbackPostId());
         List<QuestionAnswer> questionAnswers = questionAnswerRepository.findAllByFeedbackIdOrderByQuestionOrderAsc(feedbackId);
 
-        return FeedbackDetailResponse.from(questions, questionAnswers);
+        return feedbackDetailMapper.toResponse(questions, questionAnswers);
     }
 
     @Transactional

@@ -1,4 +1,4 @@
-package com.feedbacker.participation;
+package com.feedbacker.feedbackpost.domain.type;
 
 public enum ParticipationStatus {
     RESERVED, //슬롯 예약, 피드백 미제출

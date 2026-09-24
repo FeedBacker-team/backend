@@ -29,6 +29,9 @@ public class Feedback extends BaseTimeEntity {
     @Column(name = "tester_id", nullable = false)
     private UUID testerId;
 
+    @Column
+    private String testerName;
+
     @Column(nullable = false)
     private String postTitle;
 
@@ -67,6 +70,7 @@ public class Feedback extends BaseTimeEntity {
     public Feedback(
             UUID feedbackPostId,
             UUID testerId,
+            String testerName,
             String postTitle,
             FeedbackStatus status,
             LocalDateTime submitAt,
@@ -75,6 +79,7 @@ public class Feedback extends BaseTimeEntity {
     ) {
         this.feedbackPostId = feedbackPostId;
         this.testerId = testerId;
+        this.testerName = testerName;
         this.postTitle = postTitle;
         this.status = status != null ? status : FeedbackStatus.SUBMITTED;
         this.submitAt = submitAt != null ? submitAt : LocalDateTime.now();

@@ -1,5 +1,7 @@
 package com.feedbacker.feedback.domain.dto.response;
 
+import com.feedbacker.global.image.ImageResponse;
+
 import java.util.List;
 
 public record ChoiceQuestionAnswerResponse(
@@ -8,6 +10,6 @@ public record ChoiceQuestionAnswerResponse(
         List<String> optionText,
         Integer optionCount,
         Integer selectedOption,
-        String imageUrl
+        List<ImageResponse> images
 ) {
 }

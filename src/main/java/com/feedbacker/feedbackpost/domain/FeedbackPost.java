@@ -2,16 +2,20 @@ package com.feedbacker.feedbackpost.domain;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
+import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.global.exception.BusinessException;
+import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.project.domain.Project;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;import org.hibernate.annotations.JdbcTypeCode;import org.hibernate.type.SqlTypes;
-
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
-import java.util.ArrayList;import java.util.List;import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "feedback_posts")
@@ -24,9 +28,16 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(name = "feedback_post_id", updatable = false, nullable = false, columnDefinition = "VARCHAR(36)")
     private UUID id;
 
-    @Column(nullable = false, length = 100)
+    @Column
+    private UUID writerId;
+
+    @Column(nullable = false, length = 50)
     private String title;
 
+    @Column(length = 1000)
+    private String description;
+
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FeedbackPostStatus status;
@@ -35,19 +46,12 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false)
     private TargetType targetType;
 
-    @Column(length = 3000)
-    private String description;
-
     @Column(length = 2048)
     private String serviceUrl;
 
-    @ElementCollection
-    @CollectionTable(
-            name = "feedback_post_images",
-            joinColumns = @JoinColumn(name = "feedback_post_id")
-    )
-    @Column(name = "image_id")
-    private List<Long> imageIds;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "images", columnDefinition = "jsonb")
+    private List<ImageInfo> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "feedbackPost", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions = new ArrayList<>();
@@ -77,11 +81,11 @@ public class FeedbackPost extends BaseTimeEntity {
     @Builder
     public FeedbackPost(
             String title,
+            String description,
             FeedbackPostStatus status,
             TargetType targetType,
-            String description,
             String serviceUrl,
-            List<Long> imageIds,
+            List<ImageInfo> images,
             List<Question> questions,
             Integer slotCapacity,
             Integer remainSlotCount,
@@ -92,12 +96,11 @@ public class FeedbackPost extends BaseTimeEntity {
             Project project
     ) {
         this.title = title;
+        this.description = description;
         this.status = status != null ? status : FeedbackPostStatus.RECRUITING;
         this.targetType = targetType;
-        this.description = description;
         this.serviceUrl = serviceUrl;
-        this.imageIds = imageIds;
-        this.questions = questions;
+        this.images = images == null ? new ArrayList<>() : new ArrayList<>(images);
         this.slotCapacity = slotCapacity;
         this.remainSlotCount = remainSlotCount;
         this.depositAcorn = depositAcorn;
@@ -105,6 +108,42 @@ public class FeedbackPost extends BaseTimeEntity {
         this.startAt = startAt;
         this.endAt = endAt;
         this.project = project;
+
+        if (questions != null) {
+            questions.forEach(this::addQuestion);
+        }
+    }
+
+    private void addQuestion(Question question) {
+        this.questions.add(question);
+        question.setFeedbackPost(this);
+    }
+
+    public void minusRemainSlotCount() {
+        this.remainSlotCount--;
+        if (this.remainSlotCount <= 0) {
+            this.status = FeedbackPostStatus.CLOSED;
+        }
+    }
+
+    public void complete() {
+        if (status != FeedbackPostStatus.RECRUITING) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
+        }
+
+        status = FeedbackPostStatus.COMPLETED;
+    }
+
+    public void validateWriter(UUID id) {
+        if (this.writerId == id) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ACCESS_DENIED);
+        }
+    }
+
+    public void validateRecruiting() {
+        if (this.status != FeedbackPostStatus.RECRUITING) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
+        }
     }
 
 }
