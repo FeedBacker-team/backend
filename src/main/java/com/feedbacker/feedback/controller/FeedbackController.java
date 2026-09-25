@@ -1,9 +1,11 @@
 package com.feedbacker.feedback.controller;
 
+import com.feedbacker.feedback.domain.dto.request.FeedbackObjectRequest;
+import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
-import com.feedbacker.feedback.domain.dto.response.FeedbackResultResponse;
 import com.feedbacker.feedback.domain.dto.request.FeedbackSubmitRequest;
+import com.feedbacker.feedback.facade.FeedbackFacade;
 import com.feedbacker.feedback.service.FeedbackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,11 +19,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FeedbackController {
 
+    private final FeedbackFacade feedbackFacade;
     private final FeedbackService feedbackService;
 
     @PostMapping
     public UUID submit(@Valid @RequestBody FeedbackSubmitRequest request) {
-        return feedbackService.submit(request);
+        return feedbackFacade.submit(request);
     }
 
     @GetMapping("/mine")
@@ -31,17 +34,20 @@ public class FeedbackController {
 
     @GetMapping("/{feedbackId}")
     public FeedbackDetailResponse getDetail(@PathVariable UUID feedbackId) {
-        return feedbackService.getDetail(feedbackId);
+        return feedbackFacade.getDetail(feedbackId);
     }
 
     @PatchMapping("/{feedbackId}/accept")
     public void accept(@PathVariable UUID feedbackId) {
-        feedbackService.accept(feedbackId);
+        feedbackFacade.accept(feedbackId);
     }
 
     @PatchMapping("/{feedbackId}/reject")
-    public void reject(@PathVariable UUID feedbackId) {
-        feedbackService.reject(feedbackId);
+    public void reject(
+            @Valid @RequestBody FeedbackRejectRequest request,
+            @PathVariable UUID feedbackId
+    ) {
+        feedbackFacade.reject(request,feedbackId);
     }
 
 //    @GetMapping("/{feedbackId}/result")
@@ -50,8 +56,11 @@ public class FeedbackController {
 //    }
 
     @PostMapping("/{feedbackId}/objection")
-    public void object(@PathVariable UUID feedbackId, @RequestBody String objectReason) {
-        feedbackService.object(feedbackId, objectReason);
+    public void object(
+            @Valid @RequestBody FeedbackObjectRequest request,
+            @PathVariable UUID feedbackId
+    ) {
+        feedbackFacade.object(request, feedbackId);
     }
 
 }

@@ -2,7 +2,6 @@ package com.feedbacker.feedback.service.mapper;
 
 import com.feedbacker.feedback.domain.QuestionAnswer;
 import com.feedbacker.feedback.domain.dto.response.ChoiceQuestionAnswerResponse;
-import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.domain.dto.response.SubjectiveQuestionAnswerResponse;
 import com.feedbacker.feedbackpost.domain.Question;

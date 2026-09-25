@@ -2,13 +2,14 @@ package com.feedbacker.feedbackpost.service;
 
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Participation;
-import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
+import com.feedbacker.feedbackpost.exception.ParticipationErrorCode;
 import com.feedbacker.feedbackpost.repository.ParticipationRepository;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,9 +23,9 @@ public class ParticipationService {
             FeedbackPost feedbackPost,
             Member member
     ) {
-        List<Participation> participations = getParticipations(feedbackPost.getId());
+        List<Participation> participations = getAllParticipation(feedbackPost.getId());
         validateRemainSlot(participations, feedbackPost);
-        validateWriter(participations, feedbackPost);
+        validateIsWriter(participations, feedbackPost);
 
         Participation reservedParticipation = Participation.reserve(
                 feedbackPost,
@@ -39,31 +40,67 @@ public class ParticipationService {
             FeedbackPost feedbackPost
     ) {
         if (participations.size() >= feedbackPost.getSlotCapacity()) {
-            throw new BusinessException(FeedbackPostErrorCode.SLOT_FULL);
+            throw new BusinessException(ParticipationErrorCode.SLOT_FULL);
         }
     }
 
-    private void validateWriter(
+    private void validateIsWriter(
             List<Participation> participations,
             FeedbackPost feedbackPost
     ) {
         for (Participation participation : participations) {
             if (participation.getTester().getId() == feedbackPost.getWriterId()) {
-                throw new BusinessException(FeedbackPostErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
+                throw new BusinessException(ParticipationErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
             }
         }
     }
 
-    public void validateAccessAuth(UUID memberId) {
-        List<Participation> participations = getParticipations(feedbackPost.getId());
+    private void validateIsAlreadyParticipate(
+            List<Participation> participations,
+            UUID memberId
+    ) {
         for (Participation participation : participations) {
             if (participation.getTester().getId() == memberId) {
-                throw new BusinessException(FeedbackPostErrorCode.ALREADY_PARTICIPATED);
+                throw new BusinessException(ParticipationErrorCode.ALREADY_PARTICIPATED);
             }
         }
     }
 
-    private List<Participation> getParticipations(UUID feedbackPostId) {
+    public void validateFeedbackSubmit(UUID feedbackPostId, UUID memberId) {
+        List<Participation> participations = getAllParticipation(feedbackPostId);
+        validateHasParticipation(participations, memberId);
+        validateSubmissionDeadlineAt(participations);
+    }
+
+    private void validateHasParticipation(
+            List<Participation> participations,
+            UUID memberId
+    ) {
+        for (Participation participation : participations) {
+            if (participation.getTester().getId() == memberId) {
+                return;
+            }
+        }
+        throw new BusinessException(ParticipationErrorCode.PARTICIPATION_NOT_FOUND);
+    }
+
+    private void validateSubmissionDeadlineAt(List<Participation> participations) {
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Participation participation : participations) {
+            if (!now.isBefore(participation.getSubmissionDeadlineAt())) {
+                throw new BusinessException(
+                        ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED
+                );
+            }
+        }
+    }
+
+    private List<Participation> getAllParticipation(UUID feedbackPostId) {
         return participationRepository.findForUpdate(feedbackPostId);
+    }
+
+    public Participation getParticipation(Member tester) {
+        return participationRepository.findByTester(tester);
     }
 }

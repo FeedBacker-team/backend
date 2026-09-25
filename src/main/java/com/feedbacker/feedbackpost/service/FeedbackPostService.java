@@ -97,7 +97,7 @@ public class FeedbackPostService {
     public void participate(UUID feedbackPostId) {
         UUID memberId = UUID.randomUUID();
         FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
-        feedbackPost.validateWriter(memberId);
+        feedbackPost.validateIsWriter(memberId);
         feedbackPost.validateRecruiting();
         participationService.createParticipation(feedbackPost, getMember(memberId));
         feedbackPost.minusRemainSlotCount();
@@ -107,7 +107,7 @@ public class FeedbackPostService {
     public List<FeedbackProgressResponse> getFeedbacks(UUID feedbackPostId) {
         FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
         UUID memberId = UUID.randomUUID();
-        feedbackPost.validateWriter(memberId);
+        feedbackPost.validateAccessAuth(memberId);
         return feedbackRepository.getAllByFeedbackPost(feedbackPost).stream()
                 .map(FeedbackProgressResponse::from)
                 .toList();
@@ -119,11 +119,16 @@ public class FeedbackPostService {
         feedbackPost.complete();
     }
 
-    private FeedbackPost getFeedbackPost(UUID feedbackPostId) {
+    public FeedbackPost getFeedbackPost(UUID feedbackPostId) {
         return feedbackPostRepository.findById(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));
+    }
+
+    public void validateFeedbackSubmit(FeedbackPost feedbackPost, UUID testerId) {
+        feedbackPost.validateRecruiting();
+        feedbackPost.validateIsWriter(testerId);
     }
 
     private Member getMember(UUID id) {

@@ -2,7 +2,6 @@ package com.feedbacker.feedback.repository;
 
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.domain.Question;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,5 +1,6 @@
 package com.feedbacker.feedback.domain;
 
+import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.domain.type.RejectType;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -113,8 +114,16 @@ public class Feedback extends BaseTimeEntity {
         answer.setFeedback(this);
     }
 
-    public void setStatus(FeedbackStatus status) {
-        this.status = status;
+    public void accept(Integer rewardAcorn) {
+        this.rewardAcorn = rewardAcorn;
         this.processedAt = LocalDateTime.now();
+        this.status = FeedbackStatus.ACCEPTED;
+    }
+
+    public void reject(FeedbackRejectRequest request) {
+        this.rejectType = request.rejectType();
+        this.rejectDetail = request.rejectDetail();
+        this.processedAt = LocalDateTime.now();
+        this.status = FeedbackStatus.REJECTED;
     }
 }

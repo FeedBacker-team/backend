@@ -5,7 +5,6 @@ import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.domain.type.RejectType;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

@@ -1,6 +1,6 @@
 package com.feedbacker.feedback.domain.dto.response;
 
-import com.feedbacker.feedback.service.AcornHistory;
+import com.feedbacker.feedback.domain.AcornHistory;
 
 public record AcornHistoryResponse(
         Integer beforeAcorn,

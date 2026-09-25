@@ -1,6 +1,6 @@
 package com.feedbacker.feedback.repository;
 
-import com.feedbacker.feedback.service.AcornHistory;
+import com.feedbacker.feedback.domain.AcornHistory;
 import com.feedbacker.member.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

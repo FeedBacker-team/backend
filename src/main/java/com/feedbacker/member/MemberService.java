@@ -3,8 +3,10 @@ package com.feedbacker.member;
 import com.feedbacker.member.dto.ProfileResponse;
 import com.feedbacker.member.dto.ProfileUpdateRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -37,5 +39,12 @@ public class MemberService {
                 .nickname(member.getNickname())
                 .role(member.getRole().name().toLowerCase())
                 .build();
+    }
+
+    public Member getMember(UUID memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."
+                ));
     }
 }

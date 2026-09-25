@@ -1,6 +1,5 @@
-package com.feedbacker.feedback.service;
+package com.feedbacker.feedback.domain;
 
-import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
