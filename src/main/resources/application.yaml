@@ -18,3 +18,38 @@ spring:
         jdbc:
           time_zone: UTC
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  # 로컬 개발용 기본값. 배포 서버에서는 반드시 JWT_SECRET 환경변수로 교체
+  secret: ${JWT_SECRET:ZmVlZGJhY2tlci1sb2NhbC1kZXYtb25seS1zZWNyZXQta2V5LTIwMjY=}
+  access-token-expiration: 900000        # 15분 (밀리초)
+  refresh-token-expiration: 1209600000   # 14일 (밀리초)
+
+kakao:
+  client-id: ${KAKAO_CLIENT_ID:}
+  client-secret: ${KAKAO_CLIENT_SECRET:}
+  redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/oauth/kakao/callback}
+
+cors:
+  # 여러 개면 쉼표로 구분 (예: http://localhost:3000,https://feedbaker.vercel.app)
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+acorn:
+  # 이 날짜(한국시간)까지 가입하면 도토리 2배 지급
+  signup-bonus-until: 2026-10-17
+
+logging:
+  # 로컬 디버깅용 로그 파일 (git에 올라가지 않음)
+  file:
+    name: logs/feedbacker.log
