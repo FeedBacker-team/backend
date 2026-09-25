@@ -2,7 +2,9 @@ package com.feedbacker.feedback.domain;
 
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.domain.type.RejectType;
+import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.member.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -88,6 +90,22 @@ public class Feedback extends BaseTimeEntity {
         if (answers != null) {
             answers.forEach(this::addAnswer);
         }
+    }
+
+    public static Feedback create(
+            FeedbackPost feedbackPost,
+            Member tester,
+            List<QuestionAnswer> answers
+    ) {
+        return Feedback.builder()
+                .feedbackPostId(feedbackPost.getId())
+                .testerId(tester.getId())
+                .testerName(tester.getNickname())
+                .postTitle(feedbackPost.getTitle())
+                .status(FeedbackStatus.SUBMITTED)
+                .answers(answers)
+                .submitAt(LocalDateTime.now())
+                .build();
     }
 
     private void addAnswer(QuestionAnswer answer) {

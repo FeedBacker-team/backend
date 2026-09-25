@@ -1,7 +1,6 @@
 package com.feedbacker.feedback.domain.dto.response;
 
 import com.feedbacker.feedback.domain.Feedback;
-import com.feedbacker.feedback.domain.dto.AcornChange;
 import com.feedbacker.feedback.domain.type.RejectType;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
@@ -17,13 +16,13 @@ public record FeedbackResultResponse(
         RejectType rejectType,
         LocalDateTime submitAt,
         LocalDateTime processedAt,
-        AcornChange acornChange
+        AcornHistoryResponse acornChange
 ) {
 
     public static FeedbackResultResponse from(
             Feedback feedback,
             FeedbackPost feedbackPost,
-            AcornChange acornChange
+            AcornHistoryResponse acornChange
     ) {
         return new FeedbackResultResponse(
                 feedback.getId(),

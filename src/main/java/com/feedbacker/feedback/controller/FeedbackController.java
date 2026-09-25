@@ -25,8 +25,8 @@ public class FeedbackController {
     }
 
     @GetMapping("/mine")
-    public List<FeedbackResponse> getAll() {
-        return feedbackService.getAll();
+    public List<FeedbackResponse> getMine() {
+        return feedbackService.getMine();
     }
 
     @GetMapping("/{feedbackId}")
@@ -44,10 +44,10 @@ public class FeedbackController {
         feedbackService.reject(feedbackId);
     }
 
-    @GetMapping("/{feedbackId}/result")
-    public FeedbackResultResponse getResult(@PathVariable UUID feedbackId) {
-        return feedbackService.getResult(feedbackId);
-    }
+//    @GetMapping("/{feedbackId}/result")
+//    public FeedbackResultResponse getResult(@PathVariable UUID feedbackId) {
+//        return feedbackService.getResult(feedbackId);
+//    }
 
     @PostMapping("/{feedbackId}/objection")
     public void object(@PathVariable UUID feedbackId, @RequestBody String objectReason) {

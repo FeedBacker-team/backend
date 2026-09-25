@@ -9,7 +9,7 @@ public record ChoiceQuestionAnswerResponse(
         String questionText,
         List<String> optionText,
         Integer optionCount,
-        Integer selectedOption,
+        List<Integer> selectedOption,
         List<ImageResponse> images
 ) {
 }

@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record FeedbackSubmitRequest(
-        @NotNull
+
+        @NotNull(message = "피드백 모집글 아이디는 필수입니다.")
         UUID feedbackPostId,
 
         @Valid

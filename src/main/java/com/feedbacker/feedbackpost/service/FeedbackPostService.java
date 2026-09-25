@@ -2,7 +2,6 @@ package com.feedbacker.feedbackpost.service;
 
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackFormResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
@@ -31,11 +30,11 @@ public class FeedbackPostService {
 
     private final ProjectRepository projectRepository;
     private final FeedbackPostRepository feedbackPostRepository;
-    private final ParticipationRepository participationRepository;
     private final MemberRepository memberRepository;
     private final ImageService imageService;
     private final FeedbackFormMapper feedbackFormMapper;
     private final FeedbackRepository feedbackRepository;
+    private final ParticipationService participationService;
 
     @Transactional
     public void create(FeedbackPostCreateRequest request) {
@@ -100,18 +99,7 @@ public class FeedbackPostService {
         FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
         feedbackPost.validateWriter(memberId);
         feedbackPost.validateRecruiting();
-
-        validateParticipation(
-                participationRepository.findForUpdate(feedbackPost.getId()),
-                feedbackPost
-        );
-
-        Participation reservedParticipation = Participation.reserve(
-                feedbackPost,
-                getMember(memberId)
-        );
-
-        participationRepository.save(reservedParticipation);
+        participationService.createParticipation(feedbackPost, getMember(memberId));
         feedbackPost.minusRemainSlotCount();
     }
 
@@ -143,18 +131,4 @@ public class FeedbackPostService {
                 .orElseThrow(RuntimeException::new);
     }
 
-    private void validateParticipation(
-            List<Participation> participations,
-            FeedbackPost feedbackPost
-    ) {
-        if (participations.size() > feedbackPost.getSlotCapacity()) {
-            throw new BusinessException(FeedbackPostErrorCode.SLOT_FULL);
-        }
-
-        for (Participation participation : participations) {
-            if (participation.getTester().getId() == feedbackPost.getWriterId()) {
-                throw new BusinessException(FeedbackPostErrorCode.ALREADY_PARTICIPATED);
-            }
-        }
-    }
 }

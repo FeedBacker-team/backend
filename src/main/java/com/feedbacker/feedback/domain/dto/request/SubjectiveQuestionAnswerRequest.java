@@ -5,10 +5,9 @@ import jakarta.validation.constraints.NotNull;
 
 public record SubjectiveQuestionAnswerRequest(
 
-        @NotNull
-        Long questionId,
+        @NotNull(message = "질문 순서는 필수입니다.")
+        Long order,
 
-        @NotBlank
         String text
 ) {
 }

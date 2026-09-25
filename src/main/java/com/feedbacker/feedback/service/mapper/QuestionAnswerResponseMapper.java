@@ -3,6 +3,7 @@ package com.feedbacker.feedback.service.mapper;
 import com.feedbacker.feedback.domain.QuestionAnswer;
 import com.feedbacker.feedback.domain.dto.response.ChoiceQuestionAnswerResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
+import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.domain.dto.response.SubjectiveQuestionAnswerResponse;
 import com.feedbacker.feedbackpost.domain.Question;
 import com.feedbacker.feedbackpost.domain.type.QuestionType;
@@ -18,11 +19,14 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class FeedbackDetailMapper {
+public class QuestionAnswerResponseMapper {
 
     private final ImageService imageService;
 
-    public FeedbackDetailResponse toResponse(List<Question> questions, List<QuestionAnswer> questionAnswers) {
+    public QuestionAnswerResponse toResponse(
+            List<Question> questions,
+            List<QuestionAnswer> questionAnswers
+    ) {
         Map<Long, QuestionAnswer> answerMap = questionAnswers.stream()
                 .collect(Collectors.toMap(QuestionAnswer::getQuestionId, answer -> answer));
 
@@ -39,7 +43,7 @@ public class FeedbackDetailMapper {
                         question.getQuestionText(),
                         question.getOptionTexts(),
                         question.getOptionTexts().size(),
-                        answer == null ? null : answer.getChoiceOption(),
+                        answer == null ? null : answer.getSelectedOption(),
                         images
                 ));
             } else {
@@ -52,6 +56,6 @@ public class FeedbackDetailMapper {
             }
         }
 
-        return new FeedbackDetailResponse(choices, subjectives);
+        return new QuestionAnswerResponse(choices, subjectives);
     }
 }

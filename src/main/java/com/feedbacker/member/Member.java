@@ -1,5 +1,6 @@
 package com.feedbacker.member;
 
+import com.feedbacker.feedback.service.AcornHistory;
 import com.feedbacker.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -7,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -45,6 +48,9 @@ public class Member extends BaseTimeEntity {
 
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private AcornWallet acornWallet;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.REMOVE)
+    private List<AcornHistory> acornHistories = new ArrayList<>();
 
     @Builder
     public Member(String email, String password, String nickname, Role role, AuthProvider authProvider, String profileImageUrl, String interestField) {
