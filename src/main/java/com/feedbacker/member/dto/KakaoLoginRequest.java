@@ -2,14 +2,11 @@ package com.feedbacker.member.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-@Getter
-@NoArgsConstructor
-public class KakaoLoginRequest {
-
-    @NotBlank(message = "잘못된 요청입니다. 인가 코드가 누락되었거나 잘못된 형식의 데이터입니다.")
-    @JsonProperty("authorization_code")
-    private String authorizationCode;
+/** 3-1 카카오 로그인 요청 */
+public record KakaoLoginRequest(
+        @JsonProperty("authorization_code")
+        @NotBlank(message = "카카오 인가 코드가 누락되었습니다.")
+        String authorizationCode
+) {
 }
