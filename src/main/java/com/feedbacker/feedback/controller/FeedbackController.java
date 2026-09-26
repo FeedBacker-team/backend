@@ -55,7 +55,7 @@ public class FeedbackController {
 //        return feedbackService.getResult(feedbackId);
 //    }
 
-    @PostMapping("/{feedbackId}/objection")
+    @PatchMapping("/{feedbackId}/objection")
     public void object(
             @Valid @RequestBody FeedbackObjectRequest request,
             @PathVariable UUID feedbackId
