@@ -1,8 +1,8 @@
-package com.feedbacker.participation;
+package com.feedbacker.feedbackpost.domain;
 
-import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.common.BaseTimeEntity;
 import com.feedbacker.member.Member;
+import com.feedbacker.feedbackpost.domain.type.ParticipationStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -88,13 +88,12 @@ public class Participation extends BaseTimeEntity {
 
     public static Participation reserve(
             FeedbackPost feedbackPost,
-            Member tester,
-            LocalDateTime reservedAt
+            Member tester
     ){
         return new Participation(
                 feedbackPost,
                 tester,
-                reservedAt
+                LocalDateTime.now()
         );
     }
 

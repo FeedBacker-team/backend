@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
+import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -110,4 +110,12 @@ public class MemberService {
     private static CustomException nicknameConflict() {
         return new CustomException(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
     }
+
+    public Member getMember(UUID memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."
+                ));
+    }
 }
+

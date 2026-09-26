@@ -1,13 +1,20 @@
 package com.feedbacker.feedback.domain;
 
+import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.global.image.ImageInfo;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "question_answers")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class QuestionAnswer {
+public class QuestionAnswer extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,8 +32,12 @@ public class QuestionAnswer {
     @Column(name = "question_order", nullable = false)
     private Integer questionOrder;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "images", columnDefinition = "jsonb")
+    private List<ImageInfo> images = new ArrayList<>();
+
     // 객관식 선택
-    private Integer choiceOption;
+    private List<Integer> selectedOption;
 
     // 주관식 답변
     @Column(columnDefinition = "TEXT")
@@ -37,13 +48,15 @@ public class QuestionAnswer {
             Feedback feedback,
             Long questionId,
             Integer questionOrder,
-            Integer choiceOption,
+            List<ImageInfo> images,
+            List<Integer> selectedOption,
             String subjectiveAnswer
     ) {
         this.feedback = feedback;
         this.questionId = questionId;
         this.questionOrder = questionOrder;
-        this.choiceOption = choiceOption;
+        this.images = images;
+        this.selectedOption = selectedOption;
         this.subjectiveAnswer = subjectiveAnswer;
     }
 

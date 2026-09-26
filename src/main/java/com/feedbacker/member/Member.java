@@ -1,5 +1,6 @@
 package com.feedbacker.member;
 
+import com.feedbacker.feedback.domain.AcornHistory;
 import com.feedbacker.global.common.BaseTimeEntity;
 import com.feedbacker.project.domain.ProjectTag;
 import jakarta.persistence.*;
@@ -62,6 +63,12 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private TreeGrade grade = TreeGrade.NORMAL;
 
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private AcornWallet acornWallet;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.REMOVE)
+    private List<AcornHistory> acornHistories = new ArrayList<>();
+
     // 관심 분야 (0~5개)
     @ElementCollection
     @CollectionTable(name = "member_interest", joinColumns = @JoinColumn(name = "member_id"))
@@ -89,6 +96,15 @@ public class Member extends BaseTimeEntity {
     /** 카카오 회원가입 (email은 null 가능) */
     public static Member createKakaoMember(String kakaoId, String email) {
         return new Member(email, null, AuthProvider.KAKAO, kakaoId);
+    }
+
+    public void assignWallet(AcornWallet wallet) {
+        this.acornWallet = wallet;
+    }
+
+    public void setInitialProfile(String nickname, Role role) {
+        this.nickname = nickname;
+        this.role = role;
     }
 
     /** 4-2 기본 프로필 설정 */

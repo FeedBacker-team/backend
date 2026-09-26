@@ -1,6 +1,8 @@
 package com.feedbacker.global.common;
 
 import lombok.extern.slf4j.Slf4j;
+import com.feedbacker.global.exception.BusinessException;
+import com.feedbacker.global.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -77,6 +79,19 @@ public class GlobalExceptionHandler {
         }
 
     // 500: 예상 못 한 서버 오류 (원인은 서버 로그에만 남김)
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(
+            BusinessException e
+    ) {
+        ErrorCode errorCode = e.getErrorCode();
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(new ErrorResponse(errorCode.getMessage()));
+    }
+
+    // 500 Internal Server Error: 기타 서버 오류
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
 
