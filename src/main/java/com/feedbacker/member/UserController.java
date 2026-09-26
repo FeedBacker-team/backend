@@ -3,6 +3,7 @@ package com.feedbacker.member;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.dto.NicknameCheckResponse;
 import com.feedbacker.member.dto.ProfileResponse;
+import com.feedbacker.member.dto.ProfileUpdateResponse;
 import com.feedbacker.member.dto.ProfileUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +33,17 @@ public class UserController {
 
     // 4-2. 기본 프로필 설정 (로그인 필수)
     @PatchMapping("/me/profile")
-    public ResponseEntity<ProfileResponse> updateProfile(
+    public ResponseEntity<ProfileUpdateResponse> updateProfile(
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody ProfileUpdateRequest request) {
         return ResponseEntity.ok(memberService.updateProfile(user.getMemberId(), request));
     }
+
+    @GetMapping("/me/profile")
+    public ResponseEntity<ProfileResponse> getProfile(
+            @AuthenticationPrincipal CustomUserDetails user
+    )  {
+        return ResponseEntity.ok(memberService.getProfile(user.getMemberId()));
+    }
+
 }

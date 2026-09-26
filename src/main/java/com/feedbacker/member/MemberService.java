@@ -3,6 +3,7 @@ package com.feedbacker.member;
 import com.feedbacker.global.common.CustomException;
 import com.feedbacker.member.dto.NicknameCheckResponse;
 import com.feedbacker.member.dto.ProfileResponse;
+import com.feedbacker.member.dto.ProfileUpdateResponse;
 import com.feedbacker.member.dto.ProfileUpdateRequest;
 import com.feedbacker.project.domain.ProjectTag;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class MemberService {
 
     /** 4-2 기본 프로필 설정 */
     @Transactional
-    public ProfileResponse updateProfile(UUID memberId, ProfileUpdateRequest request) {
+    public ProfileUpdateResponse updateProfile(UUID memberId, ProfileUpdateRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
 
@@ -64,7 +65,7 @@ public class MemberService {
         } catch (DataIntegrityViolationException e) {
             throw nicknameConflict();
         }
-        return ProfileResponse.from(member);
+        return ProfileUpdateResponse.from(member);
     }
 
     private boolean isNicknameTaken(String nickname, UUID excludeMemberId) {
@@ -114,5 +115,9 @@ public class MemberService {
     public Member getMember(UUID memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
+    }
+
+    public ProfileResponse getProfile(UUID memberId) {
+        return ProfileResponse.from(getMember(memberId));
     }
 }
