@@ -22,10 +22,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 
-	// Spring Security 추가
+	// 로그인/보안
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-
-	// JWT (jjwt 0.12.6)
+	// 이메일 발송
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	// JWT (로그인 토큰)
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'

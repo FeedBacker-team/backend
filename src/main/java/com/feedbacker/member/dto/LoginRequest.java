@@ -2,17 +2,14 @@ package com.feedbacker.member.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-@Getter
-@NoArgsConstructor
-public class LoginRequest {
+/** 2-1 이메일 로그인 요청 */
+public record LoginRequest(
+        @NotBlank(message = "이메일 형식과 비밀번호를 올바르게 입력해 주세요.")
+        @Email(regexp = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", message = "이메일 형식과 비밀번호를 올바르게 입력해 주세요.")
+        String email,
 
-    @NotBlank(message = "이메일은 필수 입력값입니다.")
-    @Email(message = "요청 형식이 올바르지 않습니다. 이메일 형식을 확인해주세요.")
-    private String email;
-
-    @NotBlank(message = "비밀번호는 필수 입력값입니다.")
-    private String password;
+        @NotBlank(message = "이메일 형식과 비밀번호를 올바르게 입력해 주세요.")
+        String password
+) {
 }

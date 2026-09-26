@@ -1,134 +1,114 @@
 package com.feedbacker.member;
 
+import com.feedbacker.global.common.CustomException;
 import com.feedbacker.global.jwt.JwtTokenProvider;
-import com.feedbacker.member.dto.*;
+import com.feedbacker.member.dto.AuthResponse;
+import com.feedbacker.member.dto.TokenRefreshResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AuthService {
 
     private final MemberRepository memberRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AcornWalletService acornWalletService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final EmailVerificationService emailVerificationService;
+    private final AuthTokenService authTokenService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final KakaoClient kakaoClient;
+    private final PasswordEncoder passwordEncoder;
 
+    /** 1-3 이메일 회원가입 (가입 즉시 로그인) */
     @Transactional
-    public AuthResponse signUp(SignUpRequest request) {
-        if (memberRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalStateException("이미 가입된 이메일입니다.");
+    public LoginResult signUp(String rawEmail, String password) {
+        String email = EmailVerificationService.normalize(rawEmail);
+
+        if (memberRepository.existsByEmail(email) || !emailVerificationService.isVerified(email)) {
+            throw new CustomException(HttpStatus.CONFLICT,
+                    "이메일 인증이 완료되지 않았거나 이미 존재하는 계정입니다.");
         }
 
-        String defaultNickname = request.getEmail().split("@")[0];
+        Member member = memberRepository.save(
+                Member.createEmailMember(email, passwordEncoder.encode(password)));
+        acornWalletService.createForNewMember(member);
+        emailVerificationService.consume(email);
 
-        Member member = Member.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .nickname(defaultNickname)
-                .role(Role.OTHER)
-                .authProvider(AuthProvider.EMAIL)
-                .build();
-
-        AcornWallet wallet = new AcornWallet(member, 0);
-        member.assignWallet(wallet);
-
-        Member savedMember = memberRepository.save(member);
-
-        String accessToken = jwtTokenProvider.createAccessToken(
-                savedMember.getId(),
-                savedMember.getEmail(),
-                savedMember.getRole().name()
-        );
-        String refreshToken = jwtTokenProvider.createRefreshToken(savedMember.getId());
-
-        return AuthResponse.builder()
-                .userId(savedMember.getId())
-                .email(savedMember.getEmail())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(3600)
-                .build();
+        return loginResult(member);
     }
 
-    public AuthResponse login(LoginRequest request) {
-        Member member = memberRepository.findByEmail(request.getEmail())
-                .filter(m -> passwordEncoder.matches(request.getPassword(), m.getPassword()))
-                .orElseThrow(() -> new BadCredentialsException("이메일 또는 비밀번호가 일치하지 않습니다."));
+    /** 2-1 이메일 로그인 */
+    @Transactional
+    public LoginResult login(String rawEmail, String password) {
+        String email = EmailVerificationService.normalize(rawEmail);
 
-        String accessToken = jwtTokenProvider.createAccessToken(
-                member.getId(),
-                member.getEmail(),
-                member.getRole().name()
-        );
-        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
+        Member member = memberRepository.findByEmail(email)
+                .filter(m -> m.getPassword() != null)          // 카카오 가입자는 비밀번호 없음
+                .filter(m -> m.getDeactivatedAt() == null)     // 탈퇴 회원 제외
+                .filter(m -> passwordEncoder.matches(password, m.getPassword()))
+                .orElseThrow(() -> new CustomException(HttpStatus.UNAUTHORIZED,
+                        "이메일 또는 비밀번호가 일치하지 않습니다."));
 
-        return AuthResponse.builder()
-                .userId(member.getId())
-                .email(member.getEmail())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(3600)
-                .build();
+        return loginResult(member);
     }
 
+    /** 2-2 Access Token 재발급 (Refresh Token은 그대로 유지) */
+    @Transactional(readOnly = true)
+    public TokenRefreshResponse refresh(String refreshToken) {
+        if (!StringUtils.hasText(refreshToken)) {
+            throw invalidRefreshToken();
+        }
+
+        UUID memberId = jwtTokenProvider.parseRefreshToken(refreshToken)
+                .orElseThrow(AuthService::invalidRefreshToken);
+
+        RefreshToken saved = refreshTokenRepository.findByToken(refreshToken)
+                .filter(t -> t.getMemberId().equals(memberId))
+                .filter(t -> !t.isExpired(LocalDateTime.now()))
+                .orElseThrow(AuthService::invalidRefreshToken);
+
+        Member member = memberRepository.findById(saved.getMemberId())
+                .filter(m -> m.getDeactivatedAt() == null)
+                .orElseThrow(AuthService::invalidRefreshToken);
+
+        return new TokenRefreshResponse(
+                jwtTokenProvider.createAccessToken(member.getId()),
+                jwtTokenProvider.getAccessTokenExpirationSeconds(),
+                member.isProfileCompleted());
+    }
+
+    /** 2-3 로그아웃: 서버에 저장된 Refresh Token 삭제 (없어도 성공 처리) */
     @Transactional
-    public KakaoAuthResponse loginKakao(KakaoLoginRequest request) {
-        // 1. 카카오 토큰 발급 및 회원 정보 조회
-        String kakaoToken = kakaoClient.getAccessToken(request.getAuthorizationCode());
-        KakaoUserInfoResponse userInfo = kakaoClient.getUserInfo(kakaoToken);
-
-        String email = userInfo.getKakaoAccount().getEmail();
-        if (email == null || email.isBlank()) {
-            email = "kakao_" + userInfo.getId() + "@feedbacker.kakao";
+    public void logout(String refreshToken) {
+        if (StringUtils.hasText(refreshToken)) {
+            refreshTokenRepository.deleteByToken(refreshToken);
         }
+    }
 
-        // 2. 가입 여부 확인
-        Optional<Member> optionalMember = memberRepository.findByEmail(email);
-        boolean isNewUser = optionalMember.isEmpty();
-        Member member;
-
-        if (isNewUser) {
-            String nickname = (userInfo.getKakaoAccount().getProfile() != null
-                    && userInfo.getKakaoAccount().getProfile().getNickname() != null)
-                    ? userInfo.getKakaoAccount().getProfile().getNickname()
-                    : "kakao_" + userInfo.getId();
-
-            member = Member.builder()
-                    .email(email)
-                    .nickname(nickname)
-                    .role(Role.OTHER)
-                    .authProvider(AuthProvider.KAKAO)
-                    .build();
-
-            AcornWallet wallet = new AcornWallet(member, 0);
-            member.assignWallet(wallet);
-            member = memberRepository.save(member);
-        } else {
-            member = optionalMember.get();
-        }
-
-        // 3. 서비스 자체 JWT 발급
-        String accessToken = jwtTokenProvider.createAccessToken(
+    private LoginResult loginResult(Member member) {
+        AuthTokens tokens = authTokenService.issue(member.getId());
+        AuthResponse response = new AuthResponse(
                 member.getId(),
                 member.getEmail(),
-                member.getRole().name()
-        );
-        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
+                tokens.accessToken(),
+                tokens.accessTokenExpiresIn(),
+                member.isProfileCompleted());
+        return new LoginResult(response, tokens.refreshToken());
+    }
 
-        return KakaoAuthResponse.builder()
-                .userId(member.getId())
-                .email(member.getEmail())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(3600)
-                .isNewUser(isNewUser)
-                .build();
+    private static CustomException invalidRefreshToken() {
+        return new CustomException(HttpStatus.UNAUTHORIZED,
+                "유효하지 않거나 만료된 리프레시 토큰입니다. 다시 로그인해 주세요.");
+    }
+
+    /** 컨트롤러로 넘길 결과 (응답 바디 + 쿠키에 넣을 Refresh Token) */
+    public record LoginResult(AuthResponse response, String refreshToken) {
     }
 }
