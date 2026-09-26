@@ -1,8 +1,8 @@
 package com.feedbacker.global.common;
 
+import lombok.extern.slf4j.Slf4j;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.global.exception.ErrorCode;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -21,14 +22,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustom(CustomException e) {
         return ResponseEntity.status(e.getStatus()).body(new ErrorResponse(e.getMessage()));
-    }
-
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
-        ErrorCode errorCode = e.getErrorCode();
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(new ErrorResponse(errorCode.getMessage()));
     }
 
     // 400: 도메인 검증 실패 (예: Project 태그 5개 초과) - 팀 공통 규칙
@@ -78,7 +71,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(new ErrorResponse("지원하지 않는 요청 방식입니다."));
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+        public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException exception){
+        return ResponseEntity
+                .status(exception.getStatusCode())
+                .body(new ErrorResponse(exception.getReason()));
+        }
+
     // 500: 예상 못 한 서버 오류 (원인은 서버 로그에만 남김)
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
+        ErrorCode errorCode = e.getErrorCode();
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(new ErrorResponse(errorCode.getMessage()));
+    }
+
+    // 500 Internal Server Error: 기타 서버 오류
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("Unhandled exception", e);

@@ -1,22 +1,27 @@
 package com.feedbacker.project.service;
 
+import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.global.common.CustomException;
 import com.feedbacker.member.Member;
+import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.domain.Project;
+import com.feedbacker.project.domain.ProjectSort;
 import com.feedbacker.project.domain.ProjectStatus;
 import com.feedbacker.project.domain.ProjectTag;
 import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
-import com.feedbacker.project.domain.dto.response.ActiveQaResponse;
-import com.feedbacker.project.domain.dto.response.ProjectCreateResponse;
-import com.feedbacker.project.domain.dto.response.ProjectDetailResponse;
-import com.feedbacker.project.domain.dto.response.ProjectSummaryResponse;
+import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.repository.ProjectRepository;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,9 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,14 +42,21 @@ public class ProjectService {
                     FeedbackPostStatus.CLOSED
             );
     private final ProjectRepository projectRepository;
+    private final MemberRepository memberRepository;
     private final Validator validator;
 
     //프로젝트 등록
     @Transactional
-    public ProjectCreateResponse createProject(Member owner, ProjectCreateRequest request) {
-        validateLogin(owner == null ? null : owner.getId());
+    public ProjectCreateResponse createProject(UUID memberId, ProjectCreateRequest request) {
+        validateLogin(memberId);
         validateRequest(request);
         validateProjectInfo(request.tags(), request.serviceLink(), request.thumbnailImage());
+
+        Member owner = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "인증된 회원을 찾을 수 없습니다."
+                ));
 
         Project project = Project.create(
                 owner,
@@ -59,6 +69,8 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project);
         return new ProjectCreateResponse(savedProject.getId());
     }
+
+
 
     //조회수 증가
     @Transactional
@@ -141,6 +153,148 @@ public class ProjectService {
         }
 
         project.delete();
+    }
+
+    public ProjectListResponse getProjects(
+            String keyword,
+            List<ProjectTag> tags,
+            ProjectSort sort,
+            int page,
+            int size
+    ) {
+        validateProjectSearch(tags, sort, page, size);
+
+        Specification<Project> specification = hasPublishedStatus();
+
+        if (keyword != null && !keyword.isBlank()) {
+            specification = specification.and(containsKeyword(keyword));
+
+        }
+        if (tags != null && !tags.isEmpty()) {
+            specification = specification.and(hasAnyTag(tags));
+        }
+
+        PageRequest pageRequest = PageRequest.of(page, size, createSort(sort));
+
+        Page<ProjectCardResponse> projectPage = projectRepository
+                .findAll(specification, pageRequest)
+                .map(ProjectCardResponse::from);
+
+        return ProjectListResponse.from(projectPage);
+    }
+
+    private void validateProjectSearch(List<ProjectTag> tags, ProjectSort sort, int page, int size) {
+        if (tags != null && tags.size() > 5) {
+            throw badRequest("태그는 최대 5개까지 선택할 수 있습니다.");
+        }
+        if (tags != null && tags.stream().distinct().count() != tags.size()) {
+            throw badRequest("중복된 태그를 선택할 수 없습니다.");
+        }
+
+        if (sort == null) {
+            throw badRequest("지원하지 않는 정렬 기준입니다.");
+        }
+
+        if (page < 0) {
+            throw badRequest("페이지 번호는 0 이상이어야 합니다.");
+        }
+        if (size < 1 || size > 100) {
+            throw badRequest("페이지 크기는 1이상 100 이하여야 합니다.");
+        }
+
+    }
+
+    private Specification<Project> hasPublishedStatus() {
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(
+                        root.get("status"),
+                        ProjectStatus.PUBLISHED
+                );
+    }
+
+    private Specification<Project> containsKeyword(String keyword) {
+        return (root, query, criteriaBuilder) -> {
+            String pattern = "%"
+                    + keyword.trim().toLowerCase(Locale.ROOT)
+                    + "%";
+
+            return criteriaBuilder.or(
+                    criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("title")),
+                            pattern
+                    ),
+                    criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("description")),
+                            pattern
+                    )
+            );
+        };
+    }
+
+    private Specification<Project> hasAnyTag(
+            List<ProjectTag> tags
+    ) {
+        return (root, query, criteriaBuilder) -> {
+            query.distinct(true);
+
+            Join<Project, ProjectTag> tagJoin =
+                    root.join("tags", JoinType.INNER);
+
+            return tagJoin.in(tags);
+        };
+    }
+
+    private Sort createSort(ProjectSort sort) {
+        return switch (sort) {
+            case LATEST -> Sort.by(
+                    Sort.Order.desc("createdAt"),
+                    Sort.Order.desc("id")
+            );
+
+            case VIEW_COUNT -> Sort.by(
+                    Sort.Order.desc("viewCount"),
+                    Sort.Order.desc("createdAt"),
+                    Sort.Order.desc("id")
+            );
+        };
+    }
+
+    public List<MyProjectResponse> getMyProjects(UUID memberId) {
+        validateLogin(memberId);
+
+        List<Project> projects =
+                projectRepository
+                        .findByOwner_IdAndStatusOrderByCreatedAtDesc(
+                                memberId,
+                                ProjectStatus.PUBLISHED
+                        );
+
+        List<FeedbackPost> activeQaPosts =
+                projectRepository.findActiveQaByOwner(
+                        memberId,
+                        ProjectStatus.PUBLISHED,
+                        ACTIVE_QA_STATUSES
+                );
+
+        Map<UUID, UUID> activeQaIdByProjectId =
+                new HashMap<>();
+
+        for (FeedbackPost feedbackPost : activeQaPosts) {
+            UUID projectId =
+                    feedbackPost.getProject().getId();
+
+            activeQaIdByProjectId.putIfAbsent(
+                    projectId,
+                    feedbackPost.getId()
+            );
+        }
+
+        return projects.stream()
+                .map(project -> MyProjectResponse.from(
+                        project,
+                        activeQaIdByProjectId.get(project.getId())
+                ))
+                .toList();
     }
 
     private boolean hasActiveQa(UUID projectId) {

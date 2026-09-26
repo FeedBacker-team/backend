@@ -77,4 +77,7 @@ public class Question extends BaseTimeEntity {
         this.maxSelectionCount = maxSelectionCount;
         this.minimumLength = minimumLength;
     }
+    public boolean isSingleSelect() {
+        return Integer.valueOf(1).equals(maxSelectionCount);
+    }
 }

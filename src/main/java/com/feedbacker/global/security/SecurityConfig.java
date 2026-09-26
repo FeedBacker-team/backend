@@ -56,10 +56,13 @@ public class SecurityConfig {
                         // 닉네임 중복 확인 (로그인 전/후 모두 가능)
                         .requestMatchers(HttpMethod.GET, "/api/users/check-nickname").permitAll()
                         // 내 프로젝트 목록은 로그인 필수 (아래 공개 규칙보다 먼저 와야 함)
-                        .requestMatchers(HttpMethod.GET, "/api/projects/mine").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/me/projects").authenticated()
                         // 프로젝트 목록·상세는 비로그인 열람 가능
                         .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/tags").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/feedback-posts").permitAll()
                         .anyRequest().authenticated()
+
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class);

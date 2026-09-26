@@ -1,5 +1,6 @@
 package com.feedbacker.member;
 
+import com.feedbacker.feedback.domain.AcornHistory;
 import com.feedbacker.global.common.BaseTimeEntity;
 import com.feedbacker.project.domain.ProjectTag;
 import jakarta.persistence.*;
@@ -62,6 +63,12 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private TreeGrade grade = TreeGrade.NORMAL;
 
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private AcornWallet acornWallet;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.REMOVE)
+    private List<AcornHistory> acornHistories = new ArrayList<>();
+
     // 관심 분야 (0~5개)
     @ElementCollection
     @CollectionTable(name = "member_interest", joinColumns = @JoinColumn(name = "member_id"))
@@ -118,4 +125,5 @@ public class Member extends BaseTimeEntity {
     public List<ProjectTag> getInterests() {
         return List.copyOf(interests);
     }
+
 }

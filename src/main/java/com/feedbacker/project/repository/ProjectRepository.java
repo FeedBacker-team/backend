@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ProjectRepository extends JpaRepository<Project, UUID> {
+public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpecificationExecutor<Project> {
 
     @EntityGraph(attributePaths = {"owner", "tags"})
     Optional<Project> findByIdAndStatus(
@@ -96,5 +96,25 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             @Param("projectId") UUID projectId,
             @Param("statuses")
             Collection<FeedbackPostStatus> statuses
+    );
+
+    @Query("""
+        select fp
+        from FeedbackPost fp
+        join fetch fp.project p
+        where p.owner.id = :memberId
+          and p.status = :projectStatus
+          and fp.status in :activeStatuses
+        order by fp.createdAt desc, fp.id desc
+        """)
+    List<FeedbackPost> findActiveQaByOwner(
+            @Param("memberId")
+            UUID memberId,
+
+            @Param("projectStatus")
+            ProjectStatus projectStatus,
+
+            @Param("activeStatuses")
+            Collection<FeedbackPostStatus> activeStatuses
     );
 }

@@ -20,17 +20,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
-      jdbc:
-        time_zone: UTC
+        jdbc:
+          time_zone: UTC
 
-server:
-  port: ${PORT:8080}
-
-supabase:
-  url: ${SUPABASE_URL:}
-  storage:
-    secret-key: ${SUPABASE_SECRET_KEY:}
-    bucket: ${SUPABASE_STORAGE_BUCKET:}
   mail:
     host: smtp.gmail.com
     port: 587
@@ -43,6 +35,16 @@ supabase:
           starttls:
             enable: true
 
+server:
+  port: ${PORT:8080}
+
+supabase:
+  url: ${SUPABASE_URL:}
+  storage:
+    secret-key: ${SUPABASE_SECRET_KEY:}
+    bucket: ${SUPABASE_STORAGE_BUCKET:}
+
+# JWT 설정 (Access Token: 1시간, Refresh Token: 14일)
 jwt:
   # 로컬 개발용 기본값. 배포 서버에서는 반드시 JWT_SECRET 환경변수로 교체
   secret: ${JWT_SECRET:ZmVlZGJhY2tlci1sb2NhbC1kZXYtb25seS1zZWNyZXQta2V5LTIwMjY=}

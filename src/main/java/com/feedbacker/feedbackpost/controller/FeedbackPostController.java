@@ -1,15 +1,15 @@
 package com.feedbacker.feedbackpost.controller;
 
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackFormResponse;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackSimpleResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.*;
+import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.feedbackpost.facade.FeedbackPostFacade;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.global.security.CustomUserDetails;
+import com.feedbacker.project.domain.ProjectTag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -22,6 +22,20 @@ public class FeedbackPostController {
 
     private final FeedbackPostFacade feedbackPostFacade;
     private final FeedbackPostService feedbackPostService;
+
+    @GetMapping
+    public ResponseEntity<FeedbackPostListResponse> getFeedbackPosts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<ProjectTag> tags,
+            @RequestParam(defaultValue = "LATEST") FeedbackPostSort sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        FeedbackPostListResponse response =
+                feedbackPostService.getFeedbackPosts(
+                        keyword, tags, sort, page, size);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public UUID create(
