@@ -78,7 +78,8 @@ public class FeedbackPostService {
         feedbackPost.validateRecruiting();
     }
 
-    public void save(FeedbackPost feedbackPost) {
-        feedbackPostRepository.save(feedbackPost);
+    public UUID save(FeedbackPost feedbackPost) {
+        FeedbackPost savedFeedback = feedbackPostRepository.save(feedbackPost);
+        return savedFeedback.getId();
     }
 }

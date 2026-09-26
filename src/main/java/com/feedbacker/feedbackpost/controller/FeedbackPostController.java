@@ -24,11 +24,11 @@ public class FeedbackPostController {
     private final FeedbackPostService feedbackPostService;
 
     @PostMapping
-    public void create(
+    public UUID create(
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody FeedbackPostCreateRequest request
     ) {
-        feedbackPostFacade.create(user, request);
+        return feedbackPostFacade.create(user, request);
     }
 
     @GetMapping("/mine")

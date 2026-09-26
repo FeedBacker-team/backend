@@ -31,13 +31,13 @@ public class FeedbackPostFacade {
     private final FeedbackService feedbackService;
 
     @Transactional
-    public void create(CustomUserDetails user, FeedbackPostCreateRequest request) {
+    public UUID create(CustomUserDetails user, FeedbackPostCreateRequest request) {
         Member member = memberService.getMember(user.getMemberId());
         Project project = projectService.getProject(request.projectId());
         project.validateOwner(member.getId());
         projectService.validateHasFeedbackPost(project.getId());
         acornWalletService.withdraw(member.getId(), request.depositAcorn());
-        feedbackPostService.save(request.toEntity(project));
+        return feedbackPostService.save(request.toEntity(project));
     }
 
     @Transactional
