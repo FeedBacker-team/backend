@@ -5,37 +5,26 @@ import com.feedbacker.global.jwt.JwtTokenProvider;
 import com.feedbacker.member.dto.AuthResponse;
 import com.feedbacker.member.dto.TokenRefreshResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final int DEFAULT_ACORNS = 50;
-    private static final int BONUS_ACORNS = 100;
-
     private final MemberRepository memberRepository;
-    private final AcornWalletRepository acornWalletRepository;
+    private final AcornWalletService acornWalletService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationService emailVerificationService;
     private final AuthTokenService authTokenService;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
-
-    // 이 날짜(한국시간)까지 가입하면 도토리 2배
-    @Value("${acorn.signup-bonus-until}")
-    private LocalDate signupBonusUntil;
 
     /** 1-3 이메일 회원가입 (가입 즉시 로그인) */
     @Transactional
@@ -49,7 +38,7 @@ public class AuthService {
 
         Member member = memberRepository.save(
                 Member.createEmailMember(email, passwordEncoder.encode(password)));
-        createWallet(member);
+        acornWalletService.createForNewMember(member);
         emailVerificationService.consume(email);
 
         return loginResult(member);
@@ -101,12 +90,6 @@ public class AuthService {
         if (StringUtils.hasText(refreshToken)) {
             refreshTokenRepository.deleteByToken(refreshToken);
         }
-    }
-
-    /** 가입 시 도토리 지갑 생성 (카카오 가입에서도 사용) */
-    void createWallet(Member member) {
-        boolean bonus = !LocalDate.now(KST).isAfter(signupBonusUntil);
-        acornWalletRepository.save(AcornWallet.create(member, bonus ? BONUS_ACORNS : DEFAULT_ACORNS));
     }
 
     private LoginResult loginResult(Member member) {
