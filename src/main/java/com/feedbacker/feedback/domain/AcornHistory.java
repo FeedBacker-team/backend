@@ -1,5 +1,6 @@
 package com.feedbacker.feedback.domain;
 
+import com.feedbacker.feedback.domain.type.AcornHistoryType;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
@@ -8,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +35,12 @@ public class AcornHistory {
     private UUID feedbackId;
 
     @Column
+    private AcornHistoryType type;
+
+    @Column
+    private LocalDateTime translateAt;
+
+    @Column
     private Integer changeAcorn;
 
     @Column
@@ -46,6 +54,7 @@ public class AcornHistory {
             Member member,
             UUID feedbackPostId,
             UUID feedbackId,
+            AcornHistoryType type,
             Integer acronChange,
             Integer beforeAcorn,
             Integer afterAcron
@@ -53,6 +62,8 @@ public class AcornHistory {
         this.member = member;
         this.feedbackPostId = feedbackPostId;
         this.feedbackId = feedbackId;
+        this.type = type;
+        this.translateAt = LocalDateTime.now();
         this.changeAcorn = acronChange;
         this.beforeAcorn = beforeAcorn;
         this.afterAcron = afterAcron;
@@ -74,6 +85,7 @@ public class AcornHistory {
                         .member(tester)
                         .feedbackPostId(feedbackPost.getId())
                         .feedbackId(feedback.getId())
+                        .type(AcornHistoryType.FEEDBACK_ACCEPT)
                         .acronChange(rewardAcorn)
                         .beforeAcorn(testerBeforeAcorn)
                         .afterAcron(testerBeforeAcorn + rewardAcorn)
@@ -85,6 +97,7 @@ public class AcornHistory {
                         .member(writer)
                         .feedbackPostId(feedbackPost.getId())
                         .feedbackId(feedback.getId())
+                        .type(AcornHistoryType.FEEDBACK_RECRUIT)
                         .acronChange(rewardAcorn)
                         .beforeAcorn(testerBeforeAcorn)
                         .afterAcron(writerBeforeAcorn - rewardAcorn)
