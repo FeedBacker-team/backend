@@ -110,4 +110,9 @@ public class MemberService {
     private static CustomException nicknameConflict() {
         return new CustomException(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
     }
+
+    public Member getMember(UUID memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
+    }
 }
