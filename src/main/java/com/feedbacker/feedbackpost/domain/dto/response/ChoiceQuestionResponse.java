@@ -7,7 +7,7 @@ public record ChoiceQuestionResponse(
         Integer order,
         String questionText,
         List<String> optionText,
-        boolean isSingleSelect,
+        Integer maxSelectionCount,
         List<ImageResponse> images,
         boolean isRequire
 ) {

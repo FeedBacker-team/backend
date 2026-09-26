@@ -31,7 +31,7 @@ public class FeedbackFormMapper {
                         question.getOrder(),
                         question.getQuestionText(),
                         question.getOptionTexts(),
-                        question.isSingleSelect(),
+                        question.getMaxSelectionCount(),
                         images,
                         question.isRequired()
                 ));

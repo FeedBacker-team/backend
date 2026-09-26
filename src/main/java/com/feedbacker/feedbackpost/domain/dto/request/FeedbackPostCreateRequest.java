@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 public record FeedbackPostCreateRequest(
 
         @NotNull(message = "프로젝트 아이디는 필수입니다.")
-        UUID projectID,
+        UUID projectId,
 
         @NotBlank(message = "제목을 공백일 수 없습니다.")
         @Size(max = 50, message = "제목은 50자 이하여야 합니다.")

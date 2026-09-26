@@ -6,6 +6,7 @@ import com.feedbacker.feedback.domain.dto.response.*;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.Member;
@@ -70,5 +71,11 @@ public class FeedbackService {
                 || !memberId.equals(feedbackPost.getWriterId())) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
+    }
+
+    public List<FeedbackProgressResponse> getAllByFeedbackPost(FeedbackPost feedbackPost) {
+        return feedbackRepository.getAllByFeedbackPost(feedbackPost).stream()
+                .map(FeedbackProgressResponse::from)
+                .toList();
     }
 }

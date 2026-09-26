@@ -1,6 +1,7 @@
 package com.feedbacker.project.service;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
+import com.feedbacker.global.common.CustomException;
 import com.feedbacker.member.Member;
 import com.feedbacker.project.domain.Project;
 import com.feedbacker.project.domain.ProjectStatus;
@@ -79,6 +80,18 @@ public class ProjectService {
     public ProjectDetailResponse getProject(UUID projectId, UUID viewerId) {
         Project project = findPublishedProject(projectId);
         return toDetailResponse(project, viewerId);
+    }
+
+    // 프로젝트 엔티티 찾기
+    public Project getProject(UUID projectId) {
+        return projectRepository.findForUpdate(projectId, ProjectStatus.PUBLISHED)
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."));
+    }
+
+    public void validateHasFeedbackPost(UUID projectId) {
+        if (hasActiveQa(projectId)) {
+            throw new CustomException(HttpStatus.CONFLICT, "이미 모집 중인 게시글이 있습니다.");
+        }
     }
 
     //QA 모집 설정에서 선택 가능한 내 프로젝트 목록

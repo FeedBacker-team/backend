@@ -1,11 +1,14 @@
 package com.feedbacker.project.domain;
 
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.global.common.CustomException;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -148,6 +151,12 @@ public class Project extends BaseTimeEntity {
             throw new IllegalArgumentException(
                     "프로젝트 작성자는 필수입니다."
             );
+        }
+    }
+
+    public void validateOwner(UUID memberId) {
+        if (memberId != this.owner.getId()) {
+            throw new CustomException(HttpStatus.FORBIDDEN, "프로젝트에 접근 권한이 없습니다.");
         }
     }
 

@@ -1,12 +1,17 @@
 package com.feedbacker.member;
 
+import com.feedbacker.global.common.CustomException;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,5 +32,11 @@ public class AcornWalletService {
     public AcornWallet createForNewMember(Member member) {
         boolean bonus = !LocalDate.now(KST).isAfter(signupBonusUntil);
         return acornWalletRepository.save(AcornWallet.create(member, bonus ? BONUS_ACORNS : DEFAULT_ACORNS));
+    }
+
+    public void withdraw(UUID memberId, Integer acorn) {
+        AcornWallet wallet = acornWalletRepository.findByIdForUpdate(memberId)
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "유저의 도토리 지갑을 찾을 수 없습니다."));
+        wallet.withdraw(acorn);
     }
 }
