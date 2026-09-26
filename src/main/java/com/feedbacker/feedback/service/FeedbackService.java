@@ -7,6 +7,7 @@ import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.exception.BusinessException;
+import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,9 +34,8 @@ public class FeedbackService {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedbackResponse> getMine() {
-        UUID memberId = UUID.randomUUID(); // MemberPrinciple 추가 후 변경 예정
-        List<Feedback> feedbacks = feedbackRepository.getAllByTesterId(memberId);
+    public List<FeedbackResponse> getMine(CustomUserDetails user) {
+        List<Feedback> feedbacks = feedbackRepository.getAllByTesterId(user.getMemberId());
         return FeedbackResponse.fromAll(feedbacks);
     }
 

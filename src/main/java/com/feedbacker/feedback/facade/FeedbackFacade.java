@@ -15,6 +15,7 @@ import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.ParticipationService;
 import com.feedbacker.feedbackpost.service.QuestionService;
+import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +38,8 @@ public class FeedbackFacade {
     private final AcornHistoryService acornHistoryService;
 
     @Transactional
-    public UUID submit(FeedbackSubmitRequest request) {
-        UUID memberId = UUID.randomUUID(); // MemberPrinciple 추가 후 변경 예정
-        Member tester = memberService.getMember(memberId);
+    public UUID submit(CustomUserDetails user, FeedbackSubmitRequest request) {
+        Member tester = memberService.getMember(user.getMemberId());
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(request.feedbackPostId());
         List<QuestionAnswer> answers = questionAnswerService.createAnswers(request.questionAnswer());
         feedbackPostService.validateFeedbackSubmit(feedbackPost, tester.getId());
@@ -52,8 +52,7 @@ public class FeedbackFacade {
     }
 
     @Transactional(readOnly = true)
-    public FeedbackDetailResponse getDetail(UUID feedbackId) {
-        UUID memberId = UUID.randomUUID(); // MemberPrinciple 추가 후 변경 예정
+    public FeedbackDetailResponse getDetail(CustomUserDetails user, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
         Member tester = memberService.getMember(feedback.getTesterId());
@@ -62,7 +61,7 @@ public class FeedbackFacade {
                 questionService.getAllQuestion(feedbackPost.getId()),
                 questionAnswerService.getAllQuestionAnswer(feedback.getId())
         );
-        feedbackService.validateGetFeedback(memberId, feedback, feedbackPost);
+        feedbackService.validateGetFeedback(user.getMemberId(), feedback, feedbackPost);
         return FeedbackDetailResponse.from(
                 feedbackPost,
                 feedback,
@@ -72,11 +71,10 @@ public class FeedbackFacade {
     }
 
     @Transactional
-    public void accept(UUID feedbackId) {
-        UUID writerId = UUID.randomUUID(); // MemberPrinciple 추가 후 변경 예정
+    public void accept(CustomUserDetails user, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        feedbackPost.validateAccessAuth(writerId);
+        feedbackPost.validateAccessAuth(user.getMemberId());
         Member tester = memberService.getMember(feedback.getTesterId());
         Member writer = memberService.getMember(feedbackPost.getWriterId());
         feedback.accept(feedbackPost.getRewardAcorn());
@@ -89,21 +87,19 @@ public class FeedbackFacade {
     }
 
     @Transactional
-    public void reject(FeedbackRejectRequest request, UUID feedbackId) {
-        UUID writerId = UUID.randomUUID(); // MemberPrinciple 추가 후 변경 예정
+    public void reject(CustomUserDetails user, FeedbackRejectRequest request, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        feedbackPost.validateAccessAuth(writerId);
+        feedbackPost.validateAccessAuth(user.getMemberId());
         feedback.reject(request);
         // 이후 거부 사유 검증 로직 추가할 예정
     }
 
     @Transactional
-    public void object(FeedbackObjectRequest request, UUID feedbackId) {
-        UUID writerId = UUID.randomUUID(); // MemberPrinciple 추가 후 변경 예정
+    public void object(CustomUserDetails user, FeedbackObjectRequest request, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        feedbackPost.validateAccessAuth(writerId);
+        feedbackPost.validateAccessAuth(user.getMemberId());
         feedback.setObjectReason(request.objectReason());
         // 이후 어드민에 이의제기 신청 알림 추가할 예정
     }

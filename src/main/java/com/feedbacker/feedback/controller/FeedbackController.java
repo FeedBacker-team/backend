@@ -7,8 +7,10 @@ import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.request.FeedbackSubmitRequest;
 import com.feedbacker.feedback.facade.FeedbackFacade;
 import com.feedbacker.feedback.service.FeedbackService;
+import com.feedbacker.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,31 +25,43 @@ public class FeedbackController {
     private final FeedbackService feedbackService;
 
     @PostMapping
-    public UUID submit(@Valid @RequestBody FeedbackSubmitRequest request) {
-        return feedbackFacade.submit(request);
+    public UUID submit(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @Valid @RequestBody FeedbackSubmitRequest request
+    ) {
+        return feedbackFacade.submit(user, request);
     }
 
     @GetMapping("/mine")
-    public List<FeedbackResponse> getMine() {
-        return feedbackService.getMine();
+    public List<FeedbackResponse> getMine(
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return feedbackService.getMine(user);
     }
 
     @GetMapping("/{feedbackId}")
-    public FeedbackDetailResponse getDetail(@PathVariable UUID feedbackId) {
-        return feedbackFacade.getDetail(feedbackId);
+    public FeedbackDetailResponse getDetail(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID feedbackId
+    ) {
+        return feedbackFacade.getDetail(user, feedbackId);
     }
 
     @PatchMapping("/{feedbackId}/accept")
-    public void accept(@PathVariable UUID feedbackId) {
-        feedbackFacade.accept(feedbackId);
+    public void accept(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID feedbackId
+    ) {
+        feedbackFacade.accept(user, feedbackId);
     }
 
     @PatchMapping("/{feedbackId}/reject")
     public void reject(
+            @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody FeedbackRejectRequest request,
             @PathVariable UUID feedbackId
     ) {
-        feedbackFacade.reject(request,feedbackId);
+        feedbackFacade.reject(user, request, feedbackId);
     }
 
 //    @GetMapping("/{feedbackId}/result")
@@ -57,10 +71,11 @@ public class FeedbackController {
 
     @PatchMapping("/{feedbackId}/objection")
     public void object(
+            @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody FeedbackObjectRequest request,
             @PathVariable UUID feedbackId
     ) {
-        feedbackFacade.object(request, feedbackId);
+        feedbackFacade.object(user, request, feedbackId);
     }
 
 }
