@@ -60,6 +60,7 @@ public class SecurityConfig {
                         // 프로젝트 목록·상세는 비로그인 열람 가능
                         .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/tags").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/feedback-posts").permitAll()
                         .anyRequest().authenticated()
 
                 )

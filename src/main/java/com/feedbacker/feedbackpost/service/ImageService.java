@@ -18,7 +18,7 @@ public class ImageService {
     public ImageResponse toThumbnailResponse(List<ImageInfo> images) {
         return Stream.ofNullable(images)
                 .flatMap(List::stream)
-                .filter(image -> image.type() == ImageType.THUMBNAIL)
+                .filter(image -> image.type() == ImageType.POST_THUMBNAIL)
                 .findFirst()
                 .map(image -> new ImageResponse(
                         image.type(),
