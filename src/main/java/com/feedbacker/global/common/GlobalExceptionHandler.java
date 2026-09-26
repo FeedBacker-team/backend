@@ -21,6 +21,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(e.getStatus()).body(new ErrorResponse(e.getMessage()));
     }
 
+    // 400: 도메인 검증 실패 (예: Project 태그 5개 초과) - 팀 공통 규칙
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+    }
+
+    // 409: 상태 충돌 (예: 이미 삭제된 프로젝트) - 팀 공통 규칙
+    // 주의: 라이브러리 내부 오류도 이 타입일 수 있어 서버 로그에 남김
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException e) {
+        log.warn("IllegalStateException: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
+    }
+
     // 400: DTO 검증 실패 (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e) {
