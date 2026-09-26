@@ -1,5 +1,7 @@
 package com.feedbacker.global.common;
 
+import com.feedbacker.global.exception.BusinessException;
+import com.feedbacker.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustom(CustomException e) {
         return ResponseEntity.status(e.getStatus()).body(new ErrorResponse(e.getMessage()));
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
+        ErrorCode errorCode = e.getErrorCode();
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(new ErrorResponse(errorCode.getMessage()));
     }
 
     // 400: 도메인 검증 실패 (예: Project 태그 5개 초과) - 팀 공통 규칙
