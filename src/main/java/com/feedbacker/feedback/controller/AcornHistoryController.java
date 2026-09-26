@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/acorn-hisory")
 @RequiredArgsConstructor
@@ -17,7 +19,7 @@ public class AcornHistoryController {
     private final AcornHistoryService acornHistoryService;
 
     @GetMapping
-    public AcornHistoryResponse getAcornHistory(
+    public List<AcornHistoryResponse> getAcornHistory(
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         return acornHistoryService.getAcornHistory(user);

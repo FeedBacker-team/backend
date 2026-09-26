@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AcornHistoryService {
@@ -35,7 +37,11 @@ public class AcornHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public AcornHistoryResponse getAcornHistory(CustomUserDetails user) {
-        return acornHistoryRepository.findAllByMemberId(user.getMemberId());
+    public List<AcornHistoryResponse> getAcornHistory(CustomUserDetails user) {
+        return acornHistoryRepository
+                .findAllByMemberIdOrderByTranslateAtDescIdDesc(user.getMemberId())
+                .stream()
+                .map(AcornHistoryResponse::from)
+                .toList();
     }
 }
