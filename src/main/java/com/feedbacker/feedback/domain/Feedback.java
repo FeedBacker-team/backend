@@ -26,7 +26,7 @@ public class Feedback extends BaseTimeEntity {
     @Column(name = "feedback_id")
     private UUID id;
 
-    @Column(name = "feedback_post_id", nullable = false, columnDefinition = "VARCHAR(36)")
+    @Column(name = "feedback_post_id", nullable = false, columnDefinition = "uuid")
     private UUID feedbackPostId;
 
     @Column(name = "tester_id", nullable = false)

@@ -25,7 +25,7 @@ public class FeedbackPost extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "feedback_post_id", updatable = false, nullable = false, columnDefinition = "VARCHAR(36)")
+    @Column(name = "feedback_post_id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
     @Column(nullable = false)
