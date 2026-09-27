@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Question;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
+import com.feedbacker.feedbackpost.domain.type.ImageType;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
+import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.global.image.ImageRequest;
 import com.feedbacker.project.domain.Project;
 import com.feedbacker.project.domain.ProjectTag;
@@ -12,8 +14,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record FeedbackPostCreateRequest(
@@ -101,25 +105,30 @@ public record FeedbackPostCreateRequest(
                 Stream.ofNullable(subjectiveQuestions).flatMap(List::stream).map(SubjectiveQuestionCreateRequest::toEntity)
         ).toList();
 
+        List<ImageInfo> newImages = Stream.ofNullable(this.images)
+                .flatMap(List::stream)
+                .map(ImageRequest::toImageInfo)
+                .collect(Collectors.toCollection(ArrayList::new));
+        newImages.add(
+                new ImageInfo(ImageType.POST_THUMBNAIL, 1, project.getThumbnailImage())
+        );
+
         return FeedbackPost.builder()
                 .writerId(project.getOwner().getId())
                 .writerName(project.getOwner().getNickname())
-                .title(title)
+                .title(this.title)
                 .status(FeedbackPostStatus.RECRUITING)
-                .targetType(target)
-                .description(description)
-                .serviceUrl(serviceUrl)
-                .images(Stream.ofNullable(images)
-                        .flatMap(List::stream)
-                        .map(ImageRequest::toImageInfo)
-                        .toList())
+                .targetType(this.target)
+                .description(this.description)
+                .serviceUrl(this.serviceUrl)
+                .images(newImages)
                 .questions(questions)
-                .slotCapacity(slotCapacity)
-                .remainSlotCount(slotCapacity)
-                .depositAcorn(depositAcorn)
-                .rewardAcorn(rewardAcorn)
-                .startAt(startAt)
-                .endAt(endAt)
+                .slotCapacity(this.slotCapacity)
+                .remainSlotCount(this.slotCapacity)
+                .depositAcorn(this.depositAcorn)
+                .rewardAcorn(this.rewardAcorn)
+                .startAt(this.startAt)
+                .endAt(this.endAt)
                 .project(project)
                 .build();
     }
