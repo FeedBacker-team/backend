@@ -141,20 +141,26 @@ public class FeedbackPost extends BaseTimeEntity {
         status = FeedbackPostStatus.COMPLETED;
     }
 
-    public void validateIsWriter(UUID writerId) {
-        if (this.writerId == writerId) {
+    public void validateIsWriter(UUID memberId) {
+        if (this.writerId.equals(memberId)) {
             throw new BusinessException(ParticipationErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
         }
     }
 
     public void validateAccessAuth(UUID memberId) {
-        if (this.writerId != memberId) {
+        if (this.writerId.equals(memberId)) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ACCESS_DENIED);
         }
     }
 
     public void validateRecruiting() {
         if (this.status != FeedbackPostStatus.RECRUITING) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
+        }
+    }
+
+    public void validateCompleted() {
+        if (this.status != FeedbackPostStatus.COMPLETED) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
         }
     }

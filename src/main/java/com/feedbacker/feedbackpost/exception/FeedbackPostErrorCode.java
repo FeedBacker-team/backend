@@ -11,7 +11,8 @@ public enum FeedbackPostErrorCode implements ErrorCode {
 
     FEEDBACK_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "피드백 모집글을 찾을 수 없습니다."),
     FEEDBACK_POST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게시글 작성자만 수행할 수 있습니다."),
-    FEEDBACK_POST_NOT_RECRUITING(HttpStatus.CONFLICT, "모집 중인 게시글이 아닙니다.");
+    FEEDBACK_POST_NOT_RECRUITING(HttpStatus.CONFLICT, "모집 중인 게시글이 아닙니다."),
+    FEEDBACK_POST_NOT_SUBMIT(HttpStatus.CONFLICT, "제출 가능한 게시글이 아닙니다.");
 
     private final HttpStatus status;
     private final String message;

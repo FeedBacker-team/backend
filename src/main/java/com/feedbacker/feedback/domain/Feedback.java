@@ -46,7 +46,7 @@ public class Feedback extends BaseTimeEntity {
     private FeedbackStatus status;
 
     @Setter
-    @Column(nullable = false)
+    @Column
     private Integer rewardAcorn;
 
     @Enumerated(EnumType.STRING)

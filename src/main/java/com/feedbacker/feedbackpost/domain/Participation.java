@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -54,6 +56,7 @@ public class Participation extends BaseTimeEntity {
     @JoinColumn(name = "tester_id", nullable = false)
     private Member tester;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ParticipationStatus status;

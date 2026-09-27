@@ -2,6 +2,7 @@ package com.feedbacker.feedbackpost.service;
 
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Participation;
+import com.feedbacker.feedbackpost.domain.type.ParticipationStatus;
 import com.feedbacker.feedbackpost.exception.ParticipationErrorCode;
 import com.feedbacker.feedbackpost.repository.ParticipationRepository;
 import com.feedbacker.global.exception.BusinessException;
@@ -55,44 +56,34 @@ public class ParticipationService {
         }
     }
 
-    private void validateIsAlreadyParticipate(
-            List<Participation> participations,
-            UUID memberId
-    ) {
-        for (Participation participation : participations) {
-            if (participation.getTester().getId() == memberId) {
-                throw new BusinessException(ParticipationErrorCode.ALREADY_PARTICIPATED);
-            }
-        }
-    }
-
     public void validateFeedbackSubmit(UUID feedbackPostId, UUID memberId) {
         List<Participation> participations = getAllParticipation(feedbackPostId);
-        validateHasParticipation(participations, memberId);
-        validateSubmissionDeadlineAt(participations);
+        Participation participation = validateHasParticipation(participations, memberId);
+        validateSubmissionDeadlineAt(participation);
+        participation.setStatus(ParticipationStatus.SUBMITTED);
     }
 
-    private void validateHasParticipation(
+    private Participation validateHasParticipation(
             List<Participation> participations,
             UUID memberId
     ) {
         for (Participation participation : participations) {
-            if (participation.getTester().getId() == memberId) {
-                return;
+            if (participation.getTester().getId().equals(memberId)) {
+                if (participation.getStatus() == ParticipationStatus.RESERVED) {
+                    return participation;
+                }
+                throw new BusinessException(ParticipationErrorCode.ALREADY_PARTICIPATED);
             }
         }
         throw new BusinessException(ParticipationErrorCode.PARTICIPATION_NOT_FOUND);
     }
 
-    private void validateSubmissionDeadlineAt(List<Participation> participations) {
+    private void validateSubmissionDeadlineAt(Participation participation) {
         LocalDateTime now = LocalDateTime.now();
-
-        for (Participation participation : participations) {
-            if (!now.isBefore(participation.getSubmissionDeadlineAt())) {
-                throw new BusinessException(
-                        ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED
-                );
-            }
+        if (!now.isBefore(participation.getSubmissionDeadlineAt())) {
+            throw new BusinessException(
+                    ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED
+            );
         }
     }
 

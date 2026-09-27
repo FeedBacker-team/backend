@@ -11,7 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "question_answers")
+@Table(name = "question_answers", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_answer_feedback_question",
+                columnNames = {"feedback_id", "question_id"})
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class QuestionAnswer extends BaseTimeEntity {

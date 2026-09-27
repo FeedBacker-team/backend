@@ -239,7 +239,7 @@ public class FeedbackPostService {
 
     public void validateFeedbackSubmit(FeedbackPost feedbackPost, UUID memberId) {
         feedbackPost.validateIsWriter(memberId);
-        feedbackPost.validateRecruiting();
+        feedbackPost.validateCompleted();
     }
 
     public void validateParticipation(FeedbackPost feedbackPost, UUID memberId) {

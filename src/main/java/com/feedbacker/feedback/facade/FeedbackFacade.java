@@ -41,7 +41,7 @@ public class FeedbackFacade {
     public UUID submit(CustomUserDetails user, FeedbackSubmitRequest request) {
         Member tester = memberService.getMember(user.getMemberId());
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(request.feedbackPostId());
-        List<QuestionAnswer> answers = questionAnswerService.createAnswers(request.questionAnswer());
+        List<QuestionAnswer> answers = questionAnswerService.createAnswers(feedbackPost.getId(), request.questionAnswer());
         feedbackPostService.validateFeedbackSubmit(feedbackPost, tester.getId());
         participationService.validateFeedbackSubmit(feedbackPost.getId(), tester.getId());
         return feedbackService.submit(

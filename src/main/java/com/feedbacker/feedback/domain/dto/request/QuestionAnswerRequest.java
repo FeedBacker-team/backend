@@ -1,13 +1,18 @@
 package com.feedbacker.feedback.domain.dto.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record QuestionAnswerRequest(
         @Valid
-        List<ChoiceQuestionAnswerRequest> choiceAnswers,
+        List<@NotNull ChoiceQuestionAnswerRequest> choiceAnswers,
 
         @Valid
-        List<SubjectiveQuestionAnswerRequest> subjectiveAnswers
+        List<@NotNull SubjectiveQuestionAnswerRequest> subjectiveAnswers
 ) {
+    public QuestionAnswerRequest {
+        choiceAnswers = choiceAnswers == null ? List.of() : choiceAnswers;
+        subjectiveAnswers = subjectiveAnswers == null ? List.of() : subjectiveAnswers;
+    }
 }

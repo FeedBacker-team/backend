@@ -11,6 +11,7 @@ public record FeedbackSubmitRequest(
         UUID feedbackPostId,
 
         @Valid
+        @NotNull(message = "질문 답변은 필수입니다.")
         QuestionAnswerRequest questionAnswer
 ) {
 }
