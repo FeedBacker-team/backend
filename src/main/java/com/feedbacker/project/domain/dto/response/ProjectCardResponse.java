@@ -27,12 +27,12 @@ public record ProjectCardResponse(
         long viewCount
 
         ) {
-    public static ProjectCardResponse from(Project project) {
+    public static ProjectCardResponse from(Project project, String thumbnailUrl) {
         return new ProjectCardResponse(
                 project.getId(),
                 project.getTitle(),
                 project.getDescription(),
-                project.getThumbnailImage(),
+                thumbnailUrl,
                 project.getTags(),
                 project.getCreatedAt().toLocalDate(),
                 project.getViewCount()

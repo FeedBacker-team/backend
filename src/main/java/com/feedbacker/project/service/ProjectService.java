@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.feedbacker.global.storage.SupabaseStorageService;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -44,6 +45,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final MemberRepository memberRepository;
     private final Validator validator;
+    private final SupabaseStorageService storageService;
 
     //프로젝트 등록
     @Transactional
@@ -178,9 +180,20 @@ public class ProjectService {
 
         Page<ProjectCardResponse> projectPage = projectRepository
                 .findAll(specification, pageRequest)
-                .map(ProjectCardResponse::from);
+                .map(project -> ProjectCardResponse.from(project, toPublicImageUrl(project.getThumbnailImage())));
 
         return ProjectListResponse.from(projectPage);
+    }
+
+    private String toPublicImageUrl(String imagePath) {
+        if (imagePath == null || imagePath.isBlank()) {
+            return null;
+        }
+
+        if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+            return imagePath;
+        }
+        return storageService.createPublicUrl(imagePath);
     }
 
     private void validateProjectSearch(List<ProjectTag> tags, ProjectSort sort, int page, int size) {
@@ -292,7 +305,8 @@ public class ProjectService {
         return projects.stream()
                 .map(project -> MyProjectResponse.from(
                         project,
-                        activeQaIdByProjectId.get(project.getId())
+                        activeQaIdByProjectId.get(project.getId()),
+                        toPublicImageUrl(project.getThumbnailImage())
                 ))
                 .toList();
     }
@@ -330,7 +344,8 @@ public class ProjectService {
         return ProjectDetailResponse.from(
                 project,
                 viewerId,
-                activeQa
+                activeQa,
+                toPublicImageUrl(project.getThumbnailImage())
         );
     }
 
@@ -379,7 +394,18 @@ public class ProjectService {
             throw badRequest("중복된 태그를 선택할 수 없습니다.");
         }
         validateHttpUrl(serviceLink, "프로젝트 URL");
-        validateHttpUrl(thumbnailImage, "대표 이미지 URL");
+        validateImagePath(thumbnailImage);
+    }
+
+    private void validateImagePath(String path) {
+        if (path == null || path.isBlank()) {
+            throw badRequest("대표 이미지 경로는 필수입니다.");
+        }
+
+        if (!path.matches("^images/[0-9a-fA-F-]{36}\\.(jpg|jpeg|png|gif|webp)$")){
+            throw badRequest("올바른 대표 이미지 경로가 아닙니다.");
+        }
+
     }
 
     private void validateHttpUrl(String value, String fieldName) {
