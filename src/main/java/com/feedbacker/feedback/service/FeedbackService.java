@@ -40,21 +40,6 @@ public class FeedbackService {
         return FeedbackResponse.fromAll(feedbacks);
     }
 
-//    @Transactional(readOnly = true)
-//    public FeedbackResultResponse getResult(UUID feedbackId) {
-//        Feedback feedback = getFeedback(feedbackId);
-//        FeedbackPost feedbackPost = getFeedbackPost(feedback.getFeedbackPostId());
-//
-//        UUID memberId = UUID.randomUUID();
-//        Member member = getMember(memberId);
-//
-//        AcornHistoryResponse acornHistoryResponse = AcornHistoryResponse.from(
-//                acornHistoryRepository.findByMemberAndFeedbackId(member, feedbackId)
-//        );
-//
-//        return FeedbackResultResponse.from(feedback, feedbackPost, acornHistoryResponse);
-//    }
-
     public Feedback getFeedback(UUID feedbackId) {
         return feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new BusinessException(
@@ -83,5 +68,9 @@ public class FeedbackService {
         return feedbackRepository.findAllByFeedbackPost(feedbackPost).stream()
                 .map(FeedbackProgressResponse::from)
                 .toList();
+    }
+
+    public List<Feedback> getAllByFeedbackPostId(UUID feedbackPostId) {
+        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId);
     }
 }

@@ -64,11 +64,6 @@ public class FeedbackController {
         feedbackFacade.reject(user, request, feedbackId);
     }
 
-//    @GetMapping("/{feedbackId}/result")
-//    public FeedbackResultResponse getResult(@PathVariable UUID feedbackId) {
-//        return feedbackService.getResult(feedbackId);
-//    }
-
     @PatchMapping("/{feedbackId}/objection")
     public void object(
             @AuthenticationPrincipal CustomUserDetails user,

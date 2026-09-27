@@ -102,6 +102,8 @@ public record FeedbackPostCreateRequest(
         ).toList();
 
         return FeedbackPost.builder()
+                .writerId(project.getOwner().getId())
+                .writerName(project.getOwner().getNickname())
                 .title(title)
                 .status(FeedbackPostStatus.RECRUITING)
                 .targetType(target)

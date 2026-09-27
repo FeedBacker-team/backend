@@ -86,9 +86,18 @@ public class FeedbackPostController {
 
     @PatchMapping("/{feedbackPostId}/complete")
     public void complete(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
-        feedbackPostService.complete(feedbackPostId);
+        feedbackPostFacade.complete(user.getMemberId(), feedbackPostId);
+    }
+
+    @GetMapping("/{feedbackPostId}/result")
+    public FeedbackPostResultResponse getResult(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID feedbackPostId
+    ) {
+        return feedbackPostFacade.getResult(user.getMemberId(), feedbackPostId);
     }
 
 }

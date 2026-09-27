@@ -28,10 +28,10 @@ public class AcornHistory {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(nullable = false)
+    @Column
     private UUID feedbackPostId;
 
-    @Column(nullable = false)
+    @Column
     private UUID feedbackId;
 
     @Enumerated(EnumType.STRING)
@@ -44,21 +44,13 @@ public class AcornHistory {
     @Column(nullable = false)
     private Integer changeAcorn;
 
-    @Column(nullable = false)
-    private Integer beforeAcorn;
-
-    @Column(nullable = false)
-    private Integer afterAcorn;
-
     @Builder
     public AcornHistory (
             Member member,
             UUID feedbackPostId,
             UUID feedbackId,
             AcornHistoryType type,
-            Integer changeAcorn,
-            Integer beforeAcorn,
-            Integer afterAcorn
+            Integer changeAcorn
     ) {
         this.member = member;
         this.feedbackPostId = feedbackPostId;
@@ -66,8 +58,6 @@ public class AcornHistory {
         this.type = type;
         this.translateAt = LocalDateTime.now();
         this.changeAcorn = changeAcorn;
-        this.beforeAcorn = beforeAcorn;
-        this.afterAcorn = afterAcorn;
     }
 
     public static List<AcornHistory> create(
@@ -88,8 +78,6 @@ public class AcornHistory {
                         .feedbackId(feedback.getId())
                         .type(AcornHistoryType.FEEDBACK_ACCEPT)
                         .changeAcorn(rewardAcorn)
-                        .beforeAcorn(testerBeforeAcorn)
-                        .afterAcorn(testerBeforeAcorn + rewardAcorn)
                         .build()
         );
 
@@ -100,8 +88,6 @@ public class AcornHistory {
                         .feedbackId(feedback.getId())
                         .type(AcornHistoryType.FEEDBACK_RECRUIT)
                         .changeAcorn(rewardAcorn)
-                        .beforeAcorn(testerBeforeAcorn)
-                        .afterAcorn(writerBeforeAcorn - rewardAcorn)
                         .build()
         );
 

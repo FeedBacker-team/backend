@@ -28,8 +28,11 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(name = "feedback_post_id", updatable = false, nullable = false, columnDefinition = "VARCHAR(36)")
     private UUID id;
 
-    @Column
+    @Column(nullable = false)
     private UUID writerId;
+
+    @Column(nullable = false)
+    private String writerName;
 
     @Column(nullable = false, length = 50)
     private String title;
@@ -80,6 +83,8 @@ public class FeedbackPost extends BaseTimeEntity {
 
     @Builder
     public FeedbackPost(
+            UUID writerId,
+            String writerName,
             String title,
             String description,
             FeedbackPostStatus status,
@@ -95,6 +100,8 @@ public class FeedbackPost extends BaseTimeEntity {
             LocalDateTime endAt,
             Project project
     ) {
+        this.writerId = writerId;
+        this.writerName = writerName;
         this.title = title;
         this.description = description;
         this.status = status != null ? status : FeedbackPostStatus.RECRUITING;

@@ -8,16 +8,12 @@ import java.time.LocalDateTime;
 public record AcornHistoryResponse(
         AcornHistoryType type,
         LocalDateTime translateAt,
-        Integer beforeAcorn,
-        Integer afterAcorn,
         Integer changeAcorn
 ) {
     public static AcornHistoryResponse from(AcornHistory acornHistory) {
         return new AcornHistoryResponse(
                 acornHistory.getType(),
                 acornHistory.getTranslateAt(),
-                acornHistory.getBeforeAcorn(),
-                acornHistory.getAfterAcorn(),
                 acornHistory.getChangeAcorn()
         );
     }

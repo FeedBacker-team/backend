@@ -1,9 +1,7 @@
 package com.feedbacker.feedbackpost.service;
 
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackFormResponse;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackSimpleResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.*;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
 import com.feedbacker.feedbackpost.service.mapper.FeedbackFormMapper;
@@ -16,8 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostCardResponse;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostListResponse;
+
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.project.domain.ProjectTag;
@@ -54,12 +51,6 @@ public class FeedbackPostService {
     public FeedbackFormResponse getForm(UUID feedbackPostId) {
         FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
         return feedbackFormMapper.toResponse(feedbackPost.getQuestions());
-    }
-
-    @Transactional
-    public void complete(UUID feedbackPostId) {
-        FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
-        feedbackPost.complete();
     }
 
     @Transactional(readOnly = true)

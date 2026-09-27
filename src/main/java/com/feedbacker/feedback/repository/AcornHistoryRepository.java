@@ -12,4 +12,8 @@ import java.util.UUID;
 @Repository
 public interface AcornHistoryRepository extends JpaRepository<AcornHistory, Long> {
     List<AcornHistory> findAllByMemberIdOrderByTranslateAtDescIdDesc(UUID memberId);
+
+    List<AcornHistory> findAllByMemberIdAndFeedbackPostId(UUID memberId, UUID feedbackPostId);
+
+    AcornHistoryResponse findByMemberIdAndFeedbackPostId(UUID memberId, UUID feedbackPostId);
 }
