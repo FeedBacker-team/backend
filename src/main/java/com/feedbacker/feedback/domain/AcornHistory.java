@@ -28,26 +28,27 @@ public class AcornHistory {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column
+    @Column(nullable = false)
     private UUID feedbackPostId;
 
-    @Column
+    @Column(nullable = false)
     private UUID feedbackId;
 
-    @Column
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private AcornHistoryType type;
 
-    @Column
+    @Column(nullable = false)
     private LocalDateTime translateAt;
 
-    @Column
+    @Column(nullable = false)
     private Integer changeAcorn;
 
-    @Column
+    @Column(nullable = false)
     private Integer beforeAcorn;
 
-    @Column
-    private Integer afterAcron;
+    @Column(nullable = false)
+    private Integer afterAcorn;
 
     @Builder
     public AcornHistory (
@@ -55,18 +56,18 @@ public class AcornHistory {
             UUID feedbackPostId,
             UUID feedbackId,
             AcornHistoryType type,
-            Integer acronChange,
+            Integer changeAcorn,
             Integer beforeAcorn,
-            Integer afterAcron
+            Integer afterAcorn
     ) {
         this.member = member;
         this.feedbackPostId = feedbackPostId;
         this.feedbackId = feedbackId;
         this.type = type;
         this.translateAt = LocalDateTime.now();
-        this.changeAcorn = acronChange;
+        this.changeAcorn = changeAcorn;
         this.beforeAcorn = beforeAcorn;
-        this.afterAcron = afterAcron;
+        this.afterAcorn = afterAcorn;
     }
 
     public static List<AcornHistory> create(
@@ -86,9 +87,9 @@ public class AcornHistory {
                         .feedbackPostId(feedbackPost.getId())
                         .feedbackId(feedback.getId())
                         .type(AcornHistoryType.FEEDBACK_ACCEPT)
-                        .acronChange(rewardAcorn)
+                        .changeAcorn(rewardAcorn)
                         .beforeAcorn(testerBeforeAcorn)
-                        .afterAcron(testerBeforeAcorn + rewardAcorn)
+                        .afterAcorn(testerBeforeAcorn + rewardAcorn)
                         .build()
         );
 
@@ -98,9 +99,9 @@ public class AcornHistory {
                         .feedbackPostId(feedbackPost.getId())
                         .feedbackId(feedback.getId())
                         .type(AcornHistoryType.FEEDBACK_RECRUIT)
-                        .acronChange(rewardAcorn)
+                        .changeAcorn(rewardAcorn)
                         .beforeAcorn(testerBeforeAcorn)
-                        .afterAcron(writerBeforeAcorn - rewardAcorn)
+                        .afterAcorn(writerBeforeAcorn - rewardAcorn)
                         .build()
         );
 

@@ -17,7 +17,7 @@ public record AcornHistoryResponse(
                 acornHistory.getType(),
                 acornHistory.getTranslateAt(),
                 acornHistory.getBeforeAcorn(),
-                acornHistory.getAfterAcron(),
+                acornHistory.getAfterAcorn(),
                 acornHistory.getChangeAcorn()
         );
     }
