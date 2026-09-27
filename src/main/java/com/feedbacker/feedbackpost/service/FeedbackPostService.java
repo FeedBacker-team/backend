@@ -41,15 +41,6 @@ public class FeedbackPostService {
     private final FeedbackFormMapper feedbackFormMapper;
 
     @Transactional(readOnly = true)
-    public FeedbackPostDetailResponse getDetail(UUID feedbackPostId) {
-        FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
-        return FeedbackPostDetailResponse.from(
-                feedbackPost,
-                imageService.toResponses(feedbackPost.getImages())
-        );
-    }
-
-    @Transactional(readOnly = true)
     public List<FeedbackSimpleResponse> getMine(CustomUserDetails user) {
         return feedbackPostRepository.findAllByWriterId(user.getMemberId()).stream()
                 .map(post -> FeedbackSimpleResponse.from(

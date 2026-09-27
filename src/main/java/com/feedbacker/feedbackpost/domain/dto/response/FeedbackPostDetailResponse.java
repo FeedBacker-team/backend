@@ -1,5 +1,6 @@
 package com.feedbacker.feedbackpost.domain.dto.response;
 
+import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
@@ -25,10 +26,15 @@ public record FeedbackPostDetailResponse(
         Integer rewardAcorn,
         LocalDateTime startAt,
         LocalDateTime endAt,
+        LocalDateTime expireAt,
         List<ProjectTag> tags
 ) {
 
-    public static FeedbackPostDetailResponse from(FeedbackPost feedbackPost, List<ImageResponse> images) {
+    public static FeedbackPostDetailResponse from(
+            Feedback feedback,
+            FeedbackPost feedbackPost,
+            List<ImageResponse> images
+    ) {
         return new FeedbackPostDetailResponse(
                 feedbackPost.getId(),
                 feedbackPost.getProject().getId(),
@@ -44,6 +50,7 @@ public record FeedbackPostDetailResponse(
                 feedbackPost.getRewardAcorn(),
                 feedbackPost.getStartAt(),
                 feedbackPost.getEndAt(),
+                feedback == null ? null : feedback.getExpireAt(),
                 feedbackPost.getProject().getTags()
         );
     }

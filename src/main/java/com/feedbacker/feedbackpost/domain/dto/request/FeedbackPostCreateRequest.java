@@ -45,8 +45,8 @@ public record FeedbackPostCreateRequest(
         @FutureOrPresent(message = "시작일은 과거일 수 없습니다.")
         LocalDateTime startAt,
 
-        @NotNull(message = "시작일은 값이 필수입니다.")
-        @Future(message = "시작일은 과거일 수 없습니다.")
+        @NotNull(message = "종료일은 값이 필수입니다.")
+        @Future(message = "종료일은 과거일 수 없습니다.")
         LocalDateTime endAt,
 
         @NotNull(message = "타겟은 값이 필수입니다.")

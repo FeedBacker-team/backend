@@ -6,12 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
-    List<Feedback> getAllByTesterId(UUID testerId);
+    List<Feedback> findAllByTesterId(UUID testerId);
 
-    List<Feedback> getAllByFeedbackPost(FeedbackPost feedbackPost);
+    List<Feedback> findAllByFeedbackPost(FeedbackPost feedbackPost);
+
+    Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);
 }

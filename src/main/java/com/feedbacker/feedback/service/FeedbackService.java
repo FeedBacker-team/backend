@@ -36,7 +36,7 @@ public class FeedbackService {
 
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getMine(CustomUserDetails user) {
-        List<Feedback> feedbacks = feedbackRepository.getAllByTesterId(user.getMemberId());
+        List<Feedback> feedbacks = feedbackRepository.findAllByTesterId(user.getMemberId());
         return FeedbackResponse.fromAll(feedbacks);
     }
 
@@ -62,6 +62,12 @@ public class FeedbackService {
                 ));
     }
 
+    public Feedback findMyFeedback(UUID feedbackPostId, UUID memberId) {
+        return feedbackRepository
+                .findByFeedbackPostIdAndTesterId(feedbackPostId, memberId)
+                .orElse(null);
+    }
+
     public void validateGetFeedback(
             UUID memberId,
             Feedback feedback,
@@ -74,7 +80,7 @@ public class FeedbackService {
     }
 
     public List<FeedbackProgressResponse> getAllByFeedbackPost(FeedbackPost feedbackPost) {
-        return feedbackRepository.getAllByFeedbackPost(feedbackPost).stream()
+        return feedbackRepository.findAllByFeedbackPost(feedbackPost).stream()
                 .map(FeedbackProgressResponse::from)
                 .toList();
     }

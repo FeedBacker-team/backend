@@ -54,9 +54,11 @@ public class FeedbackPostController {
 
     @GetMapping("/{feedbackPostId}")
     public FeedbackPostDetailResponse getDetail(
+            @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
-        return feedbackPostService.getDetail(feedbackPostId);
+        UUID memberId = user == null ? null : user.getMemberId();
+        return feedbackPostFacade.getDetail(memberId, feedbackPostId);
     }
 
     @PostMapping("/{feedbackPostId}/participations")

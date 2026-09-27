@@ -1,10 +1,13 @@
 package com.feedbacker.feedbackpost.facade;
 
+import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
+import com.feedbacker.feedbackpost.service.ImageService;
 import com.feedbacker.feedbackpost.service.ParticipationService;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.AcornWalletService;
@@ -29,6 +32,7 @@ public class FeedbackPostFacade {
     private final AcornWalletService acornWalletService;
     private final ParticipationService participationService;
     private final FeedbackService feedbackService;
+    private final ImageService imageService;
 
     @Transactional
     public UUID create(CustomUserDetails user, FeedbackPostCreateRequest request) {
@@ -38,6 +42,17 @@ public class FeedbackPostFacade {
         projectService.validateHasFeedbackPost(project.getId());
         acornWalletService.withdraw(member.getId(), request.depositAcorn());
         return feedbackPostService.save(request.toEntity(project));
+    }
+
+    @Transactional(readOnly = true)
+    public FeedbackPostDetailResponse getDetail(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
+        Feedback feedback = memberId == null ? null : feedbackService.findMyFeedback(feedbackPostId, memberId);
+        return FeedbackPostDetailResponse.from(
+                feedback,
+                feedbackPost,
+                imageService.toResponses(feedbackPost.getImages())
+        );
     }
 
     @Transactional
