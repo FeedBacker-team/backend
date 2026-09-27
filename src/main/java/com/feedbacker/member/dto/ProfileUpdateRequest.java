@@ -12,9 +12,12 @@ import java.util.List;
  * role, interests는 문자열로 받아 서비스에서 검증 (명세의 에러 메시지를 그대로 주기 위함)
  */
 public record ProfileUpdateRequest(
-        @JsonProperty("profile_image_url")
-        @Size(max = 512, message = "프로필 이미지 URL이 너무 깁니다.")
-        String profileImageUrl,
+        // 이미지 업로드 API가 돌려준 path (예: images/uuid.png). 미등록이면 생략
+        @JsonProperty("profile_image_path")
+        @Size(max = 512, message = "프로필 이미지 경로가 너무 깁니다.")
+        @Pattern(regexp = "^images/[A-Za-z0-9-]+\\.(jpg|jpeg|png|gif|webp)$",
+                message = "프로필 이미지 경로가 올바르지 않습니다.")
+        String profileImagePath,
 
         @NotBlank(message = "닉네임은 10자 이내로 입력해 주세요.")
         @Pattern(regexp = "^\\S{1,10}$", message = "닉네임은 10자 이내로 입력해 주세요.")
