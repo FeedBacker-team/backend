@@ -28,11 +28,11 @@ public record ProjectUpdateRequest (
         )
         String serviceLink,
 
-        @NotBlank(message = "대표 이미지 URL은 필수입니다.")
+        @NotBlank(message = "대표 이미지 경로는 필수입니다.")
         @Size(max = 255, message = "대표 이미지 URL은 최대 255자까지 가능합니다.")
         @Pattern(
-                regexp = "(?i)^https?://[^\\s]+$",
-                message = "대표 이미지 URL은 HTTP 또는 HTTPS 주소여야 합니다."
+                regexp = "^images/[0-9a-fA-F-]{36}\\.(jpg|jpeg|png|gif|webp)$",
+                message = "올바른 대표 이미지 경로가 아닙니다."
         )
         String thumbnailImage
 ){

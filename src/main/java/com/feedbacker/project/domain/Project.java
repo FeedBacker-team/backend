@@ -155,7 +155,7 @@ public class Project extends BaseTimeEntity {
     }
 
     public void validateOwner(UUID memberId) {
-        if (memberId != this.owner.getId()) {
+        if (memberId == null || !this.owner.getId().equals(memberId)) {
             throw new CustomException(HttpStatus.FORBIDDEN, "프로젝트에 접근 권한이 없습니다.");
         }
     }

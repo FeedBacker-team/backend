@@ -37,14 +37,15 @@ public record MyProjectResponse(
 
     public static MyProjectResponse from(
             Project project,
-            UUID activeFeedbackPostId
+            UUID activeFeedbackPostId,
+            String thumbnailImageUrl
     ) {
         return new MyProjectResponse(
                 project.getId(),
                 project.getTitle(),
                 project.getDescription(),
                 project.getTags(),
-                project.getThumbnailImage(),
+                thumbnailImageUrl,
                 project.getViewCount(),
                 project.getCreatedAt(),
                 activeFeedbackPostId != null,

@@ -51,7 +51,8 @@ public record ProjectDetailResponse(
     public static ProjectDetailResponse from(
             Project project,
             UUID viewerId,
-            ActiveQaResponse activeQa
+            ActiveQaResponse activeQa,
+            String thumbnailImageUrl
     ) {
         UUID ownerId = project.getOwner().getId();
 
@@ -64,7 +65,7 @@ public record ProjectDetailResponse(
                 project.getDescription(),
                 project.getTags(),
                 project.getServiceLink(),
-                project.getThumbnailImage(),
+                thumbnailImageUrl,
                 ownerId,
                 project.getOwner().getNickname(),
                 project.getViewCount(),
