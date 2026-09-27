@@ -47,6 +47,17 @@ public class FeedbackService {
                 ));
     }
 
+    public List<Feedback> getAllFeedbacks(UUID feedbackPostId) {
+        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId);
+    }
+
+    public List<FeedbackProgressResponse> getFeedbackProgress(UUID feedbackPostId) {
+        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId)
+                .stream()
+                .map(FeedbackProgressResponse::from)
+                .toList();
+    }
+
     public Feedback findMyFeedback(UUID feedbackPostId, UUID memberId) {
         return feedbackRepository
                 .findByFeedbackPostIdAndTesterId(feedbackPostId, memberId)
@@ -64,13 +75,4 @@ public class FeedbackService {
         }
     }
 
-    public List<FeedbackProgressResponse> getAllByFeedbackPost(FeedbackPost feedbackPost) {
-        return feedbackRepository.findAllByFeedbackPost(feedbackPost).stream()
-                .map(FeedbackProgressResponse::from)
-                .toList();
-    }
-
-    public List<Feedback> getAllByFeedbackPostId(UUID feedbackPostId) {
-        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId);
-    }
 }

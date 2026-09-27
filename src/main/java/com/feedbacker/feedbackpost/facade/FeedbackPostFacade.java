@@ -79,7 +79,7 @@ public class FeedbackPostFacade {
     public List<FeedbackProgressResponse> getFeedbacks(CustomUserDetails user, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         feedbackPost.validateAccessAuth(user.getMemberId());
-        return feedbackService.getAllByFeedbackPost(feedbackPost);
+        return feedbackService.getFeedbackProgress(feedbackPost.getId());
     }
 
     @Transactional
@@ -93,7 +93,7 @@ public class FeedbackPostFacade {
 
     @Transactional(readOnly = true)
     public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
-        List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPostId);
+        List<Feedback> feedbacks = feedbackService.getAllFeedbacks(feedbackPostId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
         List<FeedbackResultResponse> feedbackResults = feedbacks.stream()

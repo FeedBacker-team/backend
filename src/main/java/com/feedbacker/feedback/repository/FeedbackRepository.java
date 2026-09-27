@@ -14,8 +14,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
     List<Feedback> findAllByTesterId(UUID testerId);
 
-    List<Feedback> findAllByFeedbackPost(FeedbackPost feedbackPost);
-
     Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);
 
     List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
