@@ -56,7 +56,7 @@ public class FeedbackFacade {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
         Member tester = memberService.getMember(feedback.getTesterId());
-        Participation participation = participationService.getParticipation(tester);
+        Participation participation = participationService.getParticipation(feedbackPost.getId(), tester.getId());
         QuestionAnswerResponse questionAnswerResponse = questionAnswerService.toResponse(
                 questionService.getAllQuestion(feedbackPost.getId()),
                 questionAnswerService.getAllQuestionAnswer(feedback.getId())

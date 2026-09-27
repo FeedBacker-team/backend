@@ -1,6 +1,5 @@
 package com.feedbacker.feedbackpost.repository;
 
-import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.member.Member;
 import jakarta.persistence.LockModeType;
@@ -19,5 +18,5 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     @Query("select p from Participation p where p.feedbackPost.id = :postId")
     List<Participation> findForUpdate(@Param("postId") UUID postId);
 
-    Participation findByTester(Member member);
+    Optional<Participation> findByFeedbackPost_IdAndTester_Id(UUID FeedbackPostId, UUID testerId);
 }

@@ -58,7 +58,6 @@ public record FeedbackPostCreateRequest(
 
         List<ProjectTag> tags,
 
-        @NotBlank(message = "링크는 공백일 수 없습니다.")
         @Pattern(regexp = "^https?://.+", message = "링크는 https 타입이어야 합니다.")
         String serviceUrl,
 

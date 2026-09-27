@@ -26,7 +26,6 @@ public class ParticipationService {
     ) {
         List<Participation> participations = getAllParticipation(feedbackPost.getId());
         validateRemainSlot(participations, feedbackPost);
-        validateIsWriter(participations, feedbackPost);
 
         Participation reservedParticipation = Participation.reserve(
                 feedbackPost,
@@ -50,7 +49,7 @@ public class ParticipationService {
             FeedbackPost feedbackPost
     ) {
         for (Participation participation : participations) {
-            if (participation.getTester().getId() == feedbackPost.getWriterId()) {
+            if (participation.getTester().getId().equals(feedbackPost.getWriterId())) {
                 throw new BusinessException(ParticipationErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
             }
         }
@@ -91,7 +90,8 @@ public class ParticipationService {
         return participationRepository.findForUpdate(feedbackPostId);
     }
 
-    public Participation getParticipation(Member tester) {
-        return participationRepository.findByTester(tester);
+    public Participation getParticipation(UUID FeedbackPostId, UUID testerId) {
+        return participationRepository.findByFeedbackPost_IdAndTester_Id(FeedbackPostId, testerId)
+                .orElseThrow(() -> new BusinessException(ParticipationErrorCode.PARTICIPATION_NOT_FOUND));
     }
 }

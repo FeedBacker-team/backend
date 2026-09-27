@@ -148,7 +148,7 @@ public class FeedbackPost extends BaseTimeEntity {
     }
 
     public void validateAccessAuth(UUID memberId) {
-        if (this.writerId.equals(memberId)) {
+        if (!this.writerId.equals(memberId)) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ACCESS_DENIED);
         }
     }
@@ -160,7 +160,7 @@ public class FeedbackPost extends BaseTimeEntity {
     }
 
     public void validateCompleted() {
-        if (this.status != FeedbackPostStatus.COMPLETED) {
+        if (this.status == FeedbackPostStatus.COMPLETED) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
         }
     }
