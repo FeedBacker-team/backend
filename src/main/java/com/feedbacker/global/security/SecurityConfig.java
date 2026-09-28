@@ -51,6 +51,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // Swagger UI / OpenAPI 문서는 로그인 없이 접근 허용
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // Render 헬스 체크는 로그인 없이 접근 허용
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // 인증 API (인증번호, 가입, 로그인, 재발급, 로그아웃, 카카오)
