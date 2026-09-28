@@ -27,7 +27,8 @@ public record FeedbackPostDetailResponse(
         LocalDateTime startAt,
         LocalDateTime endAt,
         LocalDateTime expireAt,
-        List<ProjectTag> tags
+        List<ProjectTag> tags,
+        QuestionConfigResponse questionConfig
 ) {
 
     public static FeedbackPostDetailResponse from(
@@ -51,7 +52,8 @@ public record FeedbackPostDetailResponse(
                 feedbackPost.getStartAt(),
                 feedbackPost.getEndAt(),
                 feedback == null ? null : feedback.getExpireAt(),
-                feedbackPost.getProject().getTags()
+                feedbackPost.getProject().getTags(),
+                QuestionConfigResponse.from(feedbackPost)
         );
     }
 }

@@ -39,4 +39,10 @@ public class AcornWalletService {
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "유저의 도토리 지갑을 찾을 수 없습니다."));
         wallet.withdraw(acorn);
     }
+
+    public void earn(UUID memberId, Integer acorn) {
+        AcornWallet wallet = acornWalletRepository.findByIdForUpdate(memberId)
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "유저의 도토리 지갑을 찾을 수 없습니다."));
+        wallet.deposit(acorn);
+    }
 }

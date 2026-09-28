@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
@@ -34,7 +35,10 @@ public class QuestionAnswerResponseMapper {
 
         for (Question question : questions) {
             QuestionAnswer answer = answerMap.get(question.getId());
-            List<ImageResponse> images = imageService.toResponses(question.getImages());
+            List<ImageResponse> images = Stream.concat(
+                    imageService.toResponses(question.getImages()).stream(),
+                    imageService.toResponses(answer.getImages()).stream()
+            ).toList();
 
             if (question.getQuestionType() == QuestionType.CHOICE) {
                 choices.add(new ChoiceQuestionAnswerResponse(

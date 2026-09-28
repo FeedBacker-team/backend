@@ -16,6 +16,7 @@ import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.ParticipationService;
 import com.feedbacker.feedbackpost.service.QuestionService;
 import com.feedbacker.global.security.CustomUserDetails;
+import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class FeedbackFacade {
     private final QuestionService questionService;
     private final QuestionAnswerService questionAnswerService;
     private final AcornHistoryService acornHistoryService;
+    private final AcornWalletService acornWalletService;
 
     @Transactional
     public UUID submit(CustomUserDetails user, FeedbackSubmitRequest request) {
@@ -72,12 +74,13 @@ public class FeedbackFacade {
 
     @Transactional
     public void accept(CustomUserDetails user, UUID feedbackId) {
-        Feedback feedback = feedbackService.getFeedback(feedbackId);
+        Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
         feedbackPost.validateAccessAuth(user.getMemberId());
         Member tester = memberService.getMember(feedback.getTesterId());
         Member writer = memberService.getMember(feedbackPost.getWriterId());
         feedback.accept(feedbackPost.getRewardAcorn());
+        acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
         acornHistoryService.save(
                 tester,
                 writer,
@@ -88,7 +91,7 @@ public class FeedbackFacade {
 
     @Transactional
     public void reject(CustomUserDetails user, FeedbackRejectRequest request, UUID feedbackId) {
-        Feedback feedback = feedbackService.getFeedback(feedbackId);
+        Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
         feedbackPost.validateAccessAuth(user.getMemberId());
         feedback.reject(request);
