@@ -6,7 +6,6 @@ import com.feedbacker.feedback.domain.type.RejectType;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.common.BaseTimeEntity;
-import com.feedbacker.global.common.CustomException;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
@@ -59,7 +58,6 @@ public class Feedback extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String rejectDetail;
 
-    @Setter
     @Column(columnDefinition = "TEXT")
     private String objectReason;
 
@@ -134,5 +132,21 @@ public class Feedback extends BaseTimeEntity {
         this.rejectDetail = request.rejectDetail();
         this.processedAt = LocalDateTime.now();
         this.status = FeedbackStatus.REJECTED;
+    }
+
+    public void validateIsTester(UUID memberId) {
+        if (!this.testerId.equals(memberId)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
+        }
+    }
+
+    public void setObjectReason(String objectReason) {
+        if (this.status != FeedbackStatus.REJECTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_REJECTED);
+        }
+        if (this.objectReason != null) {
+            throw new BusinessException(FeedbackErrorCode.OBJECTION_ALREADY_SUBMITTED);
+        }
+        this.objectReason = objectReason;
     }
 }
