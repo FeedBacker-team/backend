@@ -3,8 +3,11 @@ package com.feedbacker.feedback.domain;
 import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.domain.type.RejectType;
+import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.global.common.CustomException;
+import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
 import lombok.*;
@@ -115,12 +118,18 @@ public class Feedback extends BaseTimeEntity {
     }
 
     public void accept(Integer rewardAcorn) {
+        if (this.status != FeedbackStatus.SUBMITTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
         this.rewardAcorn = rewardAcorn;
         this.processedAt = LocalDateTime.now();
         this.status = FeedbackStatus.ACCEPTED;
     }
 
     public void reject(FeedbackRejectRequest request) {
+        if (this.status != FeedbackStatus.SUBMITTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
         this.rejectType = request.rejectType();
         this.rejectDetail = request.rejectDetail();
         this.processedAt = LocalDateTime.now();

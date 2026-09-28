@@ -47,6 +47,13 @@ public class FeedbackService {
                 ));
     }
 
+    public Feedback getFeedbackForUpdate(UUID feedbackId) {
+        return feedbackRepository.findByIdForUpdate(feedbackId)
+                .orElseThrow(() -> new BusinessException(
+                        FeedbackErrorCode.FEEDBACK_NOT_FOUND
+                ));
+    }
+
     public List<Feedback> getAllFeedbacks(UUID feedbackPostId) {
         return feedbackRepository.findAllByFeedbackPostId(feedbackPostId);
     }
