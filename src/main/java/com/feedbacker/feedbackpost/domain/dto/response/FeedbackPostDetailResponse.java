@@ -53,7 +53,7 @@ public record FeedbackPostDetailResponse(
                 feedbackPost.getEndAt(),
                 feedback == null ? null : feedback.getExpireAt(),
                 feedbackPost.getProject().getTags(),
-                null
+                QuestionConfigResponse.from(feedbackPost)
         );
     }
 }
