@@ -20,6 +20,9 @@ public record SubjectiveQuestionCreateRequest(
         @Size(max = 5, message = "이미지는 최대 5장까지 가능합니다.")
         List<@NotNull ImageRequest> images,
 
+        @NotNull(message = "이미지 첨부 허용 여부는 필수입니다.")
+        Boolean allowImageAttachment,
+
         boolean isRequire,
 
         Integer minimumLength
@@ -29,6 +32,7 @@ public record SubjectiveQuestionCreateRequest(
                         .questionType(QuestionType.SUBJECTIVE)
                         .order(order)
                         .required(isRequire)
+                        .allowImageAttachment(allowImageAttachment)
                         .questionText(questionText)
                         .minimumLength(minimumLength)
                         .images(Stream.ofNullable(images)
