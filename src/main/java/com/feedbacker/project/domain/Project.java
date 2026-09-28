@@ -1,23 +1,31 @@
 package com.feedbacker.project.domain;
 
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.global.common.CustomException;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Project extends BaseTimeEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "project_id")
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(
+            name = "project_id",
+            columnDefinition = "uuid",
+            updatable = false,
+            nullable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
@@ -30,7 +38,7 @@ public class Project extends BaseTimeEntity {
     @Column(length = 100, nullable = false)
     private String title;
 
-    @Column(length = 300, nullable = false)
+    @Column(length = 2048, nullable = false)
     private String description;
 
     @ElementCollection
@@ -143,6 +151,12 @@ public class Project extends BaseTimeEntity {
             throw new IllegalArgumentException(
                     "프로젝트 작성자는 필수입니다."
             );
+        }
+    }
+
+    public void validateOwner(UUID memberId) {
+        if (memberId == null || !this.owner.getId().equals(memberId)) {
+            throw new CustomException(HttpStatus.FORBIDDEN, "프로젝트에 접근 권한이 없습니다.");
         }
     }
 
