@@ -70,7 +70,7 @@ public class FeedbackService {
             FeedbackPost feedbackPost
     ) {
         if (!memberId.equals(feedback.getTesterId())
-                || !memberId.equals(feedbackPost.getWriterId())) {
+                && !memberId.equals(feedbackPost.getWriterId())) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
     }
