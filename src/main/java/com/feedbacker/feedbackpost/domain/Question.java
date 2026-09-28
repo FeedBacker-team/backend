@@ -36,6 +36,9 @@ public class Question extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean required;
 
+    @Column(nullable = false)
+    private boolean allowImageAttachment;
+
     @Column(nullable = false, length = 500)
     private String questionText;
 
@@ -61,6 +64,7 @@ public class Question extends BaseTimeEntity {
             QuestionType questionType,
             Integer order,
             boolean required,
+            boolean allowImageAttachment,
             String questionText,
             List<ImageInfo> images,
             List<String> optionTexts,
@@ -71,6 +75,7 @@ public class Question extends BaseTimeEntity {
         this.questionType = questionType;
         this.order = order;
         this.required = required;
+        this.allowImageAttachment = allowImageAttachment;
         this.questionText = questionText;
         this.images = images;
         this.optionTexts = optionTexts;
