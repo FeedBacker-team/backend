@@ -130,4 +130,4 @@ public class MemberService {
     public String toImageUrl(String path) {
         return StringUtils.hasText(path) ? storageService.createPublicUrl(path) : null;
     }
-}
+}
