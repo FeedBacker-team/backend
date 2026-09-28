@@ -51,6 +51,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // Render 헬스 체크는 로그인 없이 접근 허용
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // 인증 API (인증번호, 가입, 로그인, 재발급, 로그아웃, 카카오)
                         .requestMatchers("/api/auth/**").permitAll()
                         // 닉네임 중복 확인 (로그인 전/후 모두 가능)
