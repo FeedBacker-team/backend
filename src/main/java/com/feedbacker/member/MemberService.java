@@ -1,6 +1,7 @@
 package com.feedbacker.member;
 
 import com.feedbacker.global.common.CustomException;
+import com.feedbacker.global.storage.SupabaseStorageService;
 import com.feedbacker.member.dto.NicknameCheckResponse;
 import com.feedbacker.member.dto.ProfileResponse;
 import com.feedbacker.member.dto.ProfileUpdateResponse;
@@ -27,6 +28,7 @@ public class MemberService {
     private static final int MAX_INTERESTS = 5;
 
     private final MemberRepository memberRepository;
+    private final SupabaseStorageService storageService;
 
     /** 4-1 닉네임 중복 확인 (로그인 상태면 내 현재 닉네임은 사용 가능으로 처리) */
     @Transactional(readOnly = true)
@@ -54,7 +56,7 @@ public class MemberService {
         }
 
         member.updateProfile(
-                blankToNull(request.profileImageUrl()),
+                blankToNull(request.profileImagePath()),
                 request.nickname(),
                 role,
                 blankToNull(request.introLink()),
@@ -65,7 +67,7 @@ public class MemberService {
         } catch (DataIntegrityViolationException e) {
             throw nicknameConflict();
         }
-        return ProfileUpdateResponse.from(member);
+        return ProfileUpdateResponse.from(member, toImageUrl(member.getProfileImage()));
     }
 
     private boolean isNicknameTaken(String nickname, UUID excludeMemberId) {
@@ -117,7 +119,15 @@ public class MemberService {
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
     }
 
+    // 관심 분야(지연 로딩) 등을 읽으므로 트랜잭션 안에서 조회
+    @Transactional(readOnly = true)
     public ProfileResponse getProfile(UUID memberId) {
-        return ProfileResponse.from(getMember(memberId));
+        Member member = getMember(memberId);
+        return ProfileResponse.from(member, toImageUrl(member.getProfileImage()));
+    }
+
+    /** DB에 저장된 이미지 path → 프론트에 줄 URL (미등록이면 null → 프론트에서 기본 아바타) */
+    public String toImageUrl(String path) {
+        return StringUtils.hasText(path) ? storageService.createPublicUrl(path) : null;
     }
 }

@@ -18,10 +18,10 @@ public record ProfileUpdateResponse(
         List<ProjectTag> interests,
         @JsonProperty("is_profile_completed") boolean profileCompleted
 ) {
-    public static ProfileUpdateResponse from(Member member) {
+    public static ProfileUpdateResponse from(Member member, String profileImageUrl) {
         return new ProfileUpdateResponse(
                 member.getId(),
-                member.getProfileImage(),
+                profileImageUrl,
                 member.getNickname(),
                 member.getRole(),
                 member.getPortfolioLink(),

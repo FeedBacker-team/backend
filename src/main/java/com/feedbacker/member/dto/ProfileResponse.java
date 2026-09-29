@@ -21,10 +21,10 @@ public record ProfileResponse(
         BigDecimal humidity
 ) {
 
-    public static ProfileResponse from(Member member) {
+    public static ProfileResponse from(Member member, String profileImageUrl) {
         return new ProfileResponse(
                 member.getId(),
-                member.getProfileImage(),
+                profileImageUrl,
                 member.getNickname(),
                 member.getRole(),
                 member.getPortfolioLink(),
