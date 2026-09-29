@@ -21,8 +21,8 @@ public class KakaoAuthService {
 
     /** 3-1 카카오 로그인 (처음이면 자동 가입) */
     @Transactional
-    public KakaoLoginResult login(String authorizationCode) {
-        KakaoUserInfoResponse userInfo = kakaoClient.getUserInfo(authorizationCode);
+    public KakaoLoginResult login(String authorizationCode, String redirectUri) {
+        KakaoUserInfoResponse userInfo = kakaoClient.getUserInfo(authorizationCode, redirectUri);
         String kakaoId = String.valueOf(userInfo.id());
 
         Optional<Member> existing = memberRepository.findByProviderAndProviderId(AuthProvider.KAKAO, kakaoId);
