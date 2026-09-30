@@ -68,8 +68,6 @@ public class AcornHistory {
     ) {
         List<AcornHistory> acornHistories = new ArrayList<>();
         Integer rewardAcorn = feedbackPost.getRewardAcorn();
-        Integer testerBeforeAcorn = tester.getAcornWallet().getBalance();
-        Integer writerBeforeAcorn = writer.getAcornWallet().getBalance();
 
         acornHistories.add(
                 AcornHistory.builder()
