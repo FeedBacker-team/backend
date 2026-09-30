@@ -1,6 +1,7 @@
 package com.feedbacker.project.service;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
+import com.feedbacker.global.storage.SupabaseStorageService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.domain.Project;
@@ -48,6 +49,16 @@ class ProjectServiceTest {
 
     private Validator validator;
 
+    private static final String THUMBNAIL_PATH =
+            "images/550e8400-e29b-41d4-a716-446655440000.png";
+
+    private static final String THUMBNAIL_URL =
+            "https://feedbacker-storage.supabase.co/storage/v1/object/public/images/"
+                    + THUMBNAIL_PATH;
+
+    @Mock
+    private SupabaseStorageService storageService;
+
     @BeforeEach
     void setUp() {
         validator = Validation
@@ -57,7 +68,8 @@ class ProjectServiceTest {
         projectService = new ProjectService(
                 projectRepository,
                 memberRepository,
-                validator
+                validator,
+                storageService
         );
     }
 
@@ -106,7 +118,7 @@ class ProjectServiceTest {
                             "프로젝트 설명",
                             List.of(ProjectTag.WEB),
                             "https://example.com",
-                            "https://cdn.example.com/image.png"
+                            THUMBNAIL_PATH
                     );
 
             // when
@@ -156,7 +168,7 @@ class ProjectServiceTest {
                             "프로젝트 설명",
                             List.of(ProjectTag.WEB, ProjectTag.WEB),
                             "https://example.com",
-                            "https://cdn.example.com/image.png"
+                            THUMBNAIL_PATH
                     );
 
             // when
@@ -196,6 +208,9 @@ class ProjectServiceTest {
             when(project.getDescription()).thenReturn("프로젝트 설명");
             when(project.getTags())
                     .thenReturn(List.of(ProjectTag.WEB));
+            when(project.getThumbnailImage()).thenReturn(THUMBNAIL_PATH);
+            when(storageService.createPublicUrl(THUMBNAIL_PATH))
+                    .thenReturn(THUMBNAIL_URL);
 
             when(projectRepository.increaseViewCount(
                     projectId,
@@ -227,6 +242,7 @@ class ProjectServiceTest {
             assertThat(response.isOwner()).isTrue();
             assertThat(response.hasActiveQa()).isFalse();
             assertThat(response.activeQa()).isNull();
+            assertThat(response.thumbnailImage()).isEqualTo(THUMBNAIL_URL);
 
             verify(projectRepository).increaseViewCount(
                     projectId,
@@ -240,6 +256,7 @@ class ProjectServiceTest {
 
             verify(projectRepository, never())
                     .findForUpdate(any(), any());
+            verify(storageService).createPublicUrl(THUMBNAIL_PATH);
         }
 
         @Test
@@ -499,7 +516,7 @@ class ProjectServiceTest {
                 "온보딩 흐름 사용성 개선 프로젝트입니다.",
                 List.of(ProjectTag.WEB, ProjectTag.UX),
                 "https://example.com",
-                "https://cdn.example.com/thumbnail.png"
+                THUMBNAIL_PATH
         );
     }
 
@@ -509,7 +526,7 @@ class ProjectServiceTest {
                 "수정된 프로젝트 설명",
                 List.of(ProjectTag.WEB, ProjectTag.B2B),
                 "https://example.com/updated",
-                "https://cdn.example.com/updated.png"
+                THUMBNAIL_PATH
         );
     }
 }

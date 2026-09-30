@@ -67,7 +67,7 @@ public class AuthController {
     // 3-1. 카카오 소셜 로그인 및 자동 가입
     @PostMapping("/kakao")
     public ResponseEntity<KakaoAuthResponse> loginKakao(@Valid @RequestBody KakaoLoginRequest request) {
-        KakaoAuthService.KakaoLoginResult result = kakaoAuthService.login(request.authorizationCode());
+        KakaoAuthService.KakaoLoginResult result = kakaoAuthService.login(request.authorizationCode(), request.redirectUri());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieFactory.create(result.refreshToken()).toString())
                 .body(result.response());

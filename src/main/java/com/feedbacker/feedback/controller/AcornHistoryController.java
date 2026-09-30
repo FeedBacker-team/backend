@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/acorn-hisory")
+@RequestMapping("/api/acorn-history")
 @RequiredArgsConstructor
 public class AcornHistoryController {
 

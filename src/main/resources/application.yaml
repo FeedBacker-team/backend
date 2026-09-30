@@ -59,6 +59,8 @@ kakao:
   client-id: ${KAKAO_CLIENT_ID:}
   client-secret: ${KAKAO_CLIENT_SECRET:}
   redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/oauth/kakao/callback}
+  # 요청에서 받을 수 있는 redirect_uri 목록 (쉼표로 구분, 비밀값 아님)
+  allowed-redirect-uris: ${KAKAO_ALLOWED_REDIRECT_URIS:http://localhost:3000/oauth/kakao/callback,https://feedbacker-team-dev.vercel.app/oauth/kakao/callback}
 
 cors:
   # 여러 개면 쉼표로 구분 (예: http://localhost:3000,https://feedbaker.vercel.app)
