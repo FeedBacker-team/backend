@@ -47,8 +47,8 @@ public class QuestionAnswerResponseMapper {
                 choices.add(new ChoiceQuestionAnswerResponse(
                         question.getOrder(),
                         question.getQuestionText(),
-                        question.getOptionTexts(),
-                        question.getOptionTexts().size(),
+                        List.copyOf(question.getOptionTexts()),
+                        List.copyOf(question.getOptionTexts()).size(),
                         answer == null ? null : answer.getSelectedOption(),
                         images
                 ));

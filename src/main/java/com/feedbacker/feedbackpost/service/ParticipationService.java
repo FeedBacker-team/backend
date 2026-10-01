@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -81,8 +82,8 @@ public class ParticipationService {
         return participationRepository.findForUpdate(feedbackPostId);
     }
 
-    public Participation getParticipation(UUID FeedbackPostId, UUID testerId) {
-        return participationRepository.findByFeedbackPost_IdAndTester_Id(FeedbackPostId, testerId)
+    public Participation getParticipation(UUID feedbackPostId, UUID testerId) {
+        return participationRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId)
                 .orElseThrow(() -> new BusinessException(ParticipationErrorCode.PARTICIPATION_NOT_FOUND));
     }
 
@@ -95,5 +96,27 @@ public class ParticipationService {
         );
         targets.forEach(participation -> participation.expire(now));
         return targets.size();
+    }
+
+    public void validateNoActiveParticipant(UUID feedbackPostId) {
+        if (participationRepository.existsByFeedbackPost_IdAndStatus(feedbackPostId, ParticipationStatus.RESERVED)) {
+            throw new BusinessException(ParticipationErrorCode.FEEDBACK_POST_HAS_ACTIVE_PARTICIPANT);
+        }
+    }
+
+    public void validateAlreadyParticipate(UUID feedbackPostId, UUID testerId) {
+        participationRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId)
+                .ifPresent(participation -> {
+                    throw new BusinessException(toAlreadyParticipatedError(participation.getStatus()));
+                });
+    }
+
+    private ParticipationErrorCode toAlreadyParticipatedError(ParticipationStatus status) {
+        return switch (status) {
+            case RESERVED -> ParticipationErrorCode.ALREADY_RESERVED;
+            case SUBMITTED -> ParticipationErrorCode.ALREADY_PARTICIPATED;
+            case ABANDONED -> ParticipationErrorCode.ABANDONED_PARTICIPATION;
+            case EXPIRED -> ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED;
+        };
     }
 }

@@ -30,7 +30,7 @@ public class FeedbackFormMapper {
                 choices.add(new ChoiceQuestionResponse(
                         question.getOrder(),
                         question.getQuestionText(),
-                        question.getOptionTexts(),
+                        List.copyOf(question.getOptionTexts()),
                         question.getMaxSelectionCount(),
                         images,
                         question.isRequired()

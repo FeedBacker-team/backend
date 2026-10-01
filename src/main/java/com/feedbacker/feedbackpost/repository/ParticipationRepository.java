@@ -28,4 +28,6 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             @Param("status") ParticipationStatus status,
             @Param("now") LocalDateTime now
     );
+
+    boolean existsByFeedbackPost_IdAndStatus(UUID feedbackPostId, ParticipationStatus status);
 }
