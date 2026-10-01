@@ -46,8 +46,8 @@ public class FeedbackPostFacade {
     private final QuestionService questionService;
 
     @Transactional
-    public UUID create(CustomUserDetails user, FeedbackPostCreateRequest request) {
-        Member member = memberService.getMember(user.getMemberId());
+    public UUID create(UUID memberId, FeedbackPostCreateRequest request) {
+        Member member = memberService.getMember(memberId);
         Project project = projectService.getProject(request.projectId());
         project.validateOwner(member.getId());
         projectService.validateHasFeedbackPost(project.getId());
@@ -67,8 +67,8 @@ public class FeedbackPostFacade {
     }
 
     @Transactional
-    public void participate(CustomUserDetails user, UUID feedbackPostId) {
-        Member member = memberService.getMember(user.getMemberId());
+    public void participate(UUID memberId, UUID feedbackPostId) {
+        Member member = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         feedbackPostService.validateParticipation(feedbackPost, member.getId());
         participationService.createParticipation(feedbackPost, member);
@@ -76,9 +76,9 @@ public class FeedbackPostFacade {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedbackProgressResponse> getFeedbacks(CustomUserDetails user, UUID feedbackPostId) {
+    public List<FeedbackProgressResponse> getFeedbacks(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
-        feedbackPost.validateAccessAuth(user.getMemberId());
+        feedbackPost.validateAccessAuth(memberId);
         return feedbackService.getFeedbackProgress(feedbackPost.getId());
     }
 

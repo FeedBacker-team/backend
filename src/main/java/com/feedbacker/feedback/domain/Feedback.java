@@ -87,7 +87,7 @@ public class Feedback extends BaseTimeEntity {
         this.postTitle = postTitle;
         this.status = status != null ? status : FeedbackStatus.SUBMITTED;
         this.submitAt = submitAt != null ? submitAt : LocalDateTime.now();
-        this.expireAt = expireAt != null ? expireAt : this.submitAt.plusDays(100);
+        this.expireAt = expireAt != null ? expireAt : this.submitAt.plusHours(72);
 
         if (answers != null) {
             answers.forEach(this::addAnswer);

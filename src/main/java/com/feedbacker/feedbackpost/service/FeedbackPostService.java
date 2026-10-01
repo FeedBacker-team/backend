@@ -38,8 +38,8 @@ public class FeedbackPostService {
     private final FeedbackFormMapper feedbackFormMapper;
 
     @Transactional(readOnly = true)
-    public List<FeedbackSimpleResponse> getMine(CustomUserDetails user) {
-        return feedbackPostRepository.findAllByWriterId(user.getMemberId()).stream()
+    public List<FeedbackSimpleResponse> getMine(UUID memberId) {
+        return feedbackPostRepository.findAllByWriterId(memberId).stream()
                 .map(post -> FeedbackSimpleResponse.from(
                         post,
                         imageService.toThumbnailResponse(post.getImages())

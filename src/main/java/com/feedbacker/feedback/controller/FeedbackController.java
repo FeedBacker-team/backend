@@ -29,14 +29,14 @@ public class FeedbackController {
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody FeedbackSubmitRequest request
     ) {
-        return feedbackFacade.submit(user, request);
+        return feedbackFacade.submit(user.getMemberId(), request);
     }
 
     @GetMapping("/mine")
     public List<FeedbackResponse> getMine(
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        return feedbackService.getMine(user);
+        return feedbackService.getMine(user.getMemberId());
     }
 
     @GetMapping("/{feedbackId}")
@@ -44,7 +44,7 @@ public class FeedbackController {
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackId
     ) {
-        return feedbackFacade.getDetail(user, feedbackId);
+        return feedbackFacade.getDetail(user.getMemberId(), feedbackId);
     }
 
     @PatchMapping("/{feedbackId}/accept")
@@ -52,7 +52,7 @@ public class FeedbackController {
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackId
     ) {
-        feedbackFacade.accept(user, feedbackId);
+        feedbackFacade.accept(user.getMemberId(), feedbackId);
     }
 
     @PatchMapping("/{feedbackId}/reject")
@@ -61,7 +61,7 @@ public class FeedbackController {
             @Valid @RequestBody FeedbackRejectRequest request,
             @PathVariable UUID feedbackId
     ) {
-        feedbackFacade.reject(user, request, feedbackId);
+        feedbackFacade.reject(user.getMemberId(), request, feedbackId);
     }
 
     @PatchMapping("/{feedbackId}/objection")
@@ -70,7 +70,7 @@ public class FeedbackController {
             @Valid @RequestBody FeedbackObjectRequest request,
             @PathVariable UUID feedbackId
     ) {
-        feedbackFacade.object(user, request, feedbackId);
+        feedbackFacade.object(user.getMemberId(), request, feedbackId);
     }
 
 }
