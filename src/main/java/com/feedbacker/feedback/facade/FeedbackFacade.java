@@ -101,8 +101,7 @@ public class FeedbackFacade {
     @Transactional
     public void object(CustomUserDetails user, FeedbackObjectRequest request, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        feedback.validateIsTester(user.getMemberId());
-        feedback.setObjectReason(request.objectReason());
+        feedback.object(user.getMemberId(), request.objectReason());
         // 이후 어드민에 이의제기 신청 알림 추가할 예정
     }
 }

@@ -134,16 +134,16 @@ public class Feedback extends BaseTimeEntity {
         this.status = FeedbackStatus.REJECTED;
     }
 
-    public void validateIsTester(UUID memberId) {
+    public void object(UUID memberId, String objectReason) {
+        // 피드백 작성자인지 검증
         if (!this.testerId.equals(memberId)) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
-    }
-
-    public void setObjectReason(String objectReason) {
+        // 피드백 상태가 '거절'상태가 아닌지 검증
         if (this.status != FeedbackStatus.REJECTED) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_REJECTED);
         }
+        // 이전에 이의제기를 작성했는지 검증
         if (this.objectReason != null) {
             throw new BusinessException(FeedbackErrorCode.OBJECTION_ALREADY_SUBMITTED);
         }
