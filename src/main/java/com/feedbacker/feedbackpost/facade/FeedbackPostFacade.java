@@ -85,9 +85,8 @@ public class FeedbackPostFacade {
     @Transactional
     public void complete(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
-        feedbackPost.validateIsWriter(memberId);
         //acornHistoryService.combine(memberId, feedbackPost.getId());
-        feedbackPost.complete();
+        feedbackPost.complete(memberId);
     }
 
 
