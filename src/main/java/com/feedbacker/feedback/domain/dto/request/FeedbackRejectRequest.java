@@ -11,7 +11,7 @@ public record FeedbackRejectRequest(
         RejectType rejectType,
 
         @NotBlank(message = "거부 상세 사유는 필수입니다.")
-        @Size(min = 100, message = "거부 상세 사유는 100자 이상 작성해주셔야 합니다.")
+        @Size(min = 100, max = 2000, message = "거부 상세 사유는 100자 이상 2000자 이하로 작성해주셔야 합니다.")
         String rejectDetail
 ) {
 }

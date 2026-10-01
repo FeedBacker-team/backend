@@ -125,11 +125,17 @@ public class Feedback extends BaseTimeEntity {
     }
 
     public void reject(FeedbackRejectRequest request) {
+        // 피드백이 '제출'상태가 아닌지 검증
         if (this.status != FeedbackStatus.SUBMITTED) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
         }
+        // '거절 사유' 텍스트 앞뒤 공백 제거후 글자수 검증
+        String cleaned = request.rejectDetail().strip();
+        if (cleaned.length() < 100) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_REJECT_DETAIL_TOO_SHORT);
+        }
         this.rejectType = request.rejectType();
-        this.rejectDetail = request.rejectDetail();
+        this.rejectDetail = cleaned;
         this.processedAt = LocalDateTime.now();
         this.status = FeedbackStatus.REJECTED;
     }
