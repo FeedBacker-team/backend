@@ -3,6 +3,7 @@ package com.feedbacker.feedbackpost.facade;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
+import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
@@ -59,10 +60,18 @@ public class FeedbackPostFacade {
     public FeedbackPostDetailResponse getDetail(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         Feedback feedback = memberId == null ? null : feedbackService.findMyFeedback(feedbackPostId, memberId);
+
+        // 수정 예정
+        FeedbackStatus feedbackStatus = null;
+        if (participationService.isWriting(feedbackPost.getId(), memberId)) {
+            feedbackStatus = FeedbackStatus.WRITING;
+        }
+
         return FeedbackPostDetailResponse.from(
                 feedback,
                 feedbackPost,
-                imageService.toResponses(feedbackPost.getImages())
+                imageService.toResponses(feedbackPost.getImages()),
+                feedbackStatus
         );
     }
 

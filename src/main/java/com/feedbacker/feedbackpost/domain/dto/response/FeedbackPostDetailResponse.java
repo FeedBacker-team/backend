@@ -1,6 +1,7 @@
 package com.feedbacker.feedbackpost.domain.dto.response;
 
 import com.feedbacker.feedback.domain.Feedback;
+import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
@@ -16,7 +17,8 @@ public record FeedbackPostDetailResponse(
         UUID projectId,
         String title,
         String description,
-        FeedbackPostStatus status,
+        FeedbackPostStatus feedbackPostStatus,
+        FeedbackStatus myFeedbackStatus,
         TargetType targetType,
         String serviceUrl,
         List<ImageResponse> images,
@@ -34,14 +36,24 @@ public record FeedbackPostDetailResponse(
     public static FeedbackPostDetailResponse from(
             Feedback feedback,
             FeedbackPost feedbackPost,
-            List<ImageResponse> images
+            List<ImageResponse> images,
+            FeedbackStatus feedbackStatus
     ) {
+        if (feedback == null) {
+            if (feedbackStatus != FeedbackStatus.WRITING) {
+                feedbackStatus = null;
+            }
+        }
+        else {
+            feedbackStatus = feedback.getStatus();
+        }
         return new FeedbackPostDetailResponse(
                 feedbackPost.getId(),
                 feedbackPost.getProject().getId(),
                 feedbackPost.getTitle(),
                 feedbackPost.getDescription(),
                 feedbackPost.getStatus(),
+                feedbackStatus,
                 feedbackPost.getTargetType(),
                 feedbackPost.getServiceUrl(),
                 images,

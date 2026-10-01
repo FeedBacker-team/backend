@@ -1,5 +1,8 @@
 package com.feedbacker.feedbackpost.service;
 
+import com.feedbacker.feedback.domain.Feedback;
+import com.feedbacker.feedback.domain.type.FeedbackStatus;
+import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.type.ParticipationStatus;
@@ -21,6 +24,7 @@ import java.util.UUID;
 public class ParticipationService {
 
     private final ParticipationRepository participationRepository;
+    private final FeedbackRepository feedbackRepository;
 
     public void createParticipation(
             FeedbackPost feedbackPost,
@@ -94,7 +98,18 @@ public class ParticipationService {
                 ParticipationStatus.RESERVED,
                 now
         );
-        targets.forEach(participation -> participation.expire(now));
+        targets.forEach(participation -> {
+            participation.expire(now);
+
+            // 수정할 예정
+            Feedback feedback = feedbackRepository
+                    .findByFeedbackPostIdAndTesterId(
+                            participation.getFeedbackPost().getId(),
+                            participation.getTester().getId())
+                    .orElseThrow(RuntimeException::new);
+            feedback.setStatus(FeedbackStatus.EXPIRED);
+        });
+
         return targets.size();
     }
 
@@ -118,5 +133,14 @@ public class ParticipationService {
             case ABANDONED -> ParticipationErrorCode.ABANDONED_PARTICIPATION;
             case EXPIRED -> ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED;
         };
+    }
+
+    public boolean isWriting(UUID feedbackPostId, UUID testerId) {
+        Optional<Participation> participation = participationRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId);
+
+        if (participation.isEmpty()) {
+            return false;
+        }
+        return true;
     }
 }

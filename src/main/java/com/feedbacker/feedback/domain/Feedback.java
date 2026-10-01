@@ -43,6 +43,7 @@ public class Feedback extends BaseTimeEntity {
     @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionAnswer> answers = new ArrayList<>();
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FeedbackStatus status;
@@ -68,6 +69,9 @@ public class Feedback extends BaseTimeEntity {
     private LocalDateTime expireAt;
 
     @Column
+    private LocalDateTime responseDeadLineAt;
+
+    @Column
     private LocalDateTime processedAt;
 
     @Builder
@@ -78,7 +82,6 @@ public class Feedback extends BaseTimeEntity {
             String postTitle,
             FeedbackStatus status,
             LocalDateTime submitAt,
-            LocalDateTime expireAt,
             List<QuestionAnswer> answers
     ) {
         this.feedbackPostId = feedbackPostId;
@@ -87,7 +90,8 @@ public class Feedback extends BaseTimeEntity {
         this.postTitle = postTitle;
         this.status = status != null ? status : FeedbackStatus.SUBMITTED;
         this.submitAt = submitAt != null ? submitAt : LocalDateTime.now();
-        this.expireAt = expireAt != null ? expireAt : this.submitAt.plusHours(72);
+        this.expireAt = this.submitAt.plusHours(24);
+        this.responseDeadLineAt = this.submitAt.plusHours(72);
 
         if (answers != null) {
             answers.forEach(this::addAnswer);
@@ -116,8 +120,13 @@ public class Feedback extends BaseTimeEntity {
     }
 
     public void accept(Integer rewardAcorn) {
+        // 피드백이 '제출'상태가 아닌지 검증
         if (this.status != FeedbackStatus.SUBMITTED) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
+        // 응답 기한이 지났는지 검증
+        if (this.responseDeadLineAt.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_PROCESS_EXPIRED);
         }
         this.rewardAcorn = rewardAcorn;
         this.processedAt = LocalDateTime.now();
@@ -128,6 +137,10 @@ public class Feedback extends BaseTimeEntity {
         // 피드백이 '제출'상태가 아닌지 검증
         if (this.status != FeedbackStatus.SUBMITTED) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
+        // 응답 기한이 지났는지 검증
+        if (this.responseDeadLineAt.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_PROCESS_EXPIRED);
         }
         // '거절 사유' 텍스트 앞뒤 공백 제거후 글자수 검증
         String cleaned = request.rejectDetail().strip();
