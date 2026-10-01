@@ -9,6 +9,7 @@ import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,12 +27,7 @@ public class ParticipationService {
     ) {
         List<Participation> participations = getAllParticipation(feedbackPost.getId());
         validateRemainSlot(participations, feedbackPost);
-
-        Participation reservedParticipation = Participation.reserve(
-                feedbackPost,
-                member
-        );
-
+        Participation reservedParticipation = Participation.reserve(feedbackPost, member);
         participationRepository.save(reservedParticipation);
     }
 
@@ -39,19 +35,11 @@ public class ParticipationService {
             List<Participation> participations,
             FeedbackPost feedbackPost
     ) {
-        if (participations.size() >= feedbackPost.getSlotCapacity()) {
+        long occupiedSlots = participations.stream()
+                .filter(Participation::occupiesSlot)
+                .count();
+        if (occupiedSlots >= feedbackPost.getSlotCapacity()) {
             throw new BusinessException(ParticipationErrorCode.SLOT_FULL);
-        }
-    }
-
-    private void validateIsWriter(
-            List<Participation> participations,
-            FeedbackPost feedbackPost
-    ) {
-        for (Participation participation : participations) {
-            if (participation.getTester().getId().equals(feedbackPost.getWriterId())) {
-                throw new BusinessException(ParticipationErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
-            }
         }
     }
 
@@ -68,6 +56,9 @@ public class ParticipationService {
     ) {
         for (Participation participation : participations) {
             if (participation.getTester().getId().equals(memberId)) {
+                if (participation.getStatus() == ParticipationStatus.EXPIRED) {
+                    throw new BusinessException(ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+                }
                 if (participation.getStatus() == ParticipationStatus.RESERVED) {
                     return participation;
                 }
@@ -93,5 +84,16 @@ public class ParticipationService {
     public Participation getParticipation(UUID FeedbackPostId, UUID testerId) {
         return participationRepository.findByFeedbackPost_IdAndTester_Id(FeedbackPostId, testerId)
                 .orElseThrow(() -> new BusinessException(ParticipationErrorCode.PARTICIPATION_NOT_FOUND));
+    }
+
+    @Transactional
+    public int expireOverdueParticipations() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Participation> targets = participationRepository.findExpiredTargets(
+                ParticipationStatus.RESERVED,
+                now
+        );
+        targets.forEach(participation -> participation.expire(now));
+        return targets.size();
     }
 }

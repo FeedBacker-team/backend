@@ -56,11 +56,11 @@ public class AcornHistoryService {
     }
 
     @Transactional
-    public void combine(UUID memberId, UUID feedbackPostId) {
+    public int combine(UUID memberId, UUID feedbackPostId) {
         List<AcornHistory> acornHistories = acornHistoryRepository
                 .findAllByMemberIdAndFeedbackPostId(memberId, feedbackPostId);
         if (acornHistories.isEmpty()) {
-            return;
+            return 0;
         }
 
         int totalAcorn = acornHistories.stream()
@@ -77,6 +77,7 @@ public class AcornHistoryService {
 
         acornHistoryRepository.save(combinedHistory);
         acornHistoryRepository.deleteAll(acornHistories);
+        return totalAcorn;
     }
 
 

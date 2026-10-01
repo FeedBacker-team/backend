@@ -84,9 +84,13 @@ public class FeedbackPostFacade {
 
     @Transactional
     public void complete(UUID memberId, UUID feedbackPostId) {
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
-        acornHistoryService.combine(memberId, feedbackPost.getId());
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         feedbackPost.complete(memberId);
+        int paidAcorn = acornHistoryService.combine(memberId, feedbackPost.getId());
+        int refundAcorn = feedbackPost.getDepositAcorn() - paidAcorn;
+        if (refundAcorn > 0) {
+            acornWalletService.earn(memberId, refundAcorn);
+        }
     }
 
     @Transactional(readOnly = true)

@@ -62,6 +62,7 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer slotCapacity;
 
+    @Setter
     @Column(nullable = false)
     private Integer remainSlotCount;
 

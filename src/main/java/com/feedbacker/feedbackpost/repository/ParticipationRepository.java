@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.feedbacker.feedbackpost.domain.type.ParticipationStatus;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,4 +22,10 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     List<Participation> findForUpdate(@Param("postId") UUID postId);
 
     Optional<Participation> findByFeedbackPost_IdAndTester_Id(UUID FeedbackPostId, UUID testerId);
+
+    @Query("select p from Participation p where p.status = :status and p.submissionDeadlineAt <= :now")
+    List<Participation> findExpiredTargets(
+            @Param("status") ParticipationStatus status,
+            @Param("now") LocalDateTime now
+    );
 }
