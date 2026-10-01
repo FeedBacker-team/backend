@@ -85,27 +85,18 @@ public class FeedbackPostFacade {
     @Transactional
     public void complete(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
-        //acornHistoryService.combine(memberId, feedbackPost.getId());
+        acornHistoryService.combine(memberId, feedbackPost.getId());
         feedbackPost.complete(memberId);
     }
-
 
     @Transactional(readOnly = true)
     public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
         List<Feedback> feedbacks = feedbackService.getAllFeedbacks(feedbackPostId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
+        feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateCompleted();
         List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
-        List<FeedbackResultResponse> feedbackResults = feedbacks.stream()
-                .map(feedback -> {
-                    QuestionAnswerResponse questionAnswer =
-                            questionAnswerService.toResponse(
-                                    questionService.getAllQuestion(feedbackPost.getId()),
-                                    questionAnswerService.getAllQuestionAnswer(feedback.getId())
-                            );
-
-                    return FeedbackResultResponse.from(feedback, questionAnswer);
-                })
-                .toList();
+        List<FeedbackResultResponse> feedbackResults = questionAnswerService.getFeedbackResults(feedbacks, feedbackPost);
         AcornHistoryResponse acornHistory = acornHistoryService.getAcronHistoryByFeedbackPost(
                 memberId,
                 feedbackPost.getId()

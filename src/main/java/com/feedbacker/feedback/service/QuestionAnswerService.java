@@ -1,5 +1,6 @@
 package com.feedbacker.feedback.service;
 
+import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.QuestionAnswer;
 import com.feedbacker.feedback.domain.dto.request.ChoiceQuestionAnswerRequest;
 import com.feedbacker.feedback.domain.dto.request.QuestionAnswerRequest;
@@ -8,9 +9,12 @@ import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedback.repository.QuestionAnswerRepository;
 import com.feedbacker.feedback.service.mapper.QuestionAnswerResponseMapper;
+import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Question;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
 import com.feedbacker.feedbackpost.domain.type.QuestionType;
 import com.feedbacker.feedbackpost.repository.QuestionRepository;
+import com.feedbacker.feedbackpost.service.QuestionService;
 import com.feedbacker.global.image.ImageRequest;
 import com.feedbacker.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class QuestionAnswerService {
 
+    private final QuestionService questionService;
     private final QuestionRepository questionRepository;
     private final QuestionAnswerRepository questionAnswerRepository;
     private final QuestionAnswerResponseMapper questionAnswerResponseMapper;
@@ -131,6 +136,20 @@ public class QuestionAnswerService {
             throw new BusinessException(FeedbackErrorCode.DUPLICATE_QUESTION_ANSWER);
         }
         return question;
+    }
+
+    public List<FeedbackResultResponse> getFeedbackResults(List<Feedback> feedbacks, FeedbackPost feedbackPost) {
+        return feedbacks.stream()
+                .map(feedback -> {
+                    QuestionAnswerResponse questionAnswer =
+                            toResponse(
+                                    questionService.getAllQuestion(feedbackPost.getId()),
+                                    getAllQuestionAnswer(feedback.getId())
+                            );
+
+                    return FeedbackResultResponse.from(feedback, questionAnswer);
+                })
+                .toList();
     }
 
     public List<QuestionAnswer> getAllQuestionAnswer(UUID feedbackId) {

@@ -35,9 +35,12 @@ public class QuestionAnswerResponseMapper {
 
         for (Question question : questions) {
             QuestionAnswer answer = answerMap.get(question.getId());
+            List<ImageResponse> answerImages = answer == null
+                    ? List.of()
+                    : imageService.toResponses(answer.getImages());
             List<ImageResponse> images = Stream.concat(
                     imageService.toResponses(question.getImages()).stream(),
-                    imageService.toResponses(answer.getImages()).stream()
+                    answerImages.stream()
             ).toList();
 
             if (question.getQuestionType() == QuestionType.CHOICE) {
