@@ -49,19 +49,27 @@ public class QuestionAnswerResponseMapper {
                         question.getQuestionText(),
                         List.copyOf(question.getOptionTexts()),
                         List.copyOf(question.getOptionTexts()).size(),
-                        answer == null ? null : answer.getSelectedOption(),
+                        answer == null ? null : normalizeSelectedOption(answer.getSelectedOption()),
                         images
                 ));
             } else {
                 subjectives.add(new SubjectiveQuestionAnswerResponse(
                         question.getOrder(),
                         question.getQuestionText(),
-                        answer == null ? null : answer.getSubjectiveAnswer(),
+                        answer == null ? null : normalizeText(answer.getSubjectiveAnswer()),
                         images
                 ));
             }
         }
 
         return new QuestionAnswerResponse(choices, subjectives);
+    }
+
+    private List<Integer> normalizeSelectedOption(List<Integer> selectedOption) {
+        return selectedOption == null || selectedOption.isEmpty() ? null : selectedOption;
+    }
+
+    private String normalizeText(String text) {
+        return text == null || text.isBlank() ? null : text;
     }
 }

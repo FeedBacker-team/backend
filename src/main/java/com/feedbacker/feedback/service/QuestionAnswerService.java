@@ -85,7 +85,7 @@ public class QuestionAnswerService {
                     .questionId(question.getId())
                     .questionOrder(question.getOrder())
                     .images(answer.images().stream().map(ImageRequest::toImageInfo).toList())
-                    .selectedOption(selected)
+                    .selectedOption(selected.isEmpty() ? null : selected)
                     .build());
         }
 
@@ -111,7 +111,7 @@ public class QuestionAnswerService {
             answers.add(QuestionAnswer.builder()
                     .questionId(question.getId())
                     .questionOrder(question.getOrder())
-                    .subjectiveAnswer(text)
+                    .subjectiveAnswer(hasAnswer ? text : null)
                     .images(List.of())
                     .build());
         }
