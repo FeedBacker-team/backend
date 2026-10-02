@@ -1,12 +1,10 @@
 package com.feedbacker.feedbackpost.service;
 
-import com.feedbacker.feedback.domain.Feedback;
-import com.feedbacker.feedback.domain.type.FeedbackStatus;
-import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.type.ParticipationStatus;
 import com.feedbacker.feedbackpost.exception.ParticipationErrorCode;
+import com.feedbacker.feedbackpost.repository.FeedbackPostRepository;
 import com.feedbacker.feedbackpost.repository.ParticipationRepository;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
@@ -24,7 +22,7 @@ import java.util.UUID;
 public class ParticipationService {
 
     private final ParticipationRepository participationRepository;
-    private final FeedbackRepository feedbackRepository;
+    private final FeedbackPostRepository feedbackPostRepository;
 
     public void createParticipation(
             FeedbackPost feedbackPost,
@@ -110,23 +108,29 @@ public class ParticipationService {
     @Transactional
     public int expireOverdueParticipations() {
         LocalDateTime now = LocalDateTime.now();
-        List<Participation> targets = participationRepository.findExpiredTargets(
+        List<UUID> feedbackPostIds = participationRepository.findFeedbackPostIdsWithExpiredTargets(
                 ParticipationStatus.RESERVED,
                 now
         );
-        targets.forEach(participation -> {
-            participation.expire(now);
 
-            // 수정할 예정
-            Feedback feedback = feedbackRepository
-                    .findByFeedbackPostIdAndTesterId(
-                            participation.getFeedbackPost().getId(),
-                            participation.getTester().getId())
-                    .orElseThrow(RuntimeException::new);
-            feedback.setStatus(FeedbackStatus.EXPIRED);
-        });
-
-        return targets.size();
+        int expiredCount = 0;
+        for (UUID feedbackPostId : feedbackPostIds) {
+            // participate / giveUp 과 같은 순서(모집글 -> 참여)로 락을 잡아 데드락을 피한다
+            FeedbackPost feedbackPost = feedbackPostRepository.findByIdForUpdate(feedbackPostId)
+                    .orElse(null);
+            if (feedbackPost == null) {
+                continue;
+            }
+            // 락을 잡은 뒤 조회해서, 그 사이 제출/포기된 참여는 만료시키지 않는다
+            for (Participation participation : getAllParticipation(feedbackPostId)) {
+                if (participation.isReserved() && participation.isDeadlineReached(now)) {
+                    participation.expire(now);
+                    feedbackPost.plusRemainSlotCount();
+                    expiredCount++;
+                }
+            }
+        }
+        return expiredCount;
     }
 
     public void validateNoActiveParticipant(UUID feedbackPostId) {

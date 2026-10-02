@@ -23,8 +23,8 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     Optional<Participation> findByFeedbackPost_IdAndTester_Id(UUID FeedbackPostId, UUID testerId);
 
-    @Query("select p from Participation p where p.status = :status and p.submissionDeadlineAt <= :now")
-    List<Participation> findExpiredTargets(
+    @Query("select distinct p.feedbackPost.id from Participation p where p.status = :status and p.submissionDeadlineAt <= :now")
+    List<UUID> findFeedbackPostIdsWithExpiredTargets(
             @Param("status") ParticipationStatus status,
             @Param("now") LocalDateTime now
     );
