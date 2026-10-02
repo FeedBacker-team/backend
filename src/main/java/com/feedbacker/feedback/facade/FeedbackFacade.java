@@ -59,8 +59,8 @@ public class FeedbackFacade {
     @Transactional(readOnly = true)
     public FeedbackDetailResponse getDetail(UUID memberId, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        Member tester = memberService.getMember(feedback.getTesterId());
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPost().getId());
+        Member tester = memberService.getMember(feedback.getTester().getId());
         Participation participation = participationService.getParticipation(feedbackPost.getId(), tester.getId());
         QuestionAnswerResponse questionAnswerResponse = questionAnswerService.toResponse(
                 questionService.getAllQuestion(feedbackPost.getId()),
@@ -77,8 +77,8 @@ public class FeedbackFacade {
 
     @Transactional
     public void accept(UUID memberId, UUID feedbackId) {
+        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
         // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
-        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPostId();
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedbackPost.validateAccessAuth(memberId);
@@ -107,7 +107,7 @@ public class FeedbackFacade {
 
     // 테스터 보상 지급 + 도토리 내역(테스터/작성자) 저장. complete의 환급 계산이 작성자 내역에 의존한다
     private void payReward(Feedback feedback, FeedbackPost feedbackPost) {
-        Member tester = memberService.getMember(feedback.getTesterId());
+        Member tester = memberService.getMember(feedback.getTester().getId());
         Member writer = memberService.getMember(feedbackPost.getWriterId());
         acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
         acornHistoryService.save(
@@ -120,7 +120,7 @@ public class FeedbackFacade {
 
     @Transactional
     public void reject(UUID memberId, FeedbackRejectRequest request, UUID feedbackId) {
-        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPostId();
+        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedbackPost.validateAccessAuth(memberId);

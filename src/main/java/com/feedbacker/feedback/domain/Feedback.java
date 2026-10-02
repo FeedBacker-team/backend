@@ -18,80 +18,100 @@ import java.util.UUID;
 
 
 @Entity
-@Table(name = "feedbacks")
+@Table(
+        name = "feedbacks",
+        // DB에서 feedback_post_id 와 tester_id의 조합은 유니크
+        uniqueConstraints = @UniqueConstraint(name = "uk_feedback_post_tester", columnNames = {"feedback_post_id", "tester_id"}),
+        // 인덱싱
+        indexes = {
+                @Index(name = "idx_feedback_tester", columnList = "tester_id"),
+                @Index(name = "idx_feedback_status_expire", columnList = "status, expire_at")  // 만료 스케줄러용
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Feedback extends BaseTimeEntity {
+
+    private static final long SUBMISSION_LIMIT_HOURS = 24L;   // 참여 후 제출 기한
+    private static final long RESPONSE_LIMIT_HOURS = 72L;     // 제출 후 작성자 응답 기한
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "feedback_id")
     private UUID id;
 
-    @Column(name = "feedback_post_id", nullable = false, columnDefinition = "uuid")
-    private UUID feedbackPostId;
+    /** 피드백을 진행한 테스터 값 (외래키) */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tester_id", nullable = false)
+    private Member tester;
 
-    @Column(name = "tester_id", nullable = false)
-    private UUID testerId;
+    /** 피드백을 진행한 피드백 모집글 값 (외래키) */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "feedback_post_id", nullable = false)
+    private FeedbackPost feedbackPost;
 
-    @Column
-    private String testerName;
-
-    @Column(nullable = false)
-    private String postTitle;
-
+    /** 테스터가 작성한 질문 답변 리스트 */
     @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionAnswer> answers = new ArrayList<>();
 
-    @Setter
+    /** 피드백의 상태 */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FeedbackStatus status;
 
+    /** 보상으로 받은 도토리 수 */
     @Setter
     @Column
     private Integer rewardAcorn;
 
+    /** 피드백 거부 받았을시 거부 유형 */
     @Enumerated(EnumType.STRING)
     @Column
     private RejectType rejectType;
 
+    /** 거부 상세 사유 */
     @Column(columnDefinition = "TEXT")
     private String rejectDetail;
 
+    /** 거부를 이의제기 할 시 상세 사유 */
     @Column(columnDefinition = "TEXT")
     private String objectReason;
 
+    /** 피드백 모집글에 참여한 시각 */
     @Column(nullable = false)
+    private LocalDateTime participateAt;
+
+    /** 피드백 제출 시각 */
+    @Column
     private LocalDateTime submitAt;
 
+    /** 피드백 제출 마감 기한 */
     @Column(nullable = false)
     private LocalDateTime expireAt;
 
+    /** 피드백 포기 시각 */
+    @Column
+    private LocalDateTime cancelAt;
+
+    /** 피드백 제출 후 응답(수락/거절) 마감 기한*/
     @Column
     private LocalDateTime responseDeadLineAt;
 
+    /** 피드백 제출 후 응답(수락/거절) 진행 시각*/
     @Column
-    private LocalDateTime processedAt;
+    private LocalDateTime responseAt;
 
     @Builder
     public Feedback(
-            UUID feedbackPostId,
-            UUID testerId,
-            String testerName,
-            String postTitle,
-            FeedbackStatus status,
-            LocalDateTime submitAt,
+            Member tester,
+            FeedbackPost feedbackPost,
             List<QuestionAnswer> answers
     ) {
-        this.feedbackPostId = feedbackPostId;
-        this.testerId = testerId;
-        this.testerName = testerName;
-        this.postTitle = postTitle;
-        this.status = status != null ? status : FeedbackStatus.SUBMITTED;
-        this.submitAt = submitAt != null ? submitAt : LocalDateTime.now();
-        this.expireAt = this.submitAt.plusHours(24);
-        this.responseDeadLineAt = this.submitAt.plusHours(72);
+        this.tester = tester;
+        this.feedbackPost = feedbackPost;
+        this.status = FeedbackStatus.SUBMITTED;
+        this.participateAt = LocalDateTime.now();
+        this.expireAt = this.participateAt.plusHours(SUBMISSION_LIMIT_HOURS);
 
         if (answers != null) {
             answers.forEach(this::addAnswer);
@@ -104,13 +124,9 @@ public class Feedback extends BaseTimeEntity {
             List<QuestionAnswer> answers
     ) {
         return Feedback.builder()
-                .feedbackPostId(feedbackPost.getId())
-                .testerId(tester.getId())
-                .testerName(tester.getNickname())
-                .postTitle(feedbackPost.getTitle())
-                .status(FeedbackStatus.SUBMITTED)
+                .tester(tester)
+                .feedbackPost(feedbackPost)
                 .answers(answers)
-                .submitAt(LocalDateTime.now())
                 .build();
     }
 
@@ -141,7 +157,7 @@ public class Feedback extends BaseTimeEntity {
 
     private void markAccepted(Integer rewardAcorn) {
         this.rewardAcorn = rewardAcorn;
-        this.processedAt = LocalDateTime.now();
+        this.responseAt = LocalDateTime.now();
         this.status = FeedbackStatus.ACCEPTED;
     }
 
@@ -161,13 +177,13 @@ public class Feedback extends BaseTimeEntity {
         }
         this.rejectType = request.rejectType();
         this.rejectDetail = cleaned;
-        this.processedAt = LocalDateTime.now();
+        this.responseAt = LocalDateTime.now();
         this.status = FeedbackStatus.REJECTED;
     }
 
     public void object(UUID memberId, String objectReason) {
         // 피드백 작성자인지 검증
-        if (!this.testerId.equals(memberId)) {
+        if (!this.tester.getId().equals(memberId)) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
         // 피드백 상태가 '거절'상태가 아닌지 검증

@@ -19,7 +19,7 @@ public record FeedbackProgressResponse(
     public static FeedbackProgressResponse from(Feedback feedback) {
         return new FeedbackProgressResponse(
                 feedback.getId(),
-                feedback.getTesterName(),
+                feedback.getTester().getNickname(),
                 feedback.getStatus(),
                 feedback.getSubmitAt(),
                 feedback.getSubmitAt().plusHours(DEADLINE)

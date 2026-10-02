@@ -93,7 +93,7 @@ public class FeedbackService {
             Feedback feedback,
             FeedbackPost feedbackPost
     ) {
-        if (!memberId.equals(feedback.getTesterId())
+        if (!memberId.equals(feedback.getTester().getId())
                 && !memberId.equals(feedbackPost.getWriterId())) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }

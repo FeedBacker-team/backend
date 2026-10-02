@@ -20,12 +20,12 @@ public record FeedbackResponse(
     public static FeedbackResponse from(Feedback feedback) {
         return new FeedbackResponse(
                 feedback.getId(),
-                feedback.getPostTitle(),
+                feedback.getFeedbackPost().getTitle(),
                 feedback.getStatus(),
                 feedback.getRewardAcorn(),
                 feedback.getRejectType(),
                 feedback.getSubmitAt(),
-                feedback.getProcessedAt()
+                feedback.getResponseAt()
         );
     }
 

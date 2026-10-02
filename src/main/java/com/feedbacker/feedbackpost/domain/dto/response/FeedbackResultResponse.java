@@ -20,7 +20,7 @@ public record FeedbackResultResponse(
     ) {
         return new FeedbackResultResponse(
                 feedback.getId(),
-                feedback.getTesterName(),
+                feedback.getTester().getNickname(),
                 feedback.getSubmitAt(),
                 feedback.getStatus(),
                 questionAnswer
