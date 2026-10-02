@@ -10,6 +10,8 @@ import java.util.stream.Stream;
 
 public record ChoiceQuestionCreateRequest(
 
+        @NotNull(message = "질문 순서는 필수입니다.")
+        @Positive(message = "질문 순서는 1 이상이어야 합니다.")
         Integer order,
 
         @NotBlank(message = "질문 글자는 공백일 수 없습니다.")

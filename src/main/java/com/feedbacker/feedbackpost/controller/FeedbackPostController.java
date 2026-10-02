@@ -38,7 +38,7 @@ public class FeedbackPostController {
     }
 
     @PostMapping
-    public UUID create(
+    public FeedbackPostCreateResponse create(
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody FeedbackPostCreateRequest request
     ) {

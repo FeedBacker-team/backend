@@ -3,6 +3,7 @@ package com.feedbacker.feedback.service;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.QuestionAnswer;
 import com.feedbacker.feedback.domain.dto.response.*;
+import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -13,6 +14,7 @@ import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,6 +71,21 @@ public class FeedbackService {
         return feedbackRepository
                 .findByFeedbackPostIdAndTesterId(feedbackPostId, memberId)
                 .orElse(null);
+    }
+
+    /** 승인/거절하지 않은 제출 피드백(SUBMITTED)이 남아 있으면 예외 (모집글 완료 시 사용) */
+    public void validateNoSubmittedFeedback(UUID feedbackPostId) {
+        if (feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK);
+        }
+    }
+
+    public List<UUID> getFeedbackPostIdsWithOverdueFeedback(LocalDateTime now) {
+        return feedbackRepository.findFeedbackPostIdsWithOverdue(FeedbackStatus.SUBMITTED, now);
+    }
+
+    public List<Feedback> getOverdueFeedbacksForUpdate(UUID feedbackPostId, LocalDateTime now) {
+        return feedbackRepository.findOverdueForUpdate(feedbackPostId, FeedbackStatus.SUBMITTED, now);
     }
 
     public void validateGetFeedback(

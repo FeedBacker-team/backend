@@ -6,11 +6,9 @@ import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
 import com.feedbacker.feedback.domain.type.AcornHistoryType;
 import com.feedbacker.feedback.repository.AcornHistoryRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.global.common.CustomException;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,7 +50,7 @@ public class AcornHistoryService {
     public AcornHistoryResponse getAcronHistoryByFeedbackPost(UUID memberId, UUID feedbackPostId) {
         return acornHistoryRepository.
                 findByMemberIdAndFeedbackPostId(memberId, feedbackPostId)
-                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "도토리 거래 내역을 찾을 수 없습니다."));
+                .orElseGet(() -> new AcornHistoryResponse(AcornHistoryType.FEEDBACK_RECRUIT, null, 0));
     }
 
     @Transactional

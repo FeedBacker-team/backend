@@ -9,6 +9,7 @@ import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostCreateResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostResultResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
@@ -47,13 +48,13 @@ public class FeedbackPostFacade {
     private final QuestionService questionService;
 
     @Transactional
-    public UUID create(UUID memberId, FeedbackPostCreateRequest request) {
+    public FeedbackPostCreateResponse create(UUID memberId, FeedbackPostCreateRequest request) {
         Member member = memberService.getMember(memberId);
         Project project = projectService.getProject(request.projectId());
         project.validateOwner(member.getId());
         projectService.validateHasFeedbackPost(project.getId());
         acornWalletService.withdraw(member.getId(), request.depositAcorn());
-        return feedbackPostService.save(request.toEntity(project));
+        return new FeedbackPostCreateResponse(feedbackPostService.save(request.toEntity(project)));
     }
 
     @Transactional(readOnly = true)
@@ -99,7 +100,9 @@ public class FeedbackPostFacade {
     @Transactional
     public void complete(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        feedbackPost.validateAccessAuth(memberId);
         participationService.validateNoActiveParticipant(feedbackPost.getId());
+        feedbackService.validateNoSubmittedFeedback(feedbackPost.getId());
         feedbackPost.complete(memberId);
         int paidAcorn = acornHistoryService.combine(memberId, feedbackPost.getId());
         int refundAcorn = feedbackPost.getDepositAcorn() - paidAcorn;

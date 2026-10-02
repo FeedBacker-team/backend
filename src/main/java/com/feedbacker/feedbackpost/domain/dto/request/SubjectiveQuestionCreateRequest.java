@@ -5,6 +5,7 @@ import com.feedbacker.feedbackpost.domain.type.QuestionType;
 import com.feedbacker.global.image.ImageRequest;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.stream.Stream;
 
 public record SubjectiveQuestionCreateRequest(
 
+        @NotNull(message = "질문 순서는 필수입니다.")
+        @Positive(message = "질문 순서는 1 이상이어야 합니다.")
         Integer order,
 
         @NotBlank(message = "질문 글자는 공백일 수 없습니다.")

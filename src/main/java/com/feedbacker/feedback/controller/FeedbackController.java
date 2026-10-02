@@ -3,6 +3,7 @@ package com.feedbacker.feedback.controller;
 import com.feedbacker.feedback.domain.dto.request.FeedbackObjectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
+import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.request.FeedbackSubmitRequest;
 import com.feedbacker.feedback.facade.FeedbackFacade;
@@ -25,7 +26,7 @@ public class FeedbackController {
     private final FeedbackService feedbackService;
 
     @PostMapping
-    public UUID submit(
+    public FeedbackSubmitResponse submit(
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody FeedbackSubmitRequest request
     ) {

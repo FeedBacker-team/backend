@@ -128,6 +128,18 @@ public class Feedback extends BaseTimeEntity {
         if (this.responseDeadLineAt.isBefore(LocalDateTime.now())) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_PROCESS_EXPIRED);
         }
+        markAccepted(rewardAcorn);
+    }
+
+    /** 응답 기한이 지난 '제출' 상태 피드백을 자동 승인 (기한 검증 없음) */
+    public void autoAccept(Integer rewardAcorn) {
+        if (this.status != FeedbackStatus.SUBMITTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
+        markAccepted(rewardAcorn);
+    }
+
+    private void markAccepted(Integer rewardAcorn) {
         this.rewardAcorn = rewardAcorn;
         this.processedAt = LocalDateTime.now();
         this.status = FeedbackStatus.ACCEPTED;
