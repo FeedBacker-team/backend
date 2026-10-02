@@ -147,7 +147,7 @@ public class FeedbackPost extends BaseTimeEntity {
     }
 
     public void complete(UUID memberId) {
-        validateCompleted();
+        validateNotCompleted();
         validateAccessAuth(memberId);
         status = FeedbackPostStatus.COMPLETED;
     }
@@ -170,13 +170,23 @@ public class FeedbackPost extends BaseTimeEntity {
         }
     }
 
-    /** 피드백 모집글의 상태가 '완료' 상태인지 검증
+    /** 이미 '완료'된 모집글이면 예외 (완료 처리·피드백 제출 시 사용)
+     * 통과 : '모집중', '모집마감' 상태
+     * 에러 : '완료' 상태
+     */
+    public void validateNotCompleted() {
+        if (this.status == FeedbackPostStatus.COMPLETED) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ALREADY_COMPLETED);
+        }
+    }
+
+    /** '완료'되지 않은 모집글이면 예외 (결과 조회 시 사용)
      * 통과 : '완료' 상태
-     * 애러 : '모집중', '모집마감' 상태
+     * 에러 : '모집중', '모집마감' 상태
      */
     public void validateCompleted() {
-        if (this.status == FeedbackPostStatus.COMPLETED) {
-            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
+        if (this.status != FeedbackPostStatus.COMPLETED) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_COMPLETED);
         }
     }
 
