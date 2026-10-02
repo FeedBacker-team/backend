@@ -74,9 +74,12 @@ public class FeedbackFacade {
 
     @Transactional
     public void accept(UUID memberId, UUID feedbackId) {
+        // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
+        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPostId();
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
         feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateNotCompleted();
         Member tester = memberService.getMember(feedback.getTesterId());
         Member writer = memberService.getMember(feedbackPost.getWriterId());
         feedback.accept(feedbackPost.getRewardAcorn());
@@ -91,9 +94,11 @@ public class FeedbackFacade {
 
     @Transactional
     public void reject(UUID memberId, FeedbackRejectRequest request, UUID feedbackId) {
+        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPostId();
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
         feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateNotCompleted();
         feedback.reject(request);
         // 이후 거부 사유 검증 로직 추가할 예정
     }

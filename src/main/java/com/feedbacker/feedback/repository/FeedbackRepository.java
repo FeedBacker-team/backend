@@ -1,6 +1,7 @@
 package com.feedbacker.feedback.repository;
 
 import com.feedbacker.feedback.domain.Feedback;
+import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -24,4 +25,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);
 
     List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
+
+    boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 }

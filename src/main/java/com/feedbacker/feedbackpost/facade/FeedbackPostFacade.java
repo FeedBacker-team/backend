@@ -99,7 +99,9 @@ public class FeedbackPostFacade {
     @Transactional
     public void complete(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        feedbackPost.validateAccessAuth(memberId);
         participationService.validateNoActiveParticipant(feedbackPost.getId());
+        feedbackService.validateNoWritingFeedback(feedbackPost.getId());
         feedbackPost.complete(memberId);
         int paidAcorn = acornHistoryService.combine(memberId, feedbackPost.getId());
         int refundAcorn = feedbackPost.getDepositAcorn() - paidAcorn;

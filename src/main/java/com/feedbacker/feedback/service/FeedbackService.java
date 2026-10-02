@@ -3,6 +3,7 @@ package com.feedbacker.feedback.service;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.QuestionAnswer;
 import com.feedbacker.feedback.domain.dto.response.*;
+import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -69,6 +70,13 @@ public class FeedbackService {
         return feedbackRepository
                 .findByFeedbackPostIdAndTesterId(feedbackPostId, memberId)
                 .orElse(null);
+    }
+
+    /** 작성 중(WRITING)인 피드백이 남아 있으면 예외 (모집글 완료 시 사용) */
+    public void validateNoWritingFeedback(UUID feedbackPostId) {
+        if (feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.WRITING)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_WRITING_FEEDBACK);
+        }
     }
 
     public void validateGetFeedback(
