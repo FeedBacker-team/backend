@@ -6,6 +6,7 @@ import com.feedbacker.feedback.domain.dto.request.FeedbackObjectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackSubmitRequest;
 import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
+import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
@@ -40,17 +41,17 @@ public class FeedbackFacade {
     private final AcornWalletService acornWalletService;
 
     @Transactional
-    public UUID submit(UUID memberId, FeedbackSubmitRequest request) {
+    public FeedbackSubmitResponse submit(UUID memberId, FeedbackSubmitRequest request) {
         Member tester = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(request.feedbackPostId());
         List<QuestionAnswer> answers = questionAnswerService.createAnswers(feedbackPost.getId(), request.questionAnswer());
         feedbackPostService.validateFeedbackSubmit(feedbackPost, tester.getId());
         participationService.validateFeedbackSubmit(feedbackPost.getId(), tester.getId());
-        return feedbackService.submit(
+        return new FeedbackSubmitResponse(feedbackService.submit(
                 feedbackPost,
                 tester,
                 answers
-        );
+        ));
     }
 
     @Transactional(readOnly = true)
