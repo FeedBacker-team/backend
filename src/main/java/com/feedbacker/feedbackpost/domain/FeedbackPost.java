@@ -129,10 +129,13 @@ public class FeedbackPost extends BaseTimeEntity {
 
     public void minusRemainSlotCount() {
         if (this.remainSlotCount <= 0) {
-            this.status = FeedbackPostStatus.CLOSED;
             return;
         }
         this.remainSlotCount--;
+        // 마지막 슬롯이 채워지면 모집마감으로
+        if (this.remainSlotCount == 0 && this.status == FeedbackPostStatus.RECRUITING) {
+            this.status = FeedbackPostStatus.CLOSED;
+        }
     }
 
     public void plusRemainSlotCount() {
@@ -167,6 +170,16 @@ public class FeedbackPost extends BaseTimeEntity {
     public void validateRecruiting() {
         if (this.status != FeedbackPostStatus.RECRUITING) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
+        }
+    }
+
+    /** 모집 기간(startAt <= now < endAt) 안인지 검증 (참여 시 사용) */
+    public void validateRecruitingPeriod(LocalDateTime now) {
+        if (now.isBefore(this.startAt)) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_STARTED);
+        }
+        if (!now.isBefore(this.endAt)) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_RECRUITMENT_ENDED);
         }
     }
 

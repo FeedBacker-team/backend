@@ -245,6 +245,7 @@ public class FeedbackPostService {
     public void validateParticipation(FeedbackPost feedbackPost, UUID memberId) {
         feedbackPost.validateIsWriter(memberId);
         feedbackPost.validateRecruiting();
+        feedbackPost.validateRecruitingPeriod(LocalDateTime.now());
     }
 
     public UUID save(FeedbackPost feedbackPost) {

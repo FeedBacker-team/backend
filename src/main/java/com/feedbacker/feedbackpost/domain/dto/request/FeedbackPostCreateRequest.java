@@ -13,6 +13,7 @@ import com.feedbacker.project.domain.ProjectTag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +47,6 @@ public record FeedbackPostCreateRequest(
         Integer rewardAcorn,
 
         @NotNull(message = "시작일은 값이 필수입니다.")
-        @FutureOrPresent(message = "시작일은 과거일 수 없습니다.")
         LocalDateTime startAt,
 
         @NotNull(message = "종료일은 값이 필수입니다.")
@@ -73,6 +73,9 @@ public record FeedbackPostCreateRequest(
 
 ) {
 
+    // 클라이언트-서버 간 네트워크 지연 및 시계 오차 허용 범위
+    private static final Duration START_AT_TOLERANCE = Duration.ofMinutes(5);
+
     @AssertTrue(message = "질문은 최소 1개 이상이어야 합니다.")
     @JsonIgnore
     public boolean isQuestionsNotEmpty() {
@@ -91,10 +94,17 @@ public record FeedbackPostCreateRequest(
         return orders.stream().distinct().count() == orders.size();
     }
 
-    @AssertTrue(message = "종료일은 시작일 이후여야 합니다.")
+    @AssertTrue(message = "시작일은 과거일 수 없습니다.")
+    @JsonIgnore
+    public boolean isStartAtValid() {
+        return startAt == null || !startAt.isBefore(LocalDateTime.now().minus(START_AT_TOLERANCE));
+    }
+
+    @AssertTrue(message = "종료일은 시작일 다음 날 이후여야 합니다.")
     @JsonIgnore
     public boolean isPeriodValid() {
-        return startAt == null || endAt == null || endAt.isAfter(startAt);
+        return startAt == null || endAt == null
+                || endAt.toLocalDate().isAfter(startAt.toLocalDate());
     }
 
     @AssertTrue(message = "도토리 예치 수를 슬롯 수로 나눈 값은 도토리 보상 수와 같아야 합니다.")
@@ -105,6 +115,12 @@ public record FeedbackPostCreateRequest(
         }
         return depositAcorn % slotCapacity == 0
                 && depositAcorn / slotCapacity == rewardAcorn;
+    }
+
+    // 허용 오차 내 과거 시각은 서버 기준 현재 시각으로 보정
+    private LocalDateTime resolveStartAt() {
+        LocalDateTime now = LocalDateTime.now();
+        return startAt.isBefore(now) ? now : startAt;
     }
 
     public FeedbackPost toEntity(Project project) {
@@ -136,7 +152,7 @@ public record FeedbackPostCreateRequest(
                 .remainSlotCount(this.slotCapacity)
                 .depositAcorn(this.depositAcorn)
                 .rewardAcorn(this.rewardAcorn)
-                .startAt(this.startAt)
+                .startAt(resolveStartAt())
                 .endAt(this.endAt)
                 .project(project)
                 .build();
