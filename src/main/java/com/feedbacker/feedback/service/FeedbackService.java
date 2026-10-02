@@ -14,6 +14,7 @@ import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -72,11 +73,19 @@ public class FeedbackService {
                 .orElse(null);
     }
 
-    /** 작성 중(WRITING)인 피드백이 남아 있으면 예외 (모집글 완료 시 사용) */
-    public void validateNoWritingFeedback(UUID feedbackPostId) {
-        if (feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.WRITING)) {
-            throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_WRITING_FEEDBACK);
+    /** 승인/거절하지 않은 제출 피드백(SUBMITTED)이 남아 있으면 예외 (모집글 완료 시 사용) */
+    public void validateNoSubmittedFeedback(UUID feedbackPostId) {
+        if (feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK);
         }
+    }
+
+    public List<UUID> getFeedbackPostIdsWithOverdueFeedback(LocalDateTime now) {
+        return feedbackRepository.findFeedbackPostIdsWithOverdue(FeedbackStatus.SUBMITTED, now);
+    }
+
+    public List<Feedback> getOverdueFeedbacksForUpdate(UUID feedbackPostId, LocalDateTime now) {
+        return feedbackRepository.findOverdueForUpdate(feedbackPostId, FeedbackStatus.SUBMITTED, now);
     }
 
     public void validateGetFeedback(

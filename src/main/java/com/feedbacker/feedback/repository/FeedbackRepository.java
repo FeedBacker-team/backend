@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,4 +28,21 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
 
     boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+
+    @Query("select distinct f.feedbackPostId from Feedback f "
+            + "where f.status = :status and f.responseDeadLineAt <= :now")
+    List<UUID> findFeedbackPostIdsWithOverdue(
+            @Param("status") FeedbackStatus status,
+            @Param("now") LocalDateTime now
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Feedback f "
+            + "where f.feedbackPostId = :feedbackPostId "
+            + "and f.status = :status and f.responseDeadLineAt <= :now")
+    List<Feedback> findOverdueForUpdate(
+            @Param("feedbackPostId") UUID feedbackPostId,
+            @Param("status") FeedbackStatus status,
+            @Param("now") LocalDateTime now
+    );
 }
