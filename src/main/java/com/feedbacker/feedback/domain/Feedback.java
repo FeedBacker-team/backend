@@ -6,7 +6,6 @@ import com.feedbacker.feedback.domain.type.RejectType;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.common.BaseTimeEntity;
-import com.feedbacker.global.common.CustomException;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
@@ -44,6 +43,7 @@ public class Feedback extends BaseTimeEntity {
     @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionAnswer> answers = new ArrayList<>();
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FeedbackStatus status;
@@ -59,7 +59,6 @@ public class Feedback extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String rejectDetail;
 
-    @Setter
     @Column(columnDefinition = "TEXT")
     private String objectReason;
 
@@ -68,6 +67,9 @@ public class Feedback extends BaseTimeEntity {
 
     @Column(nullable = false)
     private LocalDateTime expireAt;
+
+    @Column
+    private LocalDateTime responseDeadLineAt;
 
     @Column
     private LocalDateTime processedAt;
@@ -80,7 +82,6 @@ public class Feedback extends BaseTimeEntity {
             String postTitle,
             FeedbackStatus status,
             LocalDateTime submitAt,
-            LocalDateTime expireAt,
             List<QuestionAnswer> answers
     ) {
         this.feedbackPostId = feedbackPostId;
@@ -89,7 +90,8 @@ public class Feedback extends BaseTimeEntity {
         this.postTitle = postTitle;
         this.status = status != null ? status : FeedbackStatus.SUBMITTED;
         this.submitAt = submitAt != null ? submitAt : LocalDateTime.now();
-        this.expireAt = expireAt != null ? expireAt : this.submitAt.plusDays(100);
+        this.expireAt = this.submitAt.plusHours(24);
+        this.responseDeadLineAt = this.submitAt.plusHours(72);
 
         if (answers != null) {
             answers.forEach(this::addAnswer);
@@ -118,8 +120,13 @@ public class Feedback extends BaseTimeEntity {
     }
 
     public void accept(Integer rewardAcorn) {
+        // 피드백이 '제출'상태가 아닌지 검증
         if (this.status != FeedbackStatus.SUBMITTED) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
+        // 응답 기한이 지났는지 검증
+        if (this.responseDeadLineAt.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_PROCESS_EXPIRED);
         }
         this.rewardAcorn = rewardAcorn;
         this.processedAt = LocalDateTime.now();
@@ -127,12 +134,38 @@ public class Feedback extends BaseTimeEntity {
     }
 
     public void reject(FeedbackRejectRequest request) {
+        // 피드백이 '제출'상태가 아닌지 검증
         if (this.status != FeedbackStatus.SUBMITTED) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
         }
+        // 응답 기한이 지났는지 검증
+        if (this.responseDeadLineAt.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_PROCESS_EXPIRED);
+        }
+        // '거절 사유' 텍스트 앞뒤 공백 제거후 글자수 검증
+        String cleaned = request.rejectDetail().strip();
+        if (cleaned.length() < 100) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_REJECT_DETAIL_TOO_SHORT);
+        }
         this.rejectType = request.rejectType();
-        this.rejectDetail = request.rejectDetail();
+        this.rejectDetail = cleaned;
         this.processedAt = LocalDateTime.now();
         this.status = FeedbackStatus.REJECTED;
+    }
+
+    public void object(UUID memberId, String objectReason) {
+        // 피드백 작성자인지 검증
+        if (!this.testerId.equals(memberId)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
+        }
+        // 피드백 상태가 '거절'상태가 아닌지 검증
+        if (this.status != FeedbackStatus.REJECTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_REJECTED);
+        }
+        // 이전에 이의제기를 작성했는지 검증
+        if (this.objectReason != null) {
+            throw new BusinessException(FeedbackErrorCode.OBJECTION_ALREADY_SUBMITTED);
+        }
+        this.objectReason = objectReason;
     }
 }

@@ -42,14 +42,14 @@ public class FeedbackPostController {
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody FeedbackPostCreateRequest request
     ) {
-        return feedbackPostFacade.create(user, request);
+        return feedbackPostFacade.create(user.getMemberId(), request);
     }
 
     @GetMapping("/mine")
     public List<FeedbackSimpleResponse> getMine(
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        return feedbackPostService.getMine(user);
+        return feedbackPostService.getMine(user.getMemberId());
     }
 
     @GetMapping("/{feedbackPostId}")
@@ -66,7 +66,15 @@ public class FeedbackPostController {
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
-        feedbackPostFacade.participate(user, feedbackPostId);
+        feedbackPostFacade.participate(user.getMemberId(), feedbackPostId);
+    }
+
+    @PatchMapping("/{feedbackPostId}/giveup")
+    public void giveUp(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID feedbackPostId
+    ) {
+        feedbackPostFacade.giveUp(user.getMemberId(), feedbackPostId);
     }
 
     @GetMapping("/{feedbackPostId}/form")
@@ -81,7 +89,7 @@ public class FeedbackPostController {
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
-        return feedbackPostFacade.getFeedbacks(user, feedbackPostId);
+        return feedbackPostFacade.getFeedbacks(user.getMemberId(), feedbackPostId);
     }
 
     @PatchMapping("/{feedbackPostId}/complete")

@@ -35,30 +35,41 @@ public class QuestionAnswerResponseMapper {
 
         for (Question question : questions) {
             QuestionAnswer answer = answerMap.get(question.getId());
+            List<ImageResponse> answerImages = answer == null
+                    ? List.of()
+                    : imageService.toResponses(answer.getImages());
             List<ImageResponse> images = Stream.concat(
                     imageService.toResponses(question.getImages()).stream(),
-                    imageService.toResponses(answer.getImages()).stream()
+                    answerImages.stream()
             ).toList();
 
             if (question.getQuestionType() == QuestionType.CHOICE) {
                 choices.add(new ChoiceQuestionAnswerResponse(
                         question.getOrder(),
                         question.getQuestionText(),
-                        question.getOptionTexts(),
-                        question.getOptionTexts().size(),
-                        answer == null ? null : answer.getSelectedOption(),
+                        List.copyOf(question.getOptionTexts()),
+                        List.copyOf(question.getOptionTexts()).size(),
+                        answer == null ? null : normalizeSelectedOption(answer.getSelectedOption()),
                         images
                 ));
             } else {
                 subjectives.add(new SubjectiveQuestionAnswerResponse(
                         question.getOrder(),
                         question.getQuestionText(),
-                        answer == null ? null : answer.getSubjectiveAnswer(),
+                        answer == null ? null : normalizeText(answer.getSubjectiveAnswer()),
                         images
                 ));
             }
         }
 
         return new QuestionAnswerResponse(choices, subjectives);
+    }
+
+    private List<Integer> normalizeSelectedOption(List<Integer> selectedOption) {
+        return selectedOption == null || selectedOption.isEmpty() ? null : selectedOption;
+    }
+
+    private String normalizeText(String text) {
+        return text == null || text.isBlank() ? null : text;
     }
 }

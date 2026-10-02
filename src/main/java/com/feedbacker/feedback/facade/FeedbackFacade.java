@@ -40,8 +40,8 @@ public class FeedbackFacade {
     private final AcornWalletService acornWalletService;
 
     @Transactional
-    public UUID submit(CustomUserDetails user, FeedbackSubmitRequest request) {
-        Member tester = memberService.getMember(user.getMemberId());
+    public UUID submit(UUID memberId, FeedbackSubmitRequest request) {
+        Member tester = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(request.feedbackPostId());
         List<QuestionAnswer> answers = questionAnswerService.createAnswers(feedbackPost.getId(), request.questionAnswer());
         feedbackPostService.validateFeedbackSubmit(feedbackPost, tester.getId());
@@ -54,7 +54,7 @@ public class FeedbackFacade {
     }
 
     @Transactional(readOnly = true)
-    public FeedbackDetailResponse getDetail(CustomUserDetails user, UUID feedbackId) {
+    public FeedbackDetailResponse getDetail(UUID memberId, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
         Member tester = memberService.getMember(feedback.getTesterId());
@@ -63,7 +63,7 @@ public class FeedbackFacade {
                 questionService.getAllQuestion(feedbackPost.getId()),
                 questionAnswerService.getAllQuestionAnswer(feedback.getId())
         );
-        feedbackService.validateGetFeedback(user.getMemberId(), feedback, feedbackPost);
+        feedbackService.validateGetFeedback(memberId, feedback, feedbackPost);
         return FeedbackDetailResponse.from(
                 feedbackPost,
                 feedback,
@@ -73,10 +73,10 @@ public class FeedbackFacade {
     }
 
     @Transactional
-    public void accept(CustomUserDetails user, UUID feedbackId) {
+    public void accept(UUID memberId, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        feedbackPost.validateAccessAuth(user.getMemberId());
+        feedbackPost.validateAccessAuth(memberId);
         Member tester = memberService.getMember(feedback.getTesterId());
         Member writer = memberService.getMember(feedbackPost.getWriterId());
         feedback.accept(feedbackPost.getRewardAcorn());
@@ -90,20 +90,18 @@ public class FeedbackFacade {
     }
 
     @Transactional
-    public void reject(CustomUserDetails user, FeedbackRejectRequest request, UUID feedbackId) {
+    public void reject(UUID memberId, FeedbackRejectRequest request, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        feedbackPost.validateAccessAuth(user.getMemberId());
+        feedbackPost.validateAccessAuth(memberId);
         feedback.reject(request);
         // 이후 거부 사유 검증 로직 추가할 예정
     }
 
     @Transactional
-    public void object(CustomUserDetails user, FeedbackObjectRequest request, UUID feedbackId) {
-        Feedback feedback = feedbackService.getFeedback(feedbackId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        feedbackPost.validateAccessAuth(user.getMemberId());
-        feedback.setObjectReason(request.objectReason());
+    public void object(UUID memberId, FeedbackObjectRequest request, UUID feedbackId) {
+        Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
+        feedback.object(memberId, request.objectReason());
         // 이후 어드민에 이의제기 신청 알림 추가할 예정
     }
 }

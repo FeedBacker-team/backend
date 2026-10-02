@@ -7,6 +7,7 @@ import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
+import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostResultResponse;
@@ -46,8 +47,8 @@ public class FeedbackPostFacade {
     private final QuestionService questionService;
 
     @Transactional
-    public UUID create(CustomUserDetails user, FeedbackPostCreateRequest request) {
-        Member member = memberService.getMember(user.getMemberId());
+    public UUID create(UUID memberId, FeedbackPostCreateRequest request) {
+        Member member = memberService.getMember(memberId);
         Project project = projectService.getProject(request.projectId());
         project.validateOwner(member.getId());
         projectService.validateHasFeedbackPost(project.getId());
@@ -59,54 +60,62 @@ public class FeedbackPostFacade {
     public FeedbackPostDetailResponse getDetail(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         Feedback feedback = memberId == null ? null : feedbackService.findMyFeedback(feedbackPostId, memberId);
+
+        Participation participation = memberId == null ? null
+                : participationService.findParticipation(feedbackPostId, memberId).orElse(null);
+
         return FeedbackPostDetailResponse.from(
                 feedback,
+                participation,
                 feedbackPost,
                 imageService.toResponses(feedbackPost.getImages())
         );
     }
 
     @Transactional
-    public void participate(CustomUserDetails user, UUID feedbackPostId) {
-        Member member = memberService.getMember(user.getMemberId());
+    public void participate(UUID memberId, UUID feedbackPostId) {
+        Member member = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         feedbackPostService.validateParticipation(feedbackPost, member.getId());
+        participationService.validateAlreadyParticipate(feedbackPostId, memberId);
         participationService.createParticipation(feedbackPost, member);
         feedbackPost.minusRemainSlotCount();
     }
 
+    @Transactional
+    public void giveUp(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        participationService.giveUp(feedbackPost.getId(), memberId);
+        feedbackPost.plusRemainSlotCount();
+    }
+
     @Transactional(readOnly = true)
-    public List<FeedbackProgressResponse> getFeedbacks(CustomUserDetails user, UUID feedbackPostId) {
+    public List<FeedbackProgressResponse> getFeedbacks(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
-        feedbackPost.validateAccessAuth(user.getMemberId());
+        feedbackPost.validateAccessAuth(memberId);
         return feedbackService.getFeedbackProgress(feedbackPost.getId());
     }
 
     @Transactional
     public void complete(UUID memberId, UUID feedbackPostId) {
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
-        feedbackPost.validateIsWriter(memberId);
-        //acornHistoryService.combine(memberId, feedbackPost.getId());
-        feedbackPost.complete();
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        participationService.validateNoActiveParticipant(feedbackPost.getId());
+        feedbackPost.complete(memberId);
+        int paidAcorn = acornHistoryService.combine(memberId, feedbackPost.getId());
+        int refundAcorn = feedbackPost.getDepositAcorn() - paidAcorn;
+        if (refundAcorn > 0) {
+            acornWalletService.earn(memberId, refundAcorn);
+        }
     }
-
 
     @Transactional(readOnly = true)
     public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
         List<Feedback> feedbacks = feedbackService.getAllFeedbacks(feedbackPostId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
+        feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateCompleted();
         List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
-        List<FeedbackResultResponse> feedbackResults = feedbacks.stream()
-                .map(feedback -> {
-                    QuestionAnswerResponse questionAnswer =
-                            questionAnswerService.toResponse(
-                                    questionService.getAllQuestion(feedbackPost.getId()),
-                                    questionAnswerService.getAllQuestionAnswer(feedback.getId())
-                            );
-
-                    return FeedbackResultResponse.from(feedback, questionAnswer);
-                })
-                .toList();
+        List<FeedbackResultResponse> feedbackResults = questionAnswerService.getFeedbackResults(feedbacks, feedbackPost);
         AcornHistoryResponse acornHistory = acornHistoryService.getAcronHistoryByFeedbackPost(
                 memberId,
                 feedbackPost.getId()

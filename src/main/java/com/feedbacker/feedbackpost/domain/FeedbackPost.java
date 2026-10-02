@@ -62,6 +62,7 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer slotCapacity;
 
+    @Setter
     @Column(nullable = false)
     private Integer remainSlotCount;
 
@@ -127,17 +128,27 @@ public class FeedbackPost extends BaseTimeEntity {
     }
 
     public void minusRemainSlotCount() {
-        this.remainSlotCount--;
         if (this.remainSlotCount <= 0) {
             this.status = FeedbackPostStatus.CLOSED;
+            return;
+        }
+        this.remainSlotCount--;
+    }
+
+    public void plusRemainSlotCount() {
+        if (this.remainSlotCount >= this.slotCapacity) {
+            return;
+        }
+        this.remainSlotCount++;
+        // 슬롯이 꽉 차서 마감됐던 글이면 다시 모집중으로
+        if (this.status == FeedbackPostStatus.CLOSED && LocalDateTime.now().isBefore(this.endAt)) {
+            this.status = FeedbackPostStatus.RECRUITING;
         }
     }
 
-    public void complete() {
-        if (status != FeedbackPostStatus.RECRUITING) {
-            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
-        }
-
+    public void complete(UUID memberId) {
+        validateCompleted();
+        validateAccessAuth(memberId);
         status = FeedbackPostStatus.COMPLETED;
     }
 
@@ -159,6 +170,10 @@ public class FeedbackPost extends BaseTimeEntity {
         }
     }
 
+    /** 피드백 모집글의 상태가 '완료' 상태인지 검증
+     * 통과 : '완료' 상태
+     * 애러 : '모집중', '모집마감' 상태
+     */
     public void validateCompleted() {
         if (this.status == FeedbackPostStatus.COMPLETED) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);

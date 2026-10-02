@@ -35,8 +35,8 @@ public class FeedbackService {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedbackResponse> getMine(CustomUserDetails user) {
-        List<Feedback> feedbacks = feedbackRepository.findAllByTesterId(user.getMemberId());
+    public List<FeedbackResponse> getMine(UUID memberId) {
+        List<Feedback> feedbacks = feedbackRepository.findAllByTesterId(memberId);
         return FeedbackResponse.fromAll(feedbacks);
     }
 
