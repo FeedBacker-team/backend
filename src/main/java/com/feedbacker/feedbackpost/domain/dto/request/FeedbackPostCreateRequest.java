@@ -81,6 +81,16 @@ public record FeedbackPostCreateRequest(
         return choice + subjective >= 1;
     }
 
+    @AssertTrue(message = "질문 순서는 객관식과 주관식을 통틀어 중복될 수 없습니다.")
+    @JsonIgnore
+    public boolean isQuestionOrderUnique() {
+        List<Integer> orders = Stream.concat(
+                Stream.ofNullable(choiceQuestions).flatMap(List::stream).map(ChoiceQuestionCreateRequest::order),
+                Stream.ofNullable(subjectiveQuestions).flatMap(List::stream).map(SubjectiveQuestionCreateRequest::order)
+        ).filter(java.util.Objects::nonNull).toList();
+        return orders.stream().distinct().count() == orders.size();
+    }
+
     @AssertTrue(message = "종료일은 시작일 이후여야 합니다.")
     @JsonIgnore
     public boolean isPeriodValid() {
