@@ -30,6 +30,9 @@ public record ProjectDetailResponse(
         @JsonProperty("owner_nickname")
         String ownerNickname,
 
+        @JsonProperty("profile_image_path")
+        String profileImagePath,
+
         @JsonProperty("view_count")
         long viewCount,
 
@@ -68,6 +71,7 @@ public record ProjectDetailResponse(
                 thumbnailImageUrl,
                 ownerId,
                 project.getOwner().getNickname(),
+                project.getOwner().getProfileImage(),
                 project.getViewCount(),
                 project.getCreatedAt(),
                 project.getUpdatedAt(),
