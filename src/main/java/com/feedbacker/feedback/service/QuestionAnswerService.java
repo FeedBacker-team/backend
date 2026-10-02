@@ -12,10 +12,11 @@ import com.feedbacker.feedback.service.mapper.QuestionAnswerResponseMapper;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Question;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
+import com.feedbacker.feedbackpost.domain.type.ImageType;
 import com.feedbacker.feedbackpost.domain.type.QuestionType;
 import com.feedbacker.feedbackpost.repository.QuestionRepository;
 import com.feedbacker.feedbackpost.service.QuestionService;
-import com.feedbacker.global.image.ImageRequest;
+import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -84,7 +85,7 @@ public class QuestionAnswerService {
             answers.add(QuestionAnswer.builder()
                     .questionId(question.getId())
                     .questionOrder(question.getOrder())
-                    .images(answer.images().stream().map(ImageRequest::toImageInfo).toList())
+                    .images(List.of())
                     .selectedOption(selected.isEmpty() ? null : selected)
                     .build());
         }
@@ -112,7 +113,9 @@ public class QuestionAnswerService {
                     .questionId(question.getId())
                     .questionOrder(question.getOrder())
                     .subjectiveAnswer(hasAnswer ? text : null)
-                    .images(List.of())
+                    .images(answer.images().stream()
+                            .map(image -> new ImageInfo(ImageType.ANSWER, image.order(), image.path()))
+                            .toList())
                     .build());
         }
 
