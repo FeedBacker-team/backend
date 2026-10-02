@@ -45,10 +45,9 @@ public class FeedbackFacade {
     @Transactional
     public FeedbackSubmitResponse submit(UUID memberId, FeedbackSubmitRequest request) {
         Member tester = memberService.getMember(memberId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(request.feedbackPostId());
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(request.feedbackPostId());
         List<QuestionAnswer> answers = questionAnswerService.createAnswers(feedbackPost.getId(), request.questionAnswer());
         feedbackPostService.validateFeedbackSubmit(feedbackPost, tester.getId());
-        participationService.validateFeedbackSubmit(feedbackPost.getId(), tester.getId());
         return new FeedbackSubmitResponse(feedbackService.submit(
                 feedbackPost,
                 tester,

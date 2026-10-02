@@ -109,30 +109,19 @@ public class Feedback extends BaseTimeEntity {
     ) {
         this.tester = tester;
         this.feedbackPost = feedbackPost;
-        this.status = FeedbackStatus.SUBMITTED;
+        this.status = FeedbackStatus.WRITING;
         this.participateAt = LocalDateTime.now();
         this.expireAt = this.participateAt.plusHours(SUBMISSION_LIMIT_HOURS);
-
-        if (answers != null) {
-            answers.forEach(this::addAnswer);
-        }
     }
 
     public static Feedback create(
             FeedbackPost feedbackPost,
-            Member tester,
-            List<QuestionAnswer> answers
+            Member tester
     ) {
         return Feedback.builder()
                 .tester(tester)
                 .feedbackPost(feedbackPost)
-                .answers(answers)
                 .build();
-    }
-
-    private void addAnswer(QuestionAnswer answer) {
-        this.answers.add(answer);
-        answer.setFeedback(this);
     }
 
     public void accept(Integer rewardAcorn) {
@@ -195,5 +184,31 @@ public class Feedback extends BaseTimeEntity {
             throw new BusinessException(FeedbackErrorCode.OBJECTION_ALREADY_SUBMITTED);
         }
         this.objectReason = objectReason;
+    }
+
+    public void submit(List<QuestionAnswer> answers) {
+        LocalDateTime now = LocalDateTime.now();
+        validateSubmittable(now);
+        answers.forEach(this::addAnswer);
+        this.status = FeedbackStatus.SUBMITTED;
+        this.submitAt = now;
+        this.responseDeadLineAt = now.plusHours(RESPONSE_LIMIT_HOURS);
+    }
+
+    public void addAnswer(QuestionAnswer answer) {
+        this.answers.add(answer);
+        answer.setFeedback(this);
+    }
+
+    private void validateSubmittable(LocalDateTime now) {
+        switch (this.status) {
+            case WRITING -> { }
+            case SUBMITTED, ACCEPTED, REJECTED -> throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_SUBMITTED);
+            case CANCELED -> throw new BusinessException(FeedbackErrorCode.ABANDONED_PARTICIPATION);
+            case EXPIRED -> throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+        }
+        if (!now.isBefore(this.expireAt)) {
+            throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+        }
     }
 }

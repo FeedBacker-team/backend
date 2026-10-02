@@ -30,10 +30,17 @@ public class FeedbackService {
             Member tester,
             List<QuestionAnswer> answers
     ) {
-        Feedback savedFeedback = feedbackRepository.save(
-                Feedback.create(feedbackPost, tester, answers)
-        );
-        return savedFeedback.getId();
+        Feedback feedback = feedbackRepository
+                .findByFeedbackPostIdAndTesterIdForUpdate(feedbackPost.getId(), tester.getId())
+                .orElseThrow(() -> new BusinessException(FeedbackErrorCode.PARTICIPATION_NOT_FOUND));
+        feedback.submit(answers);
+        return feedback.getId();
+    }
+
+    @Transactional
+    public void participate(FeedbackPost feedbackPost, Member tester) {
+        validateAlreadyParticipate(feedbackPost.getId(), tester.getId());
+        feedbackRepository.save(Feedback.create(feedbackPost, tester));
     }
 
     @Transactional(readOnly = true)
@@ -97,6 +104,23 @@ public class FeedbackService {
                 && !memberId.equals(feedbackPost.getWriterId())) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
+    }
+
+    /** 해당 피드백 모집글에 이미 참여했는지 검사 */
+    private void validateAlreadyParticipate(UUID feedbackPostId, UUID testerId) {
+        feedbackRepository.findByFeedbackPostIdAndTesterId(feedbackPostId, testerId)
+                .ifPresent(feedback -> {
+                    throw new BusinessException(toAlreadyParticipatedError(feedback.getStatus()));
+                });
+    }
+
+    private FeedbackErrorCode toAlreadyParticipatedError(FeedbackStatus status) {
+        return switch (status) {
+            case WRITING -> FeedbackErrorCode.ALREADY_RESERVED;
+            case SUBMITTED, ACCEPTED, REJECTED -> FeedbackErrorCode.ALREADY_PARTICIPATED;
+            case CANCELED -> FeedbackErrorCode.ABANDONED_PARTICIPATION;
+            case EXPIRED -> FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED;
+        };
     }
 
 }

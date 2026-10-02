@@ -129,10 +129,9 @@ public class FeedbackPost extends BaseTimeEntity {
 
     public void minusRemainSlotCount() {
         if (this.remainSlotCount <= 0) {
-            return;
+            throw new BusinessException(FeedbackPostErrorCode.SLOT_FULL);
         }
         this.remainSlotCount--;
-        // 마지막 슬롯이 채워지면 모집마감으로
         if (this.remainSlotCount == 0 && this.status == FeedbackPostStatus.RECRUITING) {
             this.status = FeedbackPostStatus.CLOSED;
         }

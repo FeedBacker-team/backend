@@ -27,7 +27,12 @@ public enum FeedbackErrorCode implements ErrorCode {
     FEEDBACK_NOT_REJECTED(HttpStatus.CONFLICT, "거절된 피드백만 이의제기할 수 있습니다."),
     OBJECTION_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 이의제기를 신청한 피드백입니다."),
     FEEDBACK_REJECT_DETAIL_TOO_SHORT(HttpStatus.BAD_REQUEST, "거부 사유의 글자수가 맞지 않습니다."),
-    FEEDBACK_PROCESS_EXPIRED(HttpStatus.BAD_REQUEST, "피드백 처리 기한이 지났습니다.");
+    FEEDBACK_PROCESS_EXPIRED(HttpStatus.BAD_REQUEST, "피드백 처리 기한이 지났습니다."),
+    ALREADY_PARTICIPATED(HttpStatus.CONFLICT, "이미 참여한 게시글입니다."),
+    ALREADY_RESERVED(HttpStatus.CONFLICT, "이미 신청한 게시글입니다. 작성 중인 피드백을 이어서 진행해주세요."),
+    ABANDONED_PARTICIPATION(HttpStatus.CONFLICT, "참여를 포기한 게시글에는 다시 참여할 수 없습니다."),
+    SUBMISSION_DEADLINE_EXPIRED(HttpStatus.CONFLICT, "피드백 제출 기한이 만료되었습니다."),
+    PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND, "참여 정보를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

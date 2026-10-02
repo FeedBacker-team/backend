@@ -78,9 +78,8 @@ public class FeedbackPostFacade {
         Member member = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         feedbackPostService.validateParticipation(feedbackPost, member.getId());
-        participationService.validateAlreadyParticipate(feedbackPostId, memberId);
-        participationService.createParticipation(feedbackPost, member);
         feedbackPost.minusRemainSlotCount();
+        feedbackService.participate(feedbackPost, member);
     }
 
     @Transactional

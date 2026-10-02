@@ -25,11 +25,18 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
     Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Feedback f where f.feedbackPost.id = :feedbackPostId and f.tester.id = :testerId")
+    Optional<Feedback> findByFeedbackPostIdAndTesterIdForUpdate(
+            @Param("feedbackPostId") UUID feedbackPostId,
+            @Param("testerId") UUID testerId
+    );
+
     List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
 
     boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
-    @Query("select distinct f.feedbackPostId from Feedback f "
+    @Query("select distinct f.feedbackPost.id from Feedback f "
             + "where f.status = :status and f.responseDeadLineAt <= :now")
     List<UUID> findFeedbackPostIdsWithOverdue(
             @Param("status") FeedbackStatus status,
@@ -38,7 +45,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Feedback f "
-            + "where f.feedbackPostId = :feedbackPostId "
+            + "where f.feedbackPost.id = :feedbackPostId "
             + "and f.status = :status and f.responseDeadLineAt <= :now")
     List<Feedback> findOverdueForUpdate(
             @Param("feedbackPostId") UUID feedbackPostId,
