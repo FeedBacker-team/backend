@@ -135,7 +135,7 @@ public record FeedbackPostCreateRequest(
                 .map(ImageRequest::toImageInfo)
                 .collect(Collectors.toCollection(ArrayList::new));
         newImages.add(
-                new ImageInfo(ImageType.POST_THUMBNAIL, 1, project.getThumbnailImage())
+                new ImageInfo(ImageType.POST_THUMBNAIL, 0, project.getThumbnailImage())
         );
 
         return FeedbackPost.builder()
