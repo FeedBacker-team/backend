@@ -135,6 +135,17 @@ public class FeedbackPost extends BaseTimeEntity {
         this.remainSlotCount--;
     }
 
+    public void plusRemainSlotCount() {
+        if (this.remainSlotCount >= this.slotCapacity) {
+            return;
+        }
+        this.remainSlotCount++;
+        // 슬롯이 꽉 차서 마감됐던 글이면 다시 모집중으로
+        if (this.status == FeedbackPostStatus.CLOSED && LocalDateTime.now().isBefore(this.endAt)) {
+            this.status = FeedbackPostStatus.RECRUITING;
+        }
+    }
+
     public void complete(UUID memberId) {
         validateCompleted();
         validateAccessAuth(memberId);

@@ -3,11 +3,11 @@ package com.feedbacker.feedbackpost.facade;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
-import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
+import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostResultResponse;
@@ -61,17 +61,14 @@ public class FeedbackPostFacade {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         Feedback feedback = memberId == null ? null : feedbackService.findMyFeedback(feedbackPostId, memberId);
 
-        // 수정 예정
-        FeedbackStatus feedbackStatus = null;
-        if (participationService.isWriting(feedbackPost.getId(), memberId)) {
-            feedbackStatus = FeedbackStatus.WRITING;
-        }
+        Participation participation = memberId == null ? null
+                : participationService.findParticipation(feedbackPostId, memberId).orElse(null);
 
         return FeedbackPostDetailResponse.from(
                 feedback,
+                participation,
                 feedbackPost,
-                imageService.toResponses(feedbackPost.getImages()),
-                feedbackStatus
+                imageService.toResponses(feedbackPost.getImages())
         );
     }
 
@@ -83,6 +80,13 @@ public class FeedbackPostFacade {
         participationService.validateAlreadyParticipate(feedbackPostId, memberId);
         participationService.createParticipation(feedbackPost, member);
         feedbackPost.minusRemainSlotCount();
+    }
+
+    @Transactional
+    public void giveUp(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        participationService.giveUp(feedbackPost.getId(), memberId);
+        feedbackPost.plusRemainSlotCount();
     }
 
     @Transactional(readOnly = true)

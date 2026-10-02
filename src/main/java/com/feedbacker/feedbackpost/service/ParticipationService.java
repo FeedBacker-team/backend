@@ -91,6 +91,22 @@ public class ParticipationService {
                 .orElseThrow(() -> new BusinessException(ParticipationErrorCode.PARTICIPATION_NOT_FOUND));
     }
 
+    public Optional<Participation> findParticipation(UUID feedbackPostId, UUID testerId) {
+        return participationRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId);
+    }
+
+    public void giveUp(UUID feedbackPostId, UUID testerId) {
+        Participation participation = getParticipation(feedbackPostId, testerId);
+        LocalDateTime now = LocalDateTime.now();
+        if (!participation.isReserved()) {
+            throw new BusinessException(ParticipationErrorCode.CANNOT_GIVE_UP);
+        }
+        if (participation.isDeadlineReached(now)) {
+            throw new BusinessException(ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+        }
+        participation.abandon(now);
+    }
+
     @Transactional
     public int expireOverdueParticipations() {
         LocalDateTime now = LocalDateTime.now();

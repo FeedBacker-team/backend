@@ -69,6 +69,14 @@ public class FeedbackPostController {
         feedbackPostFacade.participate(user.getMemberId(), feedbackPostId);
     }
 
+    @PatchMapping("/{feedbackPostId}/giveup")
+    public void giveUp(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable UUID feedbackPostId
+    ) {
+        feedbackPostFacade.giveUp(user.getMemberId(), feedbackPostId);
+    }
+
     @GetMapping("/{feedbackPostId}/form")
     public FeedbackFormResponse getForm(
             @PathVariable UUID feedbackPostId

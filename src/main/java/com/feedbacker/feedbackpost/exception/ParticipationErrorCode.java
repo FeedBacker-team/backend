@@ -13,6 +13,7 @@ public enum ParticipationErrorCode implements ErrorCode {
     SLOT_FULL(HttpStatus.CONFLICT, "참여 가능한 슬롯이 없습니다."),
     ALREADY_PARTICIPATED(HttpStatus.CONFLICT, "이미 참여한 게시글입니다."),
     ALREADY_RESERVED(HttpStatus.CONFLICT, "이미 신청한 게시글입니다. 작성 중인 피드백을 이어서 진행해주세요."),
+    CANNOT_GIVE_UP(HttpStatus.CONFLICT, "작성 중인 피드백만 포기할 수 있습니다."),
     ABANDONED_PARTICIPATION(HttpStatus.CONFLICT, "참여를 포기한 게시글에는 다시 참여할 수 없습니다."),
     SELF_PARTICIPATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "본인 게시글에는 참여할 수 없습니다."),
     SUBMISSION_DEADLINE_EXPIRED(HttpStatus.CONFLICT, "피드백 제출 기한이 만료되었습니다."),
