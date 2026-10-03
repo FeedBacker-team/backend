@@ -239,9 +239,14 @@ public class FeedbackPostService {
                 .collect(Collectors.toMap(FeedbackPost::getId, Function.identity()));
     }
 
+    /** 모집글 썸네일. 썸네일 이미지가 없으면 null */
+    public ImageResponse getThumbnail(FeedbackPost feedbackPost) {
+        return imageService.toThumbnailResponse(feedbackPost.getImages());
+    }
+
     /** 모집글 썸네일의 공개 URL. 썸네일 이미지가 없으면 null */
     public String getThumbnailUrl(FeedbackPost feedbackPost) {
-        ImageResponse thumbnail = imageService.toThumbnailResponse(feedbackPost.getImages());
+        ImageResponse thumbnail = getThumbnail(feedbackPost);
         return thumbnail != null ? thumbnail.url() : null;
     }
 

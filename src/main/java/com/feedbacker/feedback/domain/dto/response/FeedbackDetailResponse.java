@@ -5,6 +5,7 @@ import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.domain.type.RejectType;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
+import com.feedbacker.global.image.ImageResponse;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +16,9 @@ public record FeedbackDetailResponse(
         int rewardAcorn,
         RejectType rejectType,
         String rejectDetail,
+        ImageResponse thumbnail,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
         LocalDateTime participateAt,
         LocalDateTime submitAt,
         LocalDateTime responseDeadlineAt,
@@ -24,6 +28,7 @@ public record FeedbackDetailResponse(
     public static FeedbackDetailResponse from(
             FeedbackPost feedbackPost,
             Feedback feedback,
+            ImageResponse thumbnail,
             QuestionAnswerResponse questionAnswerResponses
     ) {
         return new FeedbackDetailResponse(
@@ -33,6 +38,9 @@ public record FeedbackDetailResponse(
                 feedbackPost.getRewardAcorn(),
                 feedback.getRejectType(),
                 feedback.getRejectDetail(),
+                thumbnail,
+                feedbackPost.getStartAt(),
+                feedbackPost.getEndAt(),
                 feedback.getParticipateAt(),
                 feedback.getSubmitAt(),
                 feedback.getResponseDeadLineAt(),

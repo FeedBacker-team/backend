@@ -88,6 +88,7 @@ public class FeedbackFacade {
         return FeedbackDetailResponse.from(
                 feedbackPost,
                 feedback,
+                feedbackPostService.getThumbnail(feedbackPost),
                 questionAnswerResponse
         );
     }
