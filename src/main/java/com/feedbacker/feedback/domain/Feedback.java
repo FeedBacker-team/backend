@@ -75,11 +75,12 @@ public class Feedback extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String rejectDetail;
 
-    /** 거부를 이의제기 할 시 상세 사유 */
+    /** 거부를 이의제기 할 시 유형 */
     @Enumerated(EnumType.STRING)
     @Column
     private ObjectType objectType;
 
+    /** 거부를 이의제기 할 시 상세 사유 */
     @Column(columnDefinition = "TEXT")
     private String objectReason;
 
@@ -202,7 +203,7 @@ public class Feedback extends BaseTimeEntity {
         this.responseDeadLineAt = now.plusHours(RESPONSE_LIMIT_HOURS);
     }
 
-    public void addAnswer(QuestionAnswer answer) {
+    private void addAnswer(QuestionAnswer answer) {
         this.answers.add(answer);
         answer.setFeedback(this);
     }
@@ -217,5 +218,17 @@ public class Feedback extends BaseTimeEntity {
         if (!now.isBefore(this.expireAt)) {
             throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
         }
+    }
+
+    public void cancel() {
+        LocalDateTime now = LocalDateTime.now();
+        if (this.status != FeedbackStatus.WRITING) {
+            throw new BusinessException(FeedbackErrorCode.CANNOT_GIVE_UP);
+        }
+        if (!now.isBefore(this.expireAt)) {
+            throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+        }
+        this.status = FeedbackStatus.CANCELED;
+        this.cancelAt = now;
     }
 }

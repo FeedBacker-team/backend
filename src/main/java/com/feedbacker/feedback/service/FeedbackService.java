@@ -122,4 +122,9 @@ public class FeedbackService {
         };
     }
 
+    public void giveUp(UUID feedbackPostId, UUID memberId) {
+        Feedback feedback = feedbackRepository.findByFeedbackPostIdAndTesterIdForUpdate(feedbackPostId, memberId)
+                .orElseThrow(() -> new BusinessException(FeedbackErrorCode.PARTICIPATION_NOT_FOUND));
+        feedback.cancel();
+    }
 }

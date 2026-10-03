@@ -89,7 +89,7 @@ public class FeedbackPostFacade {
     @Transactional
     public void giveUp(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
-        participationService.giveUp(feedbackPost.getId(), memberId);
+        feedbackService.giveUp(feedbackPost.getId(), memberId);
         feedbackPost.plusRemainSlotCount();
     }
 
