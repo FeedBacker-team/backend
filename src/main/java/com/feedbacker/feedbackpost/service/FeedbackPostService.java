@@ -239,6 +239,12 @@ public class FeedbackPostService {
                 .collect(Collectors.toMap(FeedbackPost::getId, Function.identity()));
     }
 
+    /** 모집글 썸네일의 공개 URL. 썸네일 이미지가 없으면 null */
+    public String getThumbnailUrl(FeedbackPost feedbackPost) {
+        ImageResponse thumbnail = imageService.toThumbnailResponse(feedbackPost.getImages());
+        return thumbnail != null ? thumbnail.url() : null;
+    }
+
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
         return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(

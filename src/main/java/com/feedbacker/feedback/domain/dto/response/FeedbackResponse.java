@@ -18,9 +18,11 @@ public record FeedbackResponse(
         RejectType rejectType,
         LocalDateTime submissionDeadlineAt,
         LocalDateTime startAt,
-        LocalDateTime endAt
+        LocalDateTime endAt,
+        LocalDateTime completeAt,
+        String thumbnail
 ) {
-    public static FeedbackResponse from(Feedback feedback, FeedbackPost feedbackPost) {
+    public static FeedbackResponse from(Feedback feedback, FeedbackPost feedbackPost, String thumbnail) {
         return new FeedbackResponse(
                 feedback.getId(),
                 feedback.getFeedbackPostId(),
@@ -30,12 +32,14 @@ public record FeedbackResponse(
                 feedback.getRejectType(),
                 null,
                 feedbackPost.getStartAt(),
-                feedbackPost.getEndAt()
+                feedbackPost.getEndAt(),
+                feedbackPost.getCompleteAt(),
+                thumbnail
         );
     }
 
     // 제출 전에는 Feedback이 없으므로 참여 정보로 응답을 만든다 (id는 null)
-    public static FeedbackResponse from(Participation participation, LocalDateTime now) {
+    public static FeedbackResponse from(Participation participation, LocalDateTime now, String thumbnail) {
         FeedbackPost feedbackPost = participation.getFeedbackPost();
         return new FeedbackResponse(
                 null,
@@ -46,7 +50,9 @@ public record FeedbackResponse(
                 null,
                 participation.getSubmissionDeadlineAt(),
                 feedbackPost.getStartAt(),
-                feedbackPost.getEndAt()
+                feedbackPost.getEndAt(),
+                feedbackPost.getCompleteAt(),
+                thumbnail
         );
     }
 

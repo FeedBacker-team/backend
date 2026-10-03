@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -97,7 +98,16 @@ public class FeedbackPostFacade {
     public List<FeedbackProgressResponse> getFeedbacks(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
-        return feedbackService.getFeedbackProgress(feedbackPost.getId());
+        List<Feedback> feedbacks = feedbackService.getAllFeedbacks(feedbackPost.getId());
+        Map<UUID, String> profileImageUrls = memberService.getProfileImageUrls(
+                feedbacks.stream().map(Feedback::getTesterId).toList()
+        );
+        return feedbacks.stream()
+                .map(feedback -> FeedbackProgressResponse.from(
+                        feedback,
+                        profileImageUrls.get(feedback.getTesterId())
+                ))
+                .toList();
     }
 
     @Transactional

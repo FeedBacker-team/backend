@@ -69,14 +69,25 @@ public class FeedbackFacade {
         );
         return Stream.concat(
                         feedbacks.stream()
-                                .map(feedback -> Map.entry(
-                                        feedback.getSubmitAt(),
-                                        FeedbackResponse.from(feedback, feedbackPosts.get(feedback.getFeedbackPostId()))
-                                )),
+                                .map(feedback -> {
+                                    FeedbackPost feedbackPost = feedbackPosts.get(feedback.getFeedbackPostId());
+                                    return Map.entry(
+                                            feedback.getSubmitAt(),
+                                            FeedbackResponse.from(
+                                                    feedback,
+                                                    feedbackPost,
+                                                    feedbackPostService.getThumbnailUrl(feedbackPost)
+                                            )
+                                    );
+                                }),
                         participationService.getUnsubmittedParticipations(memberId).stream()
                                 .map(participation -> Map.entry(
                                         participation.getReservedAt(),
-                                        FeedbackResponse.from(participation, now)
+                                        FeedbackResponse.from(
+                                                participation,
+                                                now,
+                                                feedbackPostService.getThumbnailUrl(participation.getFeedbackPost())
+                                        )
                                 ))
                 )
                 .sorted(Map.Entry.<LocalDateTime, FeedbackResponse>comparingByKey().reversed())

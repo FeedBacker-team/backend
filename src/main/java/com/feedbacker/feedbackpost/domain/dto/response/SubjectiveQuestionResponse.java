@@ -8,6 +8,7 @@ public record SubjectiveQuestionResponse(
         String questionText,
         List<ImageResponse> images,
         boolean isRequire,
-        Integer minimumLength
+        Integer minimumLength,
+        boolean allowImageAttachment
 ) {
 }
