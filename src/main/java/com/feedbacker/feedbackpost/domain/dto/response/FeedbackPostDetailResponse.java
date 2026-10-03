@@ -36,30 +36,16 @@ public record FeedbackPostDetailResponse(
 
     public static FeedbackPostDetailResponse from(
             Feedback feedback,
-            Participation participation,
             FeedbackPost feedbackPost,
             List<ImageResponse> images
     ) {
-        FeedbackStatus feedbackStatus = null;
-        if (feedback != null) {
-            feedbackStatus = feedback.getStatus();
-        } else if (participation != null) {
-            // 임시: 제출 전에는 Feedback이 없으므로 참여 상태로 판단
-            if (participation.isReserved()) {
-                feedbackStatus = FeedbackStatus.WRITING;
-            } else if (participation.isAbandoned()) {
-                feedbackStatus = FeedbackStatus.CANCELED;
-            } else if (participation.isExpired()) {
-                feedbackStatus = FeedbackStatus.EXPIRED;
-            }
-        }
         return new FeedbackPostDetailResponse(
                 feedbackPost.getId(),
                 feedbackPost.getProject().getId(),
                 feedbackPost.getTitle(),
                 feedbackPost.getDescription(),
                 feedbackPost.getStatus(),
-                feedbackStatus,
+                feedback == null ? null : feedback.getStatus(),
                 feedbackPost.getTargetType(),
                 feedbackPost.getServiceUrl(),
                 images,
@@ -69,8 +55,8 @@ public record FeedbackPostDetailResponse(
                 feedbackPost.getRewardAcorn(),
                 feedbackPost.getStartAt(),
                 feedbackPost.getEndAt(),
-                participation != null && participation.isReserved()
-                        ? participation.getSubmissionDeadlineAt()
+                feedback != null && feedback.getStatus() == FeedbackStatus.WRITING
+                        ? feedback.getExpireAt()
                         : null,
                 feedbackPost.getProject().getTags(),
                 QuestionConfigResponse.from(feedbackPost)

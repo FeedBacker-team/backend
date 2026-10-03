@@ -43,11 +43,9 @@ public class FeedbackPostFacade {
     private final MemberService memberService;
     private final AcornWalletService acornWalletService;
     private final AcornHistoryService acornHistoryService;
-    private final ParticipationService participationService;
     private final FeedbackService feedbackService;
     private final ImageService imageService;
     private final QuestionAnswerService questionAnswerService;
-    private final QuestionService questionService;
 
     @Transactional
     public FeedbackPostCreateResponse create(UUID memberId, FeedbackPostCreateRequest request) {
@@ -65,13 +63,8 @@ public class FeedbackPostFacade {
     public FeedbackPostDetailResponse getDetail(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         Feedback feedback = memberId == null ? null : feedbackService.findMyFeedback(feedbackPostId, memberId);
-
-        Participation participation = memberId == null ? null
-                : participationService.findParticipation(feedbackPostId, memberId).orElse(null);
-
         return FeedbackPostDetailResponse.from(
                 feedback,
-                participation,
                 feedbackPost,
                 imageService.toResponses(feedbackPost.getImages())
         );
