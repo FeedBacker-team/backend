@@ -10,6 +10,7 @@ import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostCreateResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostProgressResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostResultResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
@@ -95,19 +96,24 @@ public class FeedbackPostFacade {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedbackProgressResponse> getFeedbacks(UUID memberId, UUID feedbackPostId) {
+    public FeedbackPostProgressResponse getFeedbacks(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
         List<Feedback> feedbacks = feedbackService.getAllFeedbacks(feedbackPost.getId());
         Map<UUID, String> profileImageUrls = memberService.getProfileImageUrls(
                 feedbacks.stream().map(Feedback::getTesterId).toList()
         );
-        return feedbacks.stream()
+        List<FeedbackProgressResponse> feedbackProgress = feedbacks.stream()
                 .map(feedback -> FeedbackProgressResponse.from(
                         feedback,
                         profileImageUrls.get(feedback.getTesterId())
                 ))
                 .toList();
+        return FeedbackPostProgressResponse.from(
+                feedbackPost,
+                feedbackPostService.getThumbnail(feedbackPost),
+                feedbackProgress
+        );
     }
 
     @Transactional
