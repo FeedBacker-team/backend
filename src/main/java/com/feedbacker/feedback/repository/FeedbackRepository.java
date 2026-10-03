@@ -3,6 +3,7 @@ package com.feedbacker.feedback.repository;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -32,6 +33,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("testerId") UUID testerId
     );
 
+    @EntityGraph(attributePaths = "tester")
     List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
 
     boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
