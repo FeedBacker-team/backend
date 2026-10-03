@@ -3,7 +3,6 @@ package com.feedbacker.feedbackpost.domain.dto.response;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
 import com.feedbacker.global.image.ImageResponse;

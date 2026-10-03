@@ -3,7 +3,6 @@ package com.feedbacker.feedbackpost.domain;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
 import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
-import com.feedbacker.feedbackpost.exception.ParticipationErrorCode;
 import com.feedbacker.global.common.BaseTimeEntity;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.global.image.ImageInfo;
@@ -160,7 +159,7 @@ public class FeedbackPost extends BaseTimeEntity {
 
     public void validateIsWriter(UUID memberId) {
         if (this.writerId.equals(memberId)) {
-            throw new BusinessException(ParticipationErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
+            throw new BusinessException(FeedbackPostErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
         }
     }
 

@@ -1,12 +1,10 @@
 package com.feedbacker.feedbackpost.facade;
 
 import com.feedbacker.feedback.domain.Feedback;
-import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostCreateResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
@@ -16,10 +14,7 @@ import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.ImageService;
-import com.feedbacker.feedbackpost.service.ParticipationService;
-import com.feedbacker.feedbackpost.service.QuestionService;
 import com.feedbacker.global.image.ImageResponse;
-import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberService;

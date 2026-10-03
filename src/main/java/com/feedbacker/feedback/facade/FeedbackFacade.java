@@ -15,7 +15,6 @@ import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
-import com.feedbacker.feedbackpost.service.ParticipationService;
 import com.feedbacker.feedbackpost.service.QuestionService;
 import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
@@ -35,7 +34,6 @@ import java.util.UUID;
 public class FeedbackFacade {
 
     private final MemberService memberService;
-    private final ParticipationService participationService;
     private final FeedbackPostService feedbackPostService;
     private final FeedbackService feedbackService;
     private final QuestionService questionService;
