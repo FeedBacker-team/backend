@@ -30,4 +30,11 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     );
 
     boolean existsByFeedbackPost_IdAndStatus(UUID feedbackPostId, ParticipationStatus status);
+
+    @Query("select p from Participation p join fetch p.feedbackPost "
+            + "where p.tester.id = :testerId and p.status <> :status")
+    List<Participation> findAllByTesterIdAndStatusNot(
+            @Param("testerId") UUID testerId,
+            @Param("status") ParticipationStatus status
+    );
 }

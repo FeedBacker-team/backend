@@ -10,8 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -60,36 +58,35 @@ public class AcornHistory {
         this.changeAcorn = changeAcorn;
     }
 
-    public static List<AcornHistory> create(
-            Member tester,
-            Member writer,
-            Feedback feedback,
-            FeedbackPost feedbackPost
-    ) {
-        List<AcornHistory> acornHistories = new ArrayList<>();
-        Integer rewardAcorn = feedbackPost.getRewardAcorn();
+    /** 피드백 승인 시 테스터 보상 내역 */
+    public static AcornHistory reward(Member tester, Feedback feedback, FeedbackPost feedbackPost) {
+        return AcornHistory.builder()
+                .member(tester)
+                .feedbackPostId(feedbackPost.getId())
+                .feedbackId(feedback.getId())
+                .type(AcornHistoryType.FEEDBACK_ACCEPT)
+                .changeAcorn(feedbackPost.getRewardAcorn())
+                .build();
+    }
 
-        acornHistories.add(
-                AcornHistory.builder()
-                        .member(tester)
-                        .feedbackPostId(feedbackPost.getId())
-                        .feedbackId(feedback.getId())
-                        .type(AcornHistoryType.FEEDBACK_ACCEPT)
-                        .changeAcorn(rewardAcorn)
-                        .build()
-        );
+    /** 모집글 등록 시 작성자 예치(차감) 내역 */
+    public static AcornHistory deposit(Member writer, UUID feedbackPostId, Integer depositAcorn) {
+        return AcornHistory.builder()
+                .member(writer)
+                .feedbackPostId(feedbackPostId)
+                .type(AcornHistoryType.FEEDBACK_DEPOSIT)
+                .changeAcorn(-depositAcorn)
+                .build();
+    }
 
-        acornHistories.add(
-                AcornHistory.builder()
-                        .member(writer)
-                        .feedbackPostId(feedbackPost.getId())
-                        .feedbackId(feedback.getId())
-                        .type(AcornHistoryType.FEEDBACK_RECRUIT)
-                        .changeAcorn(rewardAcorn)
-                        .build()
-        );
-
-        return acornHistories;
+    /** 모집글 완료 시 작성자 환급 내역 */
+    public static AcornHistory refund(Member writer, UUID feedbackPostId, Integer refundAcorn) {
+        return AcornHistory.builder()
+                .member(writer)
+                .feedbackPostId(feedbackPostId)
+                .type(AcornHistoryType.FEEDBACK_REFUND)
+                .changeAcorn(refundAcorn)
+                .build();
     }
 
 }

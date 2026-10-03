@@ -29,6 +29,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
     boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
+    int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+
     @Query("select distinct f.feedbackPostId from Feedback f "
             + "where f.status = :status and f.responseDeadLineAt <= :now")
     List<UUID> findFeedbackPostIdsWithOverdue(

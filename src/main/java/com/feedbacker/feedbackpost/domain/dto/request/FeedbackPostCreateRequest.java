@@ -123,6 +123,11 @@ public record FeedbackPostCreateRequest(
         return startAt.isBefore(now) ? now : startAt;
     }
 
+    // 종료일은 시각과 무관하게 '그날 끝까지' 모집하도록 보정
+    private LocalDateTime resolveEndAt() {
+        return endAt.toLocalDate().atTime(23, 59, 59);
+    }
+
     public FeedbackPost toEntity(Project project) {
 
         List<Question> questions = Stream.concat(
@@ -135,7 +140,7 @@ public record FeedbackPostCreateRequest(
                 .map(ImageRequest::toImageInfo)
                 .collect(Collectors.toCollection(ArrayList::new));
         newImages.add(
-                new ImageInfo(ImageType.POST_THUMBNAIL, 1, project.getThumbnailImage())
+                new ImageInfo(ImageType.POST_THUMBNAIL, 0, project.getThumbnailImage())
         );
 
         return FeedbackPost.builder()
@@ -153,7 +158,7 @@ public record FeedbackPostCreateRequest(
                 .depositAcorn(this.depositAcorn)
                 .rewardAcorn(this.rewardAcorn)
                 .startAt(resolveStartAt())
-                .endAt(this.endAt)
+                .endAt(resolveEndAt())
                 .project(project)
                 .build();
     }

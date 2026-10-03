@@ -12,8 +12,12 @@ import com.feedbacker.project.domain.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.global.image.ImageResponse;
@@ -230,11 +234,24 @@ public class FeedbackPostService {
                 ));
     }
 
+    public Map<UUID, FeedbackPost> getFeedbackPostMap(Collection<UUID> feedbackPostIds) {
+        return feedbackPostRepository.findAllById(feedbackPostIds).stream()
+                .collect(Collectors.toMap(FeedbackPost::getId, Function.identity()));
+    }
+
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
         return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));
+    }
+
+    /** 모집 기간(endAt)이 지났지만 아직 완료되지 않은 모집글 (자동 완료 스케줄러에서 사용) */
+    public List<UUID> getEndedFeedbackPostIds(LocalDateTime now) {
+        return feedbackPostRepository.findEndedIds(
+                List.of(FeedbackPostStatus.RECRUITING, FeedbackPostStatus.CLOSED),
+                now
+        );
     }
 
     public void validateFeedbackSubmit(FeedbackPost feedbackPost, UUID memberId) {
