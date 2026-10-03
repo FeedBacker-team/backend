@@ -242,4 +242,11 @@ public class Feedback extends BaseTimeEntity {
         }
         this.status = FeedbackStatus.EXPIRED;
     }
+
+    /** 피드백이 '제출' 이후이면 true, 아니면 false */
+    public boolean isSubmitted() {
+        return status == FeedbackStatus.SUBMITTED
+                || status == FeedbackStatus.ACCEPTED
+                || status == FeedbackStatus.REJECTED;
+    }
 }

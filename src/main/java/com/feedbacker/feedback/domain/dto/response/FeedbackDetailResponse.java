@@ -4,7 +4,6 @@ import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.domain.type.RejectType;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
 
 import java.time.LocalDateTime;
@@ -22,12 +21,9 @@ public record FeedbackDetailResponse(
         QuestionAnswerResponse questionAnswerResponses
 ) {
 
-    private static final int RESPONSE_DEADLINE = 72;
-
     public static FeedbackDetailResponse from(
             FeedbackPost feedbackPost,
             Feedback feedback,
-            Participation participation,
             QuestionAnswerResponse questionAnswerResponses
     ) {
         return new FeedbackDetailResponse(
@@ -37,9 +33,9 @@ public record FeedbackDetailResponse(
                 feedbackPost.getRewardAcorn(),
                 feedback.getRejectType(),
                 feedback.getRejectDetail(),
-                participation.getReservedAt(),
+                feedback.getParticipateAt(),
                 feedback.getSubmitAt(),
-                feedback.getSubmitAt().plusHours(RESPONSE_DEADLINE),
+                feedback.getResponseDeadLineAt(),
                 questionAnswerResponses
         );
     }

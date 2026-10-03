@@ -14,7 +14,6 @@ import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
-import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.ParticipationService;
 import com.feedbacker.feedbackpost.service.QuestionService;
@@ -83,8 +82,6 @@ public class FeedbackFacade {
     public FeedbackDetailResponse getDetail(UUID memberId, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPost().getId());
-        Member tester = memberService.getMember(feedback.getTester().getId());
-        Participation participation = participationService.getParticipation(feedbackPost.getId(), tester.getId());
         QuestionAnswerResponse questionAnswerResponse = questionAnswerService.toResponse(
                 questionService.getAllQuestion(feedbackPost.getId()),
                 questionAnswerService.getAllQuestionAnswer(feedback.getId())
@@ -93,7 +90,6 @@ public class FeedbackFacade {
         return FeedbackDetailResponse.from(
                 feedbackPost,
                 feedback,
-                participation,
                 questionAnswerResponse
         );
     }

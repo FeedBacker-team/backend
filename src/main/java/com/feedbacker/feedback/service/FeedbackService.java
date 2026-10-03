@@ -8,7 +8,6 @@ import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.exception.BusinessException;
-import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -104,8 +103,9 @@ public class FeedbackService {
             Feedback feedback,
             FeedbackPost feedbackPost
     ) {
-        if (!memberId.equals(feedback.getTester().getId())
-                && !memberId.equals(feedbackPost.getWriterId())) {
+        boolean isTester = memberId.equals(feedback.getTester().getId());
+        boolean isWriter = memberId.equals(feedbackPost.getWriterId());
+        if (!isTester && !(isWriter && feedback.isSubmitted())) {   // 제출 이후 상태(SUBMITTED/ACCEPTED/REJECTED)만
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
     }
