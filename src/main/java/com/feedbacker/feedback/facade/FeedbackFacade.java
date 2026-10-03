@@ -128,6 +128,21 @@ public class FeedbackFacade {
         return targets.size();
     }
 
+    /** 제출 기한이 지난 작성중 피드백을 모집글 단위로 만료시키고 슬롯을 반환 (스케줄러 전용) */
+    @Transactional
+    public int expireOverdue(UUID feedbackPostId) {
+        // 락 순서: 모집글 -> 피드백 (participate/giveUp/submit과 동일)
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        LocalDateTime now = LocalDateTime.now();
+        // 락을 잡은 뒤 조회해서, 그 사이 제출/포기된 피드백은 대상에서 빠진다
+        List<Feedback> targets = feedbackService.getExpiredFeedbacksForUpdate(feedbackPostId, now);
+        for (Feedback feedback : targets) {
+            feedback.expire(now);
+            feedbackPost.plusRemainSlotCount();
+        }
+        return targets.size();
+    }
+
     // 테스터 보상 지급 + 테스터 도토리 내역 저장. 작성자는 등록 시 예치 내역으로 이미 차감이 기록되어 있다
     private void payReward(Feedback feedback, FeedbackPost feedbackPost) {
         Member tester = memberService.getMember(feedback.getTester().getId());

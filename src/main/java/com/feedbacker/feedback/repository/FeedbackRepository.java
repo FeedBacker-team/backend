@@ -54,4 +54,21 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
     );
+
+    @Query("select distinct f.feedbackPost.id from Feedback f "
+            + "where f.status = :status and f.expireAt <= :now")
+    List<UUID> findFeedbackPostIdsWithExpired(
+            @Param("status") FeedbackStatus status,
+            @Param("now") LocalDateTime now
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Feedback f "
+            + "where f.feedbackPost.id = :feedbackPostId "
+            + "and f.status = :status and f.expireAt <= :now")
+    List<Feedback> findExpiredForUpdate(
+            @Param("feedbackPostId") UUID feedbackPostId,
+            @Param("status") FeedbackStatus status,
+            @Param("now") LocalDateTime now
+    );
 }

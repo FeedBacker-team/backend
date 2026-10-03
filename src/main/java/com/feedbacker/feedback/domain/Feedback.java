@@ -231,4 +231,15 @@ public class Feedback extends BaseTimeEntity {
         this.status = FeedbackStatus.CANCELED;
         this.cancelAt = now;
     }
+
+    /** 제출 기한이 지난 '작성중' 피드백을 만료 처리 (스케줄러 전용) */
+    public void expire(LocalDateTime now) {
+        if (this.status != FeedbackStatus.WRITING) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_WRITING);
+        }
+        if (now.isBefore(this.expireAt)) {
+            throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_NOT_REACHED);
+        }
+        this.status = FeedbackStatus.EXPIRED;
+    }
 }

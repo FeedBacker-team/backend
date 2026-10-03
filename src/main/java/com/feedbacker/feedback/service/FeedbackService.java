@@ -91,6 +91,14 @@ public class FeedbackService {
         return feedbackRepository.findOverdueForUpdate(feedbackPostId, FeedbackStatus.SUBMITTED, now);
     }
 
+    public List<UUID> getFeedbackPostIdsWithExpiredFeedback(LocalDateTime now) {
+        return feedbackRepository.findFeedbackPostIdsWithExpired(FeedbackStatus.WRITING, now);
+    }
+
+    public List<Feedback> getExpiredFeedbacksForUpdate(UUID feedbackPostId, LocalDateTime now) {
+        return feedbackRepository.findExpiredForUpdate(feedbackPostId, FeedbackStatus.WRITING, now);
+    }
+
     public void validateGetFeedback(
             UUID memberId,
             Feedback feedback,

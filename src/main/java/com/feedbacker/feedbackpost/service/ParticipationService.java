@@ -37,32 +37,4 @@ public class ParticipationService {
         return participationRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId);
     }
 
-    @Transactional
-    public int expireOverdueParticipations() {
-        LocalDateTime now = LocalDateTime.now();
-        List<UUID> feedbackPostIds = participationRepository.findFeedbackPostIdsWithExpiredTargets(
-                ParticipationStatus.RESERVED,
-                now
-        );
-
-        int expiredCount = 0;
-        for (UUID feedbackPostId : feedbackPostIds) {
-            // participate / giveUp 과 같은 순서(모집글 -> 참여)로 락을 잡아 데드락을 피한다
-            FeedbackPost feedbackPost = feedbackPostRepository.findByIdForUpdate(feedbackPostId)
-                    .orElse(null);
-            if (feedbackPost == null) {
-                continue;
-            }
-            // 락을 잡은 뒤 조회해서, 그 사이 제출/포기된 참여는 만료시키지 않는다
-            for (Participation participation : getAllParticipation(feedbackPostId)) {
-                if (participation.isReserved() && participation.isDeadlineReached(now)) {
-                    participation.expire(now);
-                    feedbackPost.plusRemainSlotCount();
-                    expiredCount++;
-                }
-            }
-        }
-        return expiredCount;
-    }
-
 }

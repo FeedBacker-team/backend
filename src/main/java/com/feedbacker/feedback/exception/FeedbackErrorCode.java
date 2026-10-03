@@ -24,6 +24,8 @@ public enum FeedbackErrorCode implements ErrorCode {
     SUBMISSION_DEADLINE_EXPIRED(HttpStatus.CONFLICT, "피드백 제출 기한이 만료되었습니다."),
     PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND, "참여 정보를 찾을 수 없습니다."),
     CANNOT_GIVE_UP(HttpStatus.CONFLICT, "작성 중인 피드백만 포기할 수 있습니다."),
+    FEEDBACK_NOT_WRITING(HttpStatus.CONFLICT, "작성 중인 피드백만 만료 처리할 수 있습니다."),
+    SUBMISSION_DEADLINE_NOT_REACHED(HttpStatus.CONFLICT, "아직 제출 기한이 지나지 않았습니다."),
 
     // 피드백 모집글 관련
     FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK(HttpStatus.CONFLICT, "승인 또는 거절하지 않은 피드백이 있어 모집글을 완료할 수 없습니다."),
