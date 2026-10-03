@@ -90,7 +90,7 @@ public class FeedbackPostFacade {
     public List<FeedbackProgressResponse> getFeedbacks(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
-        List<Feedback> feedbacks = feedbackService.getAllFeedbacks(feedbackPost.getId());
+        List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPost.getId());
         Map<UUID, String> profileImageUrls = memberService.getProfileImageUrls(
                 feedbacks.stream().map(feedback -> feedback.getTester().getId()).toList()
         );
@@ -142,7 +142,7 @@ public class FeedbackPostFacade {
 
     @Transactional(readOnly = true)
     public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
-        List<Feedback> feedbacks = feedbackService.getAllFeedbacks(feedbackPostId);
+        List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPostId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
         feedbackPost.validateCompleted();

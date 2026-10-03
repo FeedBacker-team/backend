@@ -59,8 +59,10 @@ public class FeedbackService {
                 ));
     }
 
-    public List<Feedback> getAllFeedbacks(UUID feedbackPostId) {
-        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId);
+    public List<Feedback> getAllByFeedbackPostId(UUID feedbackPostId) {
+        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId).stream()
+                .filter(Feedback::isSubmitted)
+                .toList();
     }
 
     public Feedback findMyFeedback(UUID feedbackPostId, UUID memberId) {
