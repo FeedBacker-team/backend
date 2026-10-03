@@ -110,6 +110,7 @@ public class FeedbackFacade {
                 feedbackPost,
                 feedback,
                 participation,
+                feedbackPostService.getThumbnail(feedbackPost),
                 questionAnswerResponse
         );
     }
