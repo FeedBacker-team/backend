@@ -133,17 +133,11 @@ public class FeedbackFacade {
         return targets.size();
     }
 
-    // 테스터 보상 지급 + 도토리 내역(테스터/작성자) 저장. complete의 환급 계산이 작성자 내역에 의존한다
+    // 테스터 보상 지급 + 테스터 도토리 내역 저장. 작성자는 등록 시 예치 내역으로 이미 차감이 기록되어 있다
     private void payReward(Feedback feedback, FeedbackPost feedbackPost) {
         Member tester = memberService.getMember(feedback.getTesterId());
-        Member writer = memberService.getMember(feedbackPost.getWriterId());
         acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
-        acornHistoryService.save(
-                tester,
-                writer,
-                feedback,
-                feedbackPost
-        );
+        acornHistoryService.saveReward(tester, feedback, feedbackPost);
     }
 
     @Transactional

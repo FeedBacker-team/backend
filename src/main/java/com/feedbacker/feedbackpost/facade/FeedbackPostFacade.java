@@ -1,7 +1,6 @@
 package com.feedbacker.feedbackpost.facade;
 
 import com.feedbacker.feedback.domain.Feedback;
-import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
@@ -54,7 +53,9 @@ public class FeedbackPostFacade {
         project.validateOwner(member.getId());
         projectService.validateHasFeedbackPost(project.getId());
         acornWalletService.withdraw(member.getId(), request.depositAcorn());
-        return new FeedbackPostCreateResponse(feedbackPostService.save(request.toEntity(project)));
+        UUID feedbackPostId = feedbackPostService.save(request.toEntity(project));
+        acornHistoryService.saveDeposit(member, feedbackPostId, request.depositAcorn());
+        return new FeedbackPostCreateResponse(feedbackPostId);
     }
 
     @Transactional(readOnly = true)
@@ -104,10 +105,11 @@ public class FeedbackPostFacade {
         participationService.validateNoActiveParticipant(feedbackPost.getId());
         feedbackService.validateNoSubmittedFeedback(feedbackPost.getId());
         feedbackPost.complete(memberId);
-        int paidAcorn = acornHistoryService.combine(memberId, feedbackPost.getId());
-        int refundAcorn = feedbackPost.getDepositAcorn() - paidAcorn;
+        // 환급 = 예치 - (승인 수 * 건당 보상)
+        int refundAcorn = feedbackPost.getDepositAcorn() - getPaidAcorn(feedbackPost);
         if (refundAcorn > 0) {
             acornWalletService.earn(memberId, refundAcorn);
+            acornHistoryService.saveRefund(memberService.getMember(memberId), feedbackPost.getId(), refundAcorn);
         }
     }
 
@@ -119,15 +121,16 @@ public class FeedbackPostFacade {
         feedbackPost.validateCompleted();
         List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
         List<FeedbackResultResponse> feedbackResults = questionAnswerService.getFeedbackResults(feedbacks, feedbackPost);
-        AcornHistoryResponse acornHistory = acornHistoryService.getAcronHistoryByFeedbackPost(
-                memberId,
-                feedbackPost.getId()
-        );
         return FeedbackPostResultResponse.from(
                 feedbackResults,
                 feedbackPost,
-                acornHistory,
+                getPaidAcorn(feedbackPost),
                 images
         );
+    }
+
+    // 승인된 피드백에 지급된 도토리 합계
+    private int getPaidAcorn(FeedbackPost feedbackPost) {
+        return feedbackService.countAcceptedFeedbacks(feedbackPost.getId()) * feedbackPost.getRewardAcorn();
     }
 }
