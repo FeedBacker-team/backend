@@ -15,8 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -124,6 +127,19 @@ public class MemberService {
     public ProfileResponse getProfile(UUID memberId) {
         Member member = getMember(memberId);
         return ProfileResponse.from(member, toImageUrl(member.getProfileImage()));
+    }
+
+    /** 회원 ID → 프로필 이미지 URL (미등록 회원은 맵에 없음) */
+    @Transactional(readOnly = true)
+    public Map<UUID, String> getProfileImageUrls(Collection<UUID> memberIds) {
+        Map<UUID, String> result = new HashMap<>();
+        for (Member member : memberRepository.findAllById(memberIds)) {
+            String url = toImageUrl(member.getProfileImage());
+            if (url != null) {
+                result.put(member.getId(), url);
+            }
+        }
+        return result;
     }
 
     /** DB에 저장된 이미지 path → 프론트에 줄 URL (미등록이면 null → 프론트에서 기본 아바타) */
