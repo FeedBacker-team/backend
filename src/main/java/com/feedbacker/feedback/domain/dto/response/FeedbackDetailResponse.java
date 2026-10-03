@@ -8,9 +8,13 @@ import com.feedbacker.feedbackpost.domain.type.TargetType;
 import com.feedbacker.global.image.ImageResponse;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record FeedbackDetailResponse(
         String feedbackPostTitle,
+        UUID feedbackPostId,
+        String testerName,
+        String testerProfileImageUrl,
         FeedbackStatus feedbackStatus,
         TargetType targetType,
         int rewardAcorn,
@@ -28,11 +32,15 @@ public record FeedbackDetailResponse(
     public static FeedbackDetailResponse from(
             FeedbackPost feedbackPost,
             Feedback feedback,
+            String testerProfileImageUrl,
             ImageResponse thumbnail,
             QuestionAnswerResponse questionAnswerResponses
     ) {
         return new FeedbackDetailResponse(
                 feedbackPost.getTitle(),
+                feedbackPost.getId(),
+                feedback.getTester().getNickname(),
+                testerProfileImageUrl,
                 feedback.getStatus(),
                 feedbackPost.getTargetType(),
                 feedbackPost.getRewardAcorn(),

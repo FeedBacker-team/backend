@@ -80,6 +80,7 @@ public class FeedbackFacade {
     public FeedbackDetailResponse getDetail(UUID memberId, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPost().getId());
+        Member tester = memberService.getMember(feedback.getTester().getId());
         QuestionAnswerResponse questionAnswerResponse = questionAnswerService.toResponse(
                 questionService.getAllQuestion(feedbackPost.getId()),
                 questionAnswerService.getAllQuestionAnswer(feedback.getId())
@@ -88,6 +89,7 @@ public class FeedbackFacade {
         return FeedbackDetailResponse.from(
                 feedbackPost,
                 feedback,
+                memberService.toImageUrl(tester.getProfileImage()),
                 feedbackPostService.getThumbnail(feedbackPost),
                 questionAnswerResponse
         );
