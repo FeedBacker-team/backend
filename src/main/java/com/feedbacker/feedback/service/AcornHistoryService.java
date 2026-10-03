@@ -3,7 +3,6 @@ package com.feedbacker.feedback.service;
 import com.feedbacker.feedback.domain.AcornHistory;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
-import com.feedbacker.feedback.domain.type.AcornHistoryType;
 import com.feedbacker.feedback.repository.AcornHistoryRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.security.CustomUserDetails;
@@ -22,20 +21,18 @@ public class AcornHistoryService {
     private final AcornHistoryRepository acornHistoryRepository;
 
     @Transactional
-    public void save(
-            Member tester,
-            Member writer,
-            Feedback feedback,
-            FeedbackPost feedbackPost
-    ) {
-        acornHistoryRepository.saveAll(
-                AcornHistory.create(
-                        tester,
-                        writer,
-                        feedback,
-                        feedbackPost
-                )
-        );
+    public void saveReward(Member tester, Feedback feedback, FeedbackPost feedbackPost) {
+        acornHistoryRepository.save(AcornHistory.reward(tester, feedback, feedbackPost));
+    }
+
+    @Transactional
+    public void saveDeposit(Member writer, UUID feedbackPostId, Integer depositAcorn) {
+        acornHistoryRepository.save(AcornHistory.deposit(writer, feedbackPostId, depositAcorn));
+    }
+
+    @Transactional
+    public void saveRefund(Member writer, UUID feedbackPostId, Integer refundAcorn) {
+        acornHistoryRepository.save(AcornHistory.refund(writer, feedbackPostId, refundAcorn));
     }
 
     @Transactional(readOnly = true)
@@ -46,37 +43,5 @@ public class AcornHistoryService {
                 .map(AcornHistoryResponse::from)
                 .toList();
     }
-
-    public AcornHistoryResponse getAcronHistoryByFeedbackPost(UUID memberId, UUID feedbackPostId) {
-        return acornHistoryRepository.
-                findByMemberIdAndFeedbackPostId(memberId, feedbackPostId)
-                .orElseGet(() -> new AcornHistoryResponse(AcornHistoryType.FEEDBACK_RECRUIT, null, 0));
-    }
-
-    @Transactional
-    public int combine(UUID memberId, UUID feedbackPostId) {
-        List<AcornHistory> acornHistories = acornHistoryRepository
-                .findAllByMemberIdAndFeedbackPostId(memberId, feedbackPostId);
-        if (acornHistories.isEmpty()) {
-            return 0;
-        }
-
-        int totalAcorn = acornHistories.stream()
-                .mapToInt(AcornHistory::getChangeAcorn)
-                .reduce(0, Math::addExact);
-
-        AcornHistory combinedHistory = AcornHistory.builder()
-                .member(acornHistories.getFirst().getMember())
-                .feedbackPostId(feedbackPostId)
-                .feedbackId(null)
-                .type(AcornHistoryType.FEEDBACK_RECRUIT)
-                .changeAcorn(totalAcorn)
-                .build();
-
-        acornHistoryRepository.save(combinedHistory);
-        acornHistoryRepository.deleteAll(acornHistories);
-        return totalAcorn;
-    }
-
 
 }

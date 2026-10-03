@@ -30,4 +30,5 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     );
 
     boolean existsByFeedbackPost_IdAndStatus(UUID feedbackPostId, ParticipationStatus status);
+
 }

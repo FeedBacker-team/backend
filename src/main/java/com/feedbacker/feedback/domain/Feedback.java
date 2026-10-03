@@ -1,7 +1,9 @@
 package com.feedbacker.feedback.domain;
 
+import com.feedbacker.feedback.domain.dto.request.FeedbackObjectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.type.FeedbackStatus;
+import com.feedbacker.feedback.domain.type.ObjectType;
 import com.feedbacker.feedback.domain.type.RejectType;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -74,6 +76,10 @@ public class Feedback extends BaseTimeEntity {
     private String rejectDetail;
 
     /** 거부를 이의제기 할 시 상세 사유 */
+    @Enumerated(EnumType.STRING)
+    @Column
+    private ObjectType objectType;
+
     @Column(columnDefinition = "TEXT")
     private String objectReason;
 
@@ -170,7 +176,7 @@ public class Feedback extends BaseTimeEntity {
         this.status = FeedbackStatus.REJECTED;
     }
 
-    public void object(UUID memberId, String objectReason) {
+    public void object(UUID memberId, FeedbackObjectRequest request) {
         // 피드백 작성자인지 검증
         if (!this.tester.getId().equals(memberId)) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
@@ -183,7 +189,8 @@ public class Feedback extends BaseTimeEntity {
         if (this.objectReason != null) {
             throw new BusinessException(FeedbackErrorCode.OBJECTION_ALREADY_SUBMITTED);
         }
-        this.objectReason = objectReason;
+        this.objectReason = request.objectReason();
+        this.objectType = request.objectType();
     }
 
     public void submit(List<QuestionAnswer> answers) {

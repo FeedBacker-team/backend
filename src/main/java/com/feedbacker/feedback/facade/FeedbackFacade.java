@@ -6,6 +6,7 @@ import com.feedbacker.feedback.domain.dto.request.FeedbackObjectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackSubmitRequest;
 import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
+import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.service.AcornHistoryService;
@@ -17,7 +18,6 @@ import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.ParticipationService;
 import com.feedbacker.feedbackpost.service.QuestionService;
-import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberService;
@@ -26,7 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -53,6 +55,24 @@ public class FeedbackFacade {
                 tester,
                 answers
         ));
+    }
+
+    /** 내 QA 참여 목록: 작성중/포기/만료를 포함한 모든 피드백을 참여 최신순으로 반환한다 */
+    @Transactional(readOnly = true)
+    public List<FeedbackResponse> getMine(UUID memberId) {
+        LocalDateTime now = LocalDateTime.now();
+        List<Feedback> feedbacks = feedbackService.getMyFeedbacks(memberId);
+        Map<UUID, FeedbackPost> feedbackPosts = feedbackPostService.getFeedbackPostMap(
+                feedbacks.stream().map(feedback -> feedback.getFeedbackPost().getId()).toList()
+        );
+        return feedbacks.stream()
+                .sorted(Comparator.comparing(Feedback::getParticipateAt).reversed())
+                .map(feedback -> FeedbackResponse.from(
+                        feedback,
+                        feedbackPosts.get(feedback.getFeedbackPost().getId()),
+                        now
+                ))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -104,17 +124,11 @@ public class FeedbackFacade {
         return targets.size();
     }
 
-    // 테스터 보상 지급 + 도토리 내역(테스터/작성자) 저장. complete의 환급 계산이 작성자 내역에 의존한다
+    // 테스터 보상 지급 + 테스터 도토리 내역 저장. 작성자는 등록 시 예치 내역으로 이미 차감이 기록되어 있다
     private void payReward(Feedback feedback, FeedbackPost feedbackPost) {
         Member tester = memberService.getMember(feedback.getTester().getId());
-        Member writer = memberService.getMember(feedbackPost.getWriterId());
         acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
-        acornHistoryService.save(
-                tester,
-                writer,
-                feedback,
-                feedbackPost
-        );
+        acornHistoryService.saveReward(tester, feedback, feedbackPost);
     }
 
     @Transactional
@@ -131,7 +145,7 @@ public class FeedbackFacade {
     @Transactional
     public void object(UUID memberId, FeedbackObjectRequest request, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        feedback.object(memberId, request.objectReason());
+        feedback.object(memberId, request);
         // 이후 어드민에 이의제기 신청 알림 추가할 예정
     }
 }

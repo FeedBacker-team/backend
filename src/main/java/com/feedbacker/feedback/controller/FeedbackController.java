@@ -7,7 +7,6 @@ import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.request.FeedbackSubmitRequest;
 import com.feedbacker.feedback.facade.FeedbackFacade;
-import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,6 @@ import java.util.UUID;
 public class FeedbackController {
 
     private final FeedbackFacade feedbackFacade;
-    private final FeedbackService feedbackService;
 
     @PostMapping
     public FeedbackSubmitResponse submit(
@@ -37,7 +35,7 @@ public class FeedbackController {
     public List<FeedbackResponse> getMine(
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        return feedbackService.getMine(user.getMemberId());
+        return feedbackFacade.getMine(user.getMemberId());
     }
 
     @GetMapping("/{feedbackId}")

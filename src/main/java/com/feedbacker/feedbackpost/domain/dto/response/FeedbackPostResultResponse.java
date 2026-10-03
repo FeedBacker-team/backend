@@ -1,6 +1,5 @@
 package com.feedbacker.feedbackpost.domain.dto.response;
 
-import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
@@ -28,7 +27,7 @@ public record FeedbackPostResultResponse(
     public static FeedbackPostResultResponse from(
             List<FeedbackResultResponse> feedbackResult,
             FeedbackPost feedbackPost,
-            AcornHistoryResponse acornHistory,
+            Integer paidAcorn,
             List<ImageResponse> images
     ) {
         return new FeedbackPostResultResponse(
@@ -41,7 +40,7 @@ public record FeedbackPostResultResponse(
                 feedbackPost.getTargetType(),
                 feedbackPost.getProject().getTags(),
                 feedbackPost.getRewardAcorn(),
-                acornHistory.changeAcorn(),
+                paidAcorn,
                 feedbackPost.getServiceUrl(),
                 feedbackResult
         );
