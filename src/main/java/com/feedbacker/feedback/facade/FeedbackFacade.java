@@ -110,6 +110,7 @@ public class FeedbackFacade {
                 feedbackPost,
                 feedback,
                 participation,
+                memberService.toImageUrl(tester.getProfileImage()),
                 feedbackPostService.getThumbnail(feedbackPost),
                 questionAnswerResponse
         );
