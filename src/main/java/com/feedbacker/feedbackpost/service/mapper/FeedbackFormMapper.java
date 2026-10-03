@@ -41,7 +41,8 @@ public class FeedbackFormMapper {
                         question.getQuestionText(),
                         images,
                         question.isRequired(),
-                        question.getMinimumLength()
+                        question.getMinimumLength(),
+                        question.isAllowImageAttachment()
                 ));
             }
         }
