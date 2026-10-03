@@ -78,6 +78,9 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false)
     private LocalDateTime endAt;
 
+    @Column
+    private LocalDateTime completeAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
@@ -152,6 +155,7 @@ public class FeedbackPost extends BaseTimeEntity {
         validateNotCompleted();
         validateAccessAuth(memberId);
         status = FeedbackPostStatus.COMPLETED;
+        completeAt = LocalDateTime.now();
     }
 
     public void validateIsWriter(UUID memberId) {

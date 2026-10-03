@@ -7,7 +7,6 @@ import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedback.repository.FeedbackRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.Member;
@@ -63,13 +62,6 @@ public class FeedbackService {
 
     public List<Feedback> getAllFeedbacks(UUID feedbackPostId) {
         return feedbackRepository.findAllByFeedbackPostId(feedbackPostId);
-    }
-
-    public List<FeedbackProgressResponse> getFeedbackProgress(UUID feedbackPostId) {
-        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId)
-                .stream()
-                .map(FeedbackProgressResponse::from)
-                .toList();
     }
 
     public Feedback findMyFeedback(UUID feedbackPostId, UUID memberId) {

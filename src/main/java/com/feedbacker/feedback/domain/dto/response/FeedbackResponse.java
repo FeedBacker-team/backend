@@ -17,9 +17,16 @@ public record FeedbackResponse(
         RejectType rejectType,
         LocalDateTime submissionDeadlineAt,
         LocalDateTime startAt,
-        LocalDateTime endAt
+        LocalDateTime endAt,
+        LocalDateTime completeAt,
+        String thumbnail
 ) {
-    public static FeedbackResponse from(Feedback feedback, FeedbackPost feedbackPost, LocalDateTime now) {
+    public static FeedbackResponse from(
+            Feedback feedback,
+            FeedbackPost feedbackPost,
+            String thumbnail,
+            LocalDateTime now
+    ) {
         return new FeedbackResponse(
                 feedback.getId(),
                 feedbackPost.getId(),
@@ -29,7 +36,9 @@ public record FeedbackResponse(
                 feedback.getRejectType(),
                 feedback.getSubmitAt() == null ? feedback.getExpireAt() : null,
                 feedbackPost.getStartAt(),
-                feedbackPost.getEndAt()
+                feedbackPost.getEndAt(),
+                feedbackPost.getCompleteAt(),
+                thumbnail
         );
     }
 

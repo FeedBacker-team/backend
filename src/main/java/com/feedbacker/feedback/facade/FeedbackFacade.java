@@ -67,11 +67,15 @@ public class FeedbackFacade {
         );
         return feedbacks.stream()
                 .sorted(Comparator.comparing(Feedback::getParticipateAt).reversed())
-                .map(feedback -> FeedbackResponse.from(
-                        feedback,
-                        feedbackPosts.get(feedback.getFeedbackPost().getId()),
-                        now
-                ))
+                .map(feedback -> {
+                    FeedbackPost feedbackPost = feedbackPosts.get(feedback.getFeedbackPost().getId());
+                    return FeedbackResponse.from(
+                            feedback,
+                            feedbackPost,
+                            feedbackPostService.getThumbnailUrl(feedbackPost),
+                            now
+                    );
+                })
                 .toList();
     }
 

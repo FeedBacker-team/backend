@@ -9,20 +9,20 @@ import java.util.UUID;
 public record FeedbackProgressResponse(
         UUID feedbackId,
         String testerName,
+        String testerProfileImageUrl,
         FeedbackStatus status,
         LocalDateTime submitAt,
         LocalDateTime responseDeadlineAt
 ) {
 
-    private static final long DEADLINE = 72;
-
-    public static FeedbackProgressResponse from(Feedback feedback) {
+    public static FeedbackProgressResponse from(Feedback feedback, String testerProfileImageUrl) {
         return new FeedbackProgressResponse(
                 feedback.getId(),
                 feedback.getTester().getNickname(),
+                testerProfileImageUrl,
                 feedback.getStatus(),
                 feedback.getSubmitAt(),
-                feedback.getSubmitAt().plusHours(DEADLINE)
+                feedback.getResponseDeadLineAt()
         );
     }
 }
