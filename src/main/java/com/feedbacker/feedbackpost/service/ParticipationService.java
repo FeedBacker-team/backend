@@ -93,6 +93,11 @@ public class ParticipationService {
         return participationRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId);
     }
 
+    /** 피드백을 제출하지 않은 참여(작성중/포기/만료). 제출된 참여는 Feedback으로 조회한다 */
+    public List<Participation> getUnsubmittedParticipations(UUID testerId) {
+        return participationRepository.findAllByTesterIdAndStatusNot(testerId, ParticipationStatus.SUBMITTED);
+    }
+
     public void giveUp(UUID feedbackPostId, UUID testerId) {
         Participation participation = getParticipation(feedbackPostId, testerId);
         LocalDateTime now = LocalDateTime.now();

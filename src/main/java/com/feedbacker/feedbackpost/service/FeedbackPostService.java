@@ -12,8 +12,12 @@ import com.feedbacker.project.domain.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.global.image.ImageResponse;
@@ -228,6 +232,11 @@ public class FeedbackPostService {
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));
+    }
+
+    public Map<UUID, FeedbackPost> getFeedbackPostMap(Collection<UUID> feedbackPostIds) {
+        return feedbackPostRepository.findAllById(feedbackPostIds).stream()
+                .collect(Collectors.toMap(FeedbackPost::getId, Function.identity()));
     }
 
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {

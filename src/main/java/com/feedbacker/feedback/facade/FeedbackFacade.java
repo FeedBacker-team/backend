@@ -6,6 +6,7 @@ import com.feedbacker.feedback.domain.dto.request.FeedbackObjectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
 import com.feedbacker.feedback.domain.dto.request.FeedbackSubmitRequest;
 import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
+import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.service.AcornHistoryService;
@@ -27,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +57,31 @@ public class FeedbackFacade {
                 tester,
                 answers
         ));
+    }
+
+    /** 내 QA 참여 목록: 제출한 피드백 + 아직 제출하지 않은 참여(작성중/포기/만료)를 최신순으로 합친다 */
+    @Transactional(readOnly = true)
+    public List<FeedbackResponse> getMine(UUID memberId) {
+        LocalDateTime now = LocalDateTime.now();
+        List<Feedback> feedbacks = feedbackService.getMyFeedbacks(memberId);
+        Map<UUID, FeedbackPost> feedbackPosts = feedbackPostService.getFeedbackPostMap(
+                feedbacks.stream().map(Feedback::getFeedbackPostId).toList()
+        );
+        return Stream.concat(
+                        feedbacks.stream()
+                                .map(feedback -> Map.entry(
+                                        feedback.getSubmitAt(),
+                                        FeedbackResponse.from(feedback, feedbackPosts.get(feedback.getFeedbackPostId()))
+                                )),
+                        participationService.getUnsubmittedParticipations(memberId).stream()
+                                .map(participation -> Map.entry(
+                                        participation.getReservedAt(),
+                                        FeedbackResponse.from(participation, now)
+                                ))
+                )
+                .sorted(Map.Entry.<LocalDateTime, FeedbackResponse>comparingByKey().reversed())
+                .map(Map.Entry::getValue)
+                .toList();
     }
 
     @Transactional(readOnly = true)
