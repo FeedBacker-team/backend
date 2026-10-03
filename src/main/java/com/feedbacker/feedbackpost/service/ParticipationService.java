@@ -37,18 +37,6 @@ public class ParticipationService {
         return participationRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId);
     }
 
-    public void giveUp(UUID feedbackPostId, UUID testerId) {
-        Participation participation = getParticipation(feedbackPostId, testerId);
-        LocalDateTime now = LocalDateTime.now();
-        if (!participation.isReserved()) {
-            throw new BusinessException(ParticipationErrorCode.CANNOT_GIVE_UP);
-        }
-        if (participation.isDeadlineReached(now)) {
-            throw new BusinessException(ParticipationErrorCode.SUBMISSION_DEADLINE_EXPIRED);
-        }
-        participation.abandon(now);
-    }
-
     @Transactional
     public int expireOverdueParticipations() {
         LocalDateTime now = LocalDateTime.now();
@@ -75,16 +63,6 @@ public class ParticipationService {
             }
         }
         return expiredCount;
-    }
-
-    public boolean hasActiveParticipant(UUID feedbackPostId) {
-        return participationRepository.existsByFeedbackPost_IdAndStatus(feedbackPostId, ParticipationStatus.RESERVED);
-    }
-
-    public void validateNoActiveParticipant(UUID feedbackPostId) {
-        if (hasActiveParticipant(feedbackPostId)) {
-            throw new BusinessException(ParticipationErrorCode.FEEDBACK_POST_HAS_ACTIVE_PARTICIPANT);
-        }
     }
 
 }

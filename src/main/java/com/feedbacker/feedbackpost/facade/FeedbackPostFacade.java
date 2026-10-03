@@ -113,8 +113,7 @@ public class FeedbackPostFacade {
     public void complete(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
-        participationService.validateNoActiveParticipant(feedbackPost.getId());
-        feedbackService.validateNoSubmittedFeedback(feedbackPost.getId());
+        feedbackService.validateExistActive(feedbackPost.getId());
         settle(feedbackPost);
     }
 
@@ -128,7 +127,7 @@ public class FeedbackPostFacade {
             return false;
         }
         // 작성중인 참여·검토 대기 피드백이 남아 있으면 만료/자동 승인된 뒤 다음 주기에 완료한다
-        if (participationService.hasActiveParticipant(feedbackPost.getId())
+        if (feedbackService.hasWritingFeedback(feedbackPost.getId())
                 || feedbackService.hasSubmittedFeedback(feedbackPost.getId())) {
             return false;
         }

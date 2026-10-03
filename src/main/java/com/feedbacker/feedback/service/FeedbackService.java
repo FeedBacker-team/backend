@@ -79,11 +79,8 @@ public class FeedbackService {
         return feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED);
     }
 
-    /** 승인/거절하지 않은 제출 피드백(SUBMITTED)이 남아 있으면 예외 (모집글 완료 시 사용) */
-    public void validateNoSubmittedFeedback(UUID feedbackPostId) {
-        if (hasSubmittedFeedback(feedbackPostId)) {
-            throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK);
-        }
+    public boolean hasWritingFeedback(UUID feedbackPostId) {
+        return feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.WRITING);
     }
 
     public List<UUID> getFeedbackPostIdsWithOverdueFeedback(LocalDateTime now) {
@@ -126,5 +123,16 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findByFeedbackPostIdAndTesterIdForUpdate(feedbackPostId, memberId)
                 .orElseThrow(() -> new BusinessException(FeedbackErrorCode.PARTICIPATION_NOT_FOUND));
         feedback.cancel();
+    }
+
+    public void validateExistActive(UUID feedbackPostId) {
+        // '작성중' 상태인 피드백이 존재하는지 검사
+        if (hasWritingFeedback(feedbackPostId)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_ACTIVE_PARTICIPANT);
+        }
+        // '제출' 상태인 피드백이 존재하는지 검사
+        if (hasSubmittedFeedback(feedbackPostId)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK);
+        }
     }
 }

@@ -13,7 +13,6 @@ public enum FeedbackErrorCode implements ErrorCode {
     FEEDBACK_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 제출한 피드백입니다."),
     FEEDBACK_NOT_SUBMITTED(HttpStatus.CONFLICT, "제출된 피드백만 처리할 수 있습니다."),
     FEEDBACK_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 피드백입니다."),
-    FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK(HttpStatus.CONFLICT, "승인 또는 거절하지 않은 피드백이 있어 모집글을 완료할 수 없습니다."),
     FEEDBACK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "이 피드백에 접근할 권한이 없습니다."),
     FEEDBACK_NOT_REJECTED(HttpStatus.CONFLICT, "거절된 피드백만 이의제기할 수 있습니다."),
     OBJECTION_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 이의제기를 신청한 피드백입니다."),
@@ -25,6 +24,10 @@ public enum FeedbackErrorCode implements ErrorCode {
     SUBMISSION_DEADLINE_EXPIRED(HttpStatus.CONFLICT, "피드백 제출 기한이 만료되었습니다."),
     PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND, "참여 정보를 찾을 수 없습니다."),
     CANNOT_GIVE_UP(HttpStatus.CONFLICT, "작성 중인 피드백만 포기할 수 있습니다."),
+
+    // 피드백 모집글 관련
+    FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK(HttpStatus.CONFLICT, "승인 또는 거절하지 않은 피드백이 있어 모집글을 완료할 수 없습니다."),
+    FEEDBACK_POST_HAS_ACTIVE_PARTICIPANT(HttpStatus.CONFLICT, "작성 중인 참여자가 있어 조기 마감할 수 없습니다."),
 
     // 질문 관련
     QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다."),
