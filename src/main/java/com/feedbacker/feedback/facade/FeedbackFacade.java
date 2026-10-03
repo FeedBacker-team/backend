@@ -160,7 +160,7 @@ public class FeedbackFacade {
     @Transactional
     public void object(UUID memberId, FeedbackObjectRequest request, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        feedback.object(memberId, request.objectReason());
+        feedback.object(memberId, request);
         // 이후 어드민에 이의제기 신청 알림 추가할 예정
     }
 }
