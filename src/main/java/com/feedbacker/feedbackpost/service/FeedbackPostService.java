@@ -246,6 +246,14 @@ public class FeedbackPostService {
                 ));
     }
 
+    /** 모집 기간(endAt)이 지났지만 아직 완료되지 않은 모집글 (자동 완료 스케줄러에서 사용) */
+    public List<UUID> getEndedFeedbackPostIds(LocalDateTime now) {
+        return feedbackPostRepository.findEndedIds(
+                List.of(FeedbackPostStatus.RECRUITING, FeedbackPostStatus.CLOSED),
+                now
+        );
+    }
+
     public void validateFeedbackSubmit(FeedbackPost feedbackPost, UUID memberId) {
         feedbackPost.validateIsWriter(memberId);
         feedbackPost.validateNotCompleted();

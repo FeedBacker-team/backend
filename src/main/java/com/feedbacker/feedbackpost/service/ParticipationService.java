@@ -138,8 +138,12 @@ public class ParticipationService {
         return expiredCount;
     }
 
+    public boolean hasActiveParticipant(UUID feedbackPostId) {
+        return participationRepository.existsByFeedbackPost_IdAndStatus(feedbackPostId, ParticipationStatus.RESERVED);
+    }
+
     public void validateNoActiveParticipant(UUID feedbackPostId) {
-        if (participationRepository.existsByFeedbackPost_IdAndStatus(feedbackPostId, ParticipationStatus.RESERVED)) {
+        if (hasActiveParticipant(feedbackPostId)) {
             throw new BusinessException(ParticipationErrorCode.FEEDBACK_POST_HAS_ACTIVE_PARTICIPANT);
         }
     }

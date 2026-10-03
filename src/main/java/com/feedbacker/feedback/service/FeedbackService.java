@@ -76,9 +76,13 @@ public class FeedbackService {
         return feedbackRepository.countByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.ACCEPTED);
     }
 
+    public boolean hasSubmittedFeedback(UUID feedbackPostId) {
+        return feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED);
+    }
+
     /** 승인/거절하지 않은 제출 피드백(SUBMITTED)이 남아 있으면 예외 (모집글 완료 시 사용) */
     public void validateNoSubmittedFeedback(UUID feedbackPostId) {
-        if (feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED)) {
+        if (hasSubmittedFeedback(feedbackPostId)) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK);
         }
     }
