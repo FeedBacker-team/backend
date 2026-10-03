@@ -19,6 +19,7 @@ public record FeedbackResponse(
         LocalDateTime submissionDeadlineAt,
         LocalDateTime startAt,
         LocalDateTime endAt,
+        LocalDateTime completeAt,
         String thumbnail
 ) {
     public static FeedbackResponse from(Feedback feedback, FeedbackPost feedbackPost, String thumbnail) {
@@ -32,6 +33,7 @@ public record FeedbackResponse(
                 null,
                 feedbackPost.getStartAt(),
                 feedbackPost.getEndAt(),
+                feedbackPost.getCompleteAt(),
                 thumbnail
         );
     }
@@ -49,6 +51,7 @@ public record FeedbackResponse(
                 participation.getSubmissionDeadlineAt(),
                 feedbackPost.getStartAt(),
                 feedbackPost.getEndAt(),
+                feedbackPost.getCompleteAt(),
                 thumbnail
         );
     }
