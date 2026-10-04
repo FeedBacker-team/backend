@@ -84,6 +84,10 @@ public class Feedback extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String objectReason;
 
+    /** 이의제기 검토 결과 */
+    @Column(columnDefinition = "TEXT")
+    private String objectResult;
+
     /** 피드백 모집글에 참여한 시각 */
     @Column(nullable = false)
     private LocalDateTime participateAt;
@@ -192,6 +196,7 @@ public class Feedback extends BaseTimeEntity {
         }
         this.objectReason = request.objectReason();
         this.objectType = request.objectType();
+        this.status = FeedbackStatus.OBJECTED;
     }
 
     public void submit(List<QuestionAnswer> answers) {
