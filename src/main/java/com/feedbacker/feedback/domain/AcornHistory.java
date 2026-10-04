@@ -58,6 +58,25 @@ public class AcornHistory {
         this.changeAcorn = changeAcorn;
     }
 
+
+    /** 기본 도토리 지급 메서드 */
+    public static AcornHistory earn(Member member, AcornHistoryType type, Integer changeAcorn) {
+        return AcornHistory.builder()
+                .member(member)
+                .type(type)
+                .changeAcorn(changeAcorn)
+                .build();
+    }
+
+    /** 기본 도토리 차감 메서드 */
+    public static AcornHistory withdraw(Member member, AcornHistoryType type, Integer changeAcorn) {
+        return AcornHistory.builder()
+                .member(member)
+                .type(type)
+                .changeAcorn(changeAcorn < 0 ? -changeAcorn : changeAcorn)
+                .build();
+    }
+
     /** 피드백 승인 시 테스터 보상 내역 */
     public static AcornHistory reward(Member tester, Feedback feedback, FeedbackPost feedbackPost) {
         return AcornHistory.builder()
