@@ -18,6 +18,8 @@ import com.feedbacker.feedbackpost.repository.QuestionRepository;
 import com.feedbacker.feedbackpost.service.QuestionService;
 import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.global.exception.BusinessException;
+import com.feedbacker.member.Member;
+import com.feedbacker.member.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +40,7 @@ public class QuestionAnswerService {
     private final QuestionRepository questionRepository;
     private final QuestionAnswerRepository questionAnswerRepository;
     private final QuestionAnswerResponseMapper questionAnswerResponseMapper;
+    private final MemberService memberService;
 
     @Transactional
     public List<QuestionAnswer> createAnswers(
@@ -149,8 +152,9 @@ public class QuestionAnswerService {
                                     questionService.getAllQuestion(feedbackPost.getId()),
                                     getAllQuestionAnswer(feedback.getId())
                             );
-
-                    return FeedbackResultResponse.from(feedback, questionAnswer);
+                    // 수정 예정
+                    Member member = memberService.getMember(feedback.getTesterId());
+                    return FeedbackResultResponse.from(feedback, questionAnswer, member.getProfileImage());
                 })
                 .toList();
     }
