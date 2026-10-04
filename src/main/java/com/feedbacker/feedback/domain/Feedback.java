@@ -68,6 +68,9 @@ public class Feedback extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT")
     private String objectReason;
 
+    @Column(columnDefinition = "TEXT")
+    private String objectResult;
+
     @Column(nullable = false)
     private LocalDateTime submitAt;
 
@@ -186,5 +189,6 @@ public class Feedback extends BaseTimeEntity {
         }
         this.objectReason = request.objectReason();
         this.objectType = request.objectType();
+        this.status = FeedbackStatus.OBJECTED;
     }
 }
