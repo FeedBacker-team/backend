@@ -10,17 +10,23 @@ import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.global.image.ImageResponse;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record FeedbackDetailResponse(
         String feedbackPostTitle,
+        UUID feedbackPostId,
+        String testerName,
+        String testerProfileImageUrl,
         FeedbackStatus feedbackStatus,
         TargetType targetType,
         int rewardAcorn,
         RejectType rejectType,
         String rejectDetail,
-        ImageResponse Thumbnail,
+        String objectReason,
+        String objectResult,
+        ImageResponse thumbnail,
         LocalDateTime startAt,
-        LocalDateTime endaAt,
+        LocalDateTime endAt,
         LocalDateTime participateAt,
         LocalDateTime submitAt,
         LocalDateTime responseDeadlineAt,
@@ -33,16 +39,22 @@ public record FeedbackDetailResponse(
             FeedbackPost feedbackPost,
             Feedback feedback,
             Participation participation,
+            String testerProfileImageUrl,
             ImageResponse thumbnail,
             QuestionAnswerResponse questionAnswerResponses
     ) {
         return new FeedbackDetailResponse(
                 feedbackPost.getTitle(),
+                feedbackPost.getId(),
+                feedback.getTesterName(),
+                testerProfileImageUrl,
                 feedback.getStatus(),
                 feedbackPost.getTargetType(),
                 feedbackPost.getRewardAcorn(),
                 feedback.getRejectType(),
                 feedback.getRejectDetail(),
+                feedback.getObjectReason(),
+                feedback.getObjectResult(),
                 thumbnail,
                 feedbackPost.getStartAt(),
                 feedbackPost.getEndAt(),

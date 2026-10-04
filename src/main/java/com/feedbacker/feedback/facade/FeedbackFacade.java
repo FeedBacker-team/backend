@@ -9,6 +9,7 @@ import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
+import com.feedbacker.feedback.domain.type.AcornHistoryType;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
@@ -110,6 +111,7 @@ public class FeedbackFacade {
                 feedbackPost,
                 feedback,
                 participation,
+                memberService.toImageUrl(tester.getProfileImage()),
                 feedbackPostService.getThumbnail(feedbackPost),
                 questionAnswerResponse
         );
