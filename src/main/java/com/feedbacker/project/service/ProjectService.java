@@ -13,6 +13,7 @@ import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
 import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.repository.ProjectRepository;
+import com.feedbacker.project.repository.ProjectViewRepository;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.validation.ConstraintViolation;
@@ -46,6 +47,7 @@ public class ProjectService {
     private final MemberRepository memberRepository;
     private final Validator validator;
     private final SupabaseStorageService storageService;
+    private final ProjectViewRepository projectViewRepository;
 
     //프로젝트 등록
     @Transactional
@@ -77,16 +79,26 @@ public class ProjectService {
     //조회수 증가
     @Transactional
     public ProjectDetailResponse getProjectDetail(UUID projectId, UUID viewerId) {
-        validateProjectId(projectId);
-        int updatedCount = projectRepository.increaseViewCount(
-                projectId, ProjectStatus.PUBLISHED
-        );
-
-        if (updatedCount == 0) {
-            throw projectNotFound();
+        Project project = findPublishedProject(projectId);
+        if (viewerId == null) {
+            return toDetailResponse(project, null);
         }
 
-        Project project = findPublishedProject(projectId);
+        if (!memberRepository.existsById(viewerId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 회원을 찾을 수 없습니다.");
+        }
+
+        int insertCount = projectViewRepository.insertIfAbsent(projectId, viewerId);
+
+        if (insertCount == 1) {
+            int updatedCount = projectRepository.increaseViewCount(projectId, ProjectStatus.PUBLISHED);
+
+            if (updatedCount == 0) {
+                throw projectNotFound();
+            }
+
+            project = findPublishedProject(projectId);
+        }
         return toDetailResponse(project, viewerId);
     }
 

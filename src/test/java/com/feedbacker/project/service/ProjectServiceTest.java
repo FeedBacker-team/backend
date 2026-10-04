@@ -13,6 +13,7 @@ import com.feedbacker.project.domain.dto.response.ProjectCreateResponse;
 import com.feedbacker.project.domain.dto.response.ProjectDetailResponse;
 import com.feedbacker.project.domain.dto.response.ProjectSummaryResponse;
 import com.feedbacker.project.repository.ProjectRepository;
+import com.feedbacker.project.repository.ProjectViewRepository;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,9 @@ class ProjectServiceTest {
     @Mock
     private MemberRepository memberRepository;
 
+    @Mock
+    private ProjectViewRepository projectViewRepository;
+
     private ProjectService projectService;
 
     private Validator validator;
@@ -69,7 +73,8 @@ class ProjectServiceTest {
                 projectRepository,
                 memberRepository,
                 validator,
-                storageService
+                storageService,
+                projectViewRepository
         );
     }
 
@@ -191,7 +196,7 @@ class ProjectServiceTest {
     class GetProjectDetail {
 
         @Test
-        @DisplayName("프로젝트를 조회하면 조회수를 증가시키고 상세 응답을 반환한다")
+        @DisplayName("작성자도 최초 로그인 조회 시 한 번 증가시키고 최신 상세 응답을 반환한다")
         void getProjectDetailSuccess() {
             // given
             UUID projectId = UUID.randomUUID();
@@ -199,6 +204,7 @@ class ProjectServiceTest {
 
             Member owner = mock(Member.class);
             Project project = mock(Project.class);
+            Project beforeIncrease = mock(Project.class);
 
             when(owner.getId()).thenReturn(ownerId);
             when(owner.getNickname()).thenReturn("메이커");
@@ -209,8 +215,12 @@ class ProjectServiceTest {
             when(project.getTags())
                     .thenReturn(List.of(ProjectTag.WEB));
             when(project.getThumbnailImage()).thenReturn(THUMBNAIL_PATH);
+            when(project.getViewCount()).thenReturn(11L);
             when(storageService.createPublicUrl(THUMBNAIL_PATH))
                     .thenReturn(THUMBNAIL_URL);
+
+            when(memberRepository.existsById(ownerId)).thenReturn(true);
+            when(projectViewRepository.insertIfAbsent(projectId, ownerId)).thenReturn(1);
 
             when(projectRepository.increaseViewCount(
                     projectId,
@@ -220,7 +230,7 @@ class ProjectServiceTest {
             when(projectRepository.findByIdAndStatus(
                     projectId,
                     ProjectStatus.PUBLISHED
-            )).thenReturn(Optional.of(project));
+            )).thenReturn(Optional.of(beforeIncrease), Optional.of(project));
 
             when(projectRepository.findActiveQa(
                     eq(projectId),
@@ -243,13 +253,19 @@ class ProjectServiceTest {
             assertThat(response.hasActiveQa()).isFalse();
             assertThat(response.activeQa()).isNull();
             assertThat(response.thumbnailImage()).isEqualTo(THUMBNAIL_URL);
+            assertThat(response.viewCount()).isEqualTo(11L);
+
+            var order = inOrder(projectViewRepository, projectRepository);
+            order.verify(projectViewRepository).insertIfAbsent(projectId, ownerId);
+            order.verify(projectRepository).increaseViewCount(projectId, ProjectStatus.PUBLISHED);
+            order.verify(projectRepository).findByIdAndStatus(projectId, ProjectStatus.PUBLISHED);
 
             verify(projectRepository).increaseViewCount(
                     projectId,
                     ProjectStatus.PUBLISHED
             );
 
-            verify(projectRepository).findByIdAndStatus(
+            verify(projectRepository, times(2)).findByIdAndStatus(
                     projectId,
                     ProjectStatus.PUBLISHED
             );
@@ -265,10 +281,10 @@ class ProjectServiceTest {
             // given
             UUID projectId = UUID.randomUUID();
 
-            when(projectRepository.increaseViewCount(
+            when(projectRepository.findByIdAndStatus(
                     projectId,
                     ProjectStatus.PUBLISHED
-            )).thenReturn(0);
+            )).thenReturn(Optional.empty());
 
             // when
             ResponseStatusException exception = assertThrows(
@@ -283,8 +299,140 @@ class ProjectServiceTest {
             assertThat(exception.getStatusCode())
                     .isEqualTo(HttpStatus.NOT_FOUND);
 
-            verify(projectRepository, never())
-                    .findByIdAndStatus(any(), any());
+            verify(projectRepository, never()).increaseViewCount(any(), any());
+            verifyNoInteractions(memberRepository, projectViewRepository);
+        }
+
+        @Test
+        @DisplayName("비로그인 조회는 기존 조회수를 반환하고 회원 및 조회 이력에 접근하지 않는다")
+        void anonymousViewDoesNotIncreaseCount() {
+            UUID projectId = UUID.randomUUID();
+            stubDetail(projectId, 10L);
+
+            ProjectDetailResponse response = projectService.getProjectDetail(projectId, null);
+
+            assertThat(response.viewCount()).isEqualTo(10L);
+            assertThat(response.isOwner()).isFalse();
+            verifyNoInteractions(memberRepository, projectViewRepository);
+            verify(projectRepository, never()).increaseViewCount(any(), any());
+            verify(projectRepository).findByIdAndStatus(projectId, ProjectStatus.PUBLISHED);
+        }
+
+        @Test
+        @DisplayName("이미 조회한 회원은 조회수를 증가시키지 않는다")
+        void existingViewerDoesNotIncreaseCount() {
+            UUID projectId = UUID.randomUUID();
+            UUID viewerId = UUID.randomUUID();
+            stubDetail(projectId, 10L);
+            when(memberRepository.existsById(viewerId)).thenReturn(true);
+            when(projectViewRepository.insertIfAbsent(projectId, viewerId)).thenReturn(0);
+
+            ProjectDetailResponse response = projectService.getProjectDetail(projectId, viewerId);
+
+            assertThat(response.viewCount()).isEqualTo(10L);
+            verify(projectViewRepository).insertIfAbsent(projectId, viewerId);
+            verify(projectRepository, never()).increaseViewCount(any(), any());
+            verify(projectRepository).findByIdAndStatus(projectId, ProjectStatus.PUBLISHED);
+        }
+
+        @Test
+        @DisplayName("같은 회원이 연속 조회하면 신규 이력일 때만 한 번 증가한다")
+        void repeatedViewsIncreaseOnlyOnce() {
+            UUID projectId = UUID.randomUUID();
+            UUID viewerId = UUID.randomUUID();
+            stubDetail(projectId, 11L);
+            when(memberRepository.existsById(viewerId)).thenReturn(true);
+            when(projectViewRepository.insertIfAbsent(projectId, viewerId)).thenReturn(1, 0);
+            when(projectRepository.increaseViewCount(projectId, ProjectStatus.PUBLISHED)).thenReturn(1);
+
+            assertThat(projectService.getProjectDetail(projectId, viewerId).viewCount()).isEqualTo(11L);
+            assertThat(projectService.getProjectDetail(projectId, viewerId).viewCount()).isEqualTo(11L);
+
+            verify(projectViewRepository, times(2)).insertIfAbsent(projectId, viewerId);
+            verify(projectRepository).increaseViewCount(projectId, ProjectStatus.PUBLISHED);
+            verify(projectRepository, times(3)).findByIdAndStatus(projectId, ProjectStatus.PUBLISHED);
+        }
+
+        @Test
+        @DisplayName("서로 다른 회원의 최초 조회는 각각 증가한다")
+        void distinctViewersEachIncreaseCount() {
+            UUID projectId = UUID.randomUUID();
+            UUID firstViewer = UUID.randomUUID();
+            UUID secondViewer = UUID.randomUUID();
+            Project project = stubDetail(projectId, 11L);
+            when(project.getViewCount()).thenReturn(11L, 12L);
+            when(memberRepository.existsById(firstViewer)).thenReturn(true);
+            when(memberRepository.existsById(secondViewer)).thenReturn(true);
+            when(projectViewRepository.insertIfAbsent(projectId, firstViewer)).thenReturn(1);
+            when(projectViewRepository.insertIfAbsent(projectId, secondViewer)).thenReturn(1);
+            when(projectRepository.increaseViewCount(projectId, ProjectStatus.PUBLISHED)).thenReturn(1);
+
+            assertThat(projectService.getProjectDetail(projectId, firstViewer).viewCount()).isEqualTo(11L);
+            assertThat(projectService.getProjectDetail(projectId, secondViewer).viewCount()).isEqualTo(12L);
+
+            verify(projectViewRepository).insertIfAbsent(projectId, firstViewer);
+            verify(projectViewRepository).insertIfAbsent(projectId, secondViewer);
+            verify(projectRepository, times(2)).increaseViewCount(projectId, ProjectStatus.PUBLISHED);
+        }
+
+        @Test
+        @DisplayName("회원이 존재하지 않으면 401이며 조회 이력을 저장하지 않는다")
+        void missingMemberDoesNotRecordView() {
+            UUID projectId = UUID.randomUUID();
+            UUID viewerId = UUID.randomUUID();
+            when(projectRepository.findByIdAndStatus(projectId, ProjectStatus.PUBLISHED))
+                    .thenReturn(Optional.of(mock(Project.class)));
+            when(memberRepository.existsById(viewerId)).thenReturn(false);
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> projectService.getProjectDetail(projectId, viewerId));
+
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            verifyNoInteractions(projectViewRepository);
+            verify(projectRepository, never()).increaseViewCount(any(), any());
+        }
+
+        @Test
+        @DisplayName("조회수 갱신 대상이 사라지면 404 예외를 전파한다")
+        void failedIncreaseThrowsNotFound() {
+            UUID projectId = UUID.randomUUID();
+            UUID viewerId = UUID.randomUUID();
+            when(projectRepository.findByIdAndStatus(projectId, ProjectStatus.PUBLISHED))
+                    .thenReturn(Optional.of(mock(Project.class)));
+            when(memberRepository.existsById(viewerId)).thenReturn(true);
+            when(projectViewRepository.insertIfAbsent(projectId, viewerId)).thenReturn(1);
+            when(projectRepository.increaseViewCount(projectId, ProjectStatus.PUBLISHED)).thenReturn(0);
+
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> projectService.getProjectDetail(projectId, viewerId));
+
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            verify(projectRepository).findByIdAndStatus(projectId, ProjectStatus.PUBLISHED);
+            verify(projectRepository, never()).findActiveQa(any(), anyCollection(), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("프로젝트 ID가 없으면 400이며 DB에 접근하지 않는다")
+        void missingProjectIdThrowsBadRequest() {
+            ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> projectService.getProjectDetail(null, UUID.randomUUID()));
+
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            verifyNoInteractions(projectRepository, memberRepository, projectViewRepository);
+        }
+
+        private Project stubDetail(UUID projectId, long viewCount) {
+            Member owner = mock(Member.class);
+            Project project = mock(Project.class);
+            when(owner.getId()).thenReturn(UUID.randomUUID());
+            when(project.getOwner()).thenReturn(owner);
+            when(project.getId()).thenReturn(projectId);
+            when(project.getViewCount()).thenReturn(viewCount);
+            when(projectRepository.findByIdAndStatus(projectId, ProjectStatus.PUBLISHED))
+                    .thenReturn(Optional.of(project));
+            when(projectRepository.findActiveQa(eq(projectId), anyCollection(), any(Pageable.class)))
+                    .thenReturn(List.of());
+            return project;
         }
     }
 
