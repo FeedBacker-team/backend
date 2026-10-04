@@ -10,9 +10,13 @@ import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.global.image.ImageResponse;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record FeedbackDetailResponse(
         String feedbackPostTitle,
+        UUID feedbackPostId,
+        String testerName,
+        String testerProfileImageUrl,
         FeedbackStatus feedbackStatus,
         TargetType targetType,
         int rewardAcorn,
@@ -33,11 +37,15 @@ public record FeedbackDetailResponse(
             FeedbackPost feedbackPost,
             Feedback feedback,
             Participation participation,
+            String testerProfileImageUrl,
             ImageResponse thumbnail,
             QuestionAnswerResponse questionAnswerResponses
     ) {
         return new FeedbackDetailResponse(
                 feedbackPost.getTitle(),
+                feedbackPost.getId(),
+                feedback.getTesterName(),
+                testerProfileImageUrl,
                 feedback.getStatus(),
                 feedbackPost.getTargetType(),
                 feedbackPost.getRewardAcorn(),

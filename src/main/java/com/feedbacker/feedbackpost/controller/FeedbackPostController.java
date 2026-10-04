@@ -85,7 +85,7 @@ public class FeedbackPostController {
     }
 
     @GetMapping("/{feedbackPostId}/feedbacks")
-    public List<FeedbackProgressResponse> getFeedbacks(
+    public FeedbackPostProgressResponse getFeedbacks(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
