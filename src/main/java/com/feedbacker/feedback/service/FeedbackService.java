@@ -123,7 +123,8 @@ public class FeedbackService {
     private FeedbackErrorCode toAlreadyParticipatedError(FeedbackStatus status) {
         return switch (status) {
             case WRITING -> FeedbackErrorCode.ALREADY_RESERVED;
-            case SUBMITTED, ACCEPTED, REJECTED -> FeedbackErrorCode.ALREADY_PARTICIPATED;
+            case SUBMITTED, ACCEPTED, REJECTED,
+                 OBJECTED, OBJECTION_ACCEPTED, OBJECTION_REJECTED -> FeedbackErrorCode.ALREADY_PARTICIPATED;
             case CANCELED -> FeedbackErrorCode.ABANDONED_PARTICIPATION;
             case EXPIRED -> FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED;
         };
