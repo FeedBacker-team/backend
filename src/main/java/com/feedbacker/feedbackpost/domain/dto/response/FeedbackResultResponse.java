@@ -10,6 +10,7 @@ import java.util.UUID;
 public record FeedbackResultResponse(
         UUID feedbackId,
         String testerName,
+        String testerProfileImage,
         LocalDateTime submitAt,
         FeedbackStatus status,
         QuestionAnswerResponse questionAnswer
@@ -21,6 +22,7 @@ public record FeedbackResultResponse(
         return new FeedbackResultResponse(
                 feedback.getId(),
                 feedback.getTester().getNickname(),
+                feedback.getTester().getProfileImage(),
                 feedback.getSubmitAt(),
                 feedback.getStatus(),
                 questionAnswer

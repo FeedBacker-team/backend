@@ -3,6 +3,7 @@ package com.feedbacker.feedback.service;
 import com.feedbacker.feedback.domain.AcornHistory;
 import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
+import com.feedbacker.feedback.domain.type.AcornHistoryType;
 import com.feedbacker.feedback.repository.AcornHistoryRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.security.CustomUserDetails;
@@ -19,6 +20,16 @@ import java.util.UUID;
 public class AcornHistoryService {
 
     private final AcornHistoryRepository acornHistoryRepository;
+    
+    @Transactional
+    public void saveEarn(Member member, AcornHistoryType type, Integer changeAcorn) {
+        acornHistoryRepository.save(AcornHistory.earn(member, type, changeAcorn));
+    }
+
+    @Transactional
+    public void saveWithdraw(Member member, AcornHistoryType type, Integer changeAcorn) {
+        acornHistoryRepository.save(AcornHistory.withdraw(member, type, changeAcorn));
+    }
 
     @Transactional
     public void saveReward(Member tester, Feedback feedback, FeedbackPost feedbackPost) {
