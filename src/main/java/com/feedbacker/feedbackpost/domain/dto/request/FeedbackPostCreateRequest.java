@@ -27,7 +27,7 @@ public record FeedbackPostCreateRequest(
         UUID projectId,
 
         @NotBlank(message = "제목을 공백일 수 없습니다.")
-        @Size(max = 50, message = "제목은 50자 이하여야 합니다.")
+        @Size(max = 100, message = "제목은 100자 이하여야 합니다.")
         String title,
 
         @NotBlank(message = "설명글은 공백일 수 없습니다.")
