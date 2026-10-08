@@ -15,6 +15,7 @@ import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.repository.ProjectRepository;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -173,7 +174,7 @@ public class ProjectService {
 
         }
         if (tags != null && !tags.isEmpty()) {
-            specification = specification.and(hasAnyTag(tags));
+            specification = specification.and(hasAllTag(tags));
         }
 
         PageRequest pageRequest = PageRequest.of(page, size, createSort(sort));
@@ -244,16 +245,20 @@ public class ProjectService {
         };
     }
 
-    private Specification<Project> hasAnyTag(
+    private Specification<Project> hasAllTag(
             List<ProjectTag> tags
-    ) {
+    ){
         return (root, query, criteriaBuilder) -> {
-            query.distinct(true);
+            Predicate condition = criteriaBuilder.conjunction();
 
-            Join<Project, ProjectTag> tagJoin =
-                    root.join("tags", JoinType.INNER);
+            for (ProjectTag tag : tags) {
+                condition = criteriaBuilder.and(
+                        condition,
+                        criteriaBuilder.isMember(tag, root.<List<ProjectTag>>get("tags"))
+                );
+            }
+            return condition;
 
-            return tagJoin.in(tags);
         };
     }
 
