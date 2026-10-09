@@ -275,7 +275,7 @@ public class ProjectService {
     }
 
     private Sort createSort(ProjectSort sort) {
-        return switch (sort) {
+        Sort defaultSort = switch (sort) {
             case LATEST -> Sort.by(
                     Sort.Order.desc("createdAt"),
                     Sort.Order.desc("id")
@@ -287,6 +287,7 @@ public class ProjectService {
                     Sort.Order.desc("id")
             );
         };
+        return Sort.by(Sort.Order.desc("pinned")).and(defaultSort);
     }
 
     public List<MyProjectResponse> getMyProjects(UUID memberId) {
