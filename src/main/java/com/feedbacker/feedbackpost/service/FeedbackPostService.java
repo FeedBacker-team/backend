@@ -114,7 +114,7 @@ public class FeedbackPostService {
     }
 
     private Sort createSort(FeedbackPostSort sort) {
-        return switch (sort) {
+        Sort defaultSort = switch (sort) {
             case LATEST -> Sort.by(
                     Sort.Order.desc("createdAt"),
                     Sort.Order.desc("id")
@@ -125,6 +125,7 @@ public class FeedbackPostService {
                     Sort.Order.asc("id")
             );
         };
+        return Sort.by(Sort.Order.desc("pinned")).and(defaultSort);
     }
 
     private Specification<FeedbackPost> hasAnyTag(List<ProjectTag> tags) {

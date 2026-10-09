@@ -12,6 +12,7 @@ import com.feedbacker.project.repository.ProjectRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
+import com.feedbacker.project.repository.ProjectViewRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,12 +48,13 @@ class ProjectTagFilterTest {
     private ProjectService projectService;
     private Member owner;
 
+
     @BeforeEach
     void setUp() {
         validatorFactory = Validation.buildDefaultValidatorFactory();
         projectService = new ProjectService(
                 projectRepository, memberRepository, validatorFactory.getValidator(),
-                mock(SupabaseStorageService.class)
+                mock(SupabaseStorageService.class), mock(ProjectViewRepository.class)
         );
         owner = memberRepository.save(Member.createEmailMember("tags@example.com", "test-password"));
 

@@ -1,0 +1,2 @@
+ALTER TABLE feedback_posts
+    ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT FALSE;
