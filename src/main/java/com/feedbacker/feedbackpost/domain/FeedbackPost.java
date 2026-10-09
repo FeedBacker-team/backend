@@ -81,6 +81,9 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column
     private LocalDateTime completeAt;
 
+    @Column(name = "is_pinned", nullable = false)
+    private boolean pinned = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
