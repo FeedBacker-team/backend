@@ -85,7 +85,7 @@ public class FeedbackPostFacade {
     }
 
     @Transactional(readOnly = true)
-    public FeedbackPostProgressResponse getFeedbacks(UUID memberId, UUID feedbackPostId) {
+    public FeedbackPostProgressResponse getProgress(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
         List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPost.getId());

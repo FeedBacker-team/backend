@@ -20,7 +20,7 @@ public record FeedbackProgressResponse(
                 feedback.getId(),
                 feedback.getTester().getNickname(),
                 testerProfileImageUrl,
-                feedback.getStatus(),
+                feedback.statusForFeedbackPostWriter(),
                 feedback.getSubmitAt(),
                 feedback.getResponseDeadLineAt()
         );

@@ -254,4 +254,13 @@ public class Feedback extends BaseTimeEntity {
                 || status == FeedbackStatus.ACCEPTED
                 || status == FeedbackStatus.REJECTED;
     }
+
+    public FeedbackStatus statusForFeedbackPostWriter() {
+        return switch (this.status) {
+            case FeedbackStatus.OBJECTED,
+                 FeedbackStatus.OBJECTION_REJECTED,
+                 FeedbackStatus.OBJECTION_ACCEPTED -> FeedbackStatus.REJECTED;
+            default -> this.status;
+        };
+    }
 }
