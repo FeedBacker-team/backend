@@ -14,6 +14,7 @@ import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
+import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
 import com.feedbacker.feedbackpost.service.ImageService;
 import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.member.AcornWalletService;
@@ -35,6 +36,7 @@ import java.util.UUID;
 public class FeedbackPostFacade {
 
     private final FeedbackPostService feedbackPostService;
+    private final FeedbackPostCompleteService feedbackPostCompleteService;
     private final ProjectService projectService;
     private final MemberService memberService;
     private final AcornWalletService acornWalletService;
@@ -108,7 +110,7 @@ public class FeedbackPostFacade {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
         feedbackService.validateExistActive(feedbackPost.getId());
-        settle(feedbackPost);
+        feedbackPostCompleteService.complete(feedbackPost);
     }
 
     /** 모집 기간이 끝난 모집글을 자동 완료·환급 (스케줄러 전용). 완료 처리했으면 true */
@@ -125,20 +127,8 @@ public class FeedbackPostFacade {
                 || feedbackService.hasSubmittedFeedback(feedbackPost.getId())) {
             return false;
         }
-        settle(feedbackPost);
+        feedbackPostCompleteService.complete(feedbackPost);
         return true;
-    }
-
-    // 모집글 완료 처리 + 작성자에게 남은 예치 도토리 환급
-    private void settle(FeedbackPost feedbackPost) {
-        UUID writerId = feedbackPost.getWriterId();
-        feedbackPost.complete(writerId);
-        // 환급 = 예치 - (승인 수 * 건당 보상)
-        int refundAcorn = feedbackPost.getDepositAcorn() - getPaidAcorn(feedbackPost);
-        if (refundAcorn > 0) {
-            acornWalletService.earn(writerId, refundAcorn);
-            acornHistoryService.saveRefund(memberService.getMember(writerId), feedbackPost.getId(), refundAcorn);
-        }
     }
 
     @Transactional(readOnly = true)
@@ -152,13 +142,8 @@ public class FeedbackPostFacade {
         return FeedbackPostResultResponse.from(
                 feedbackResults,
                 feedbackPost,
-                getPaidAcorn(feedbackPost),
+                feedbackPostCompleteService.getPaidAcorn(feedbackPost),
                 images
         );
-    }
-
-    // 승인된 피드백에 지급된 도토리 합계
-    private int getPaidAcorn(FeedbackPost feedbackPost) {
-        return feedbackService.countAcceptedFeedbacks(feedbackPost.getId()) * feedbackPost.getRewardAcorn();
     }
 }

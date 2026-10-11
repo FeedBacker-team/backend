@@ -9,13 +9,13 @@ import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
-import com.feedbacker.feedback.domain.type.AcornHistoryType;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
+import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
 import com.feedbacker.feedbackpost.service.QuestionService;
 import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
@@ -36,6 +36,7 @@ public class FeedbackFacade {
 
     private final MemberService memberService;
     private final FeedbackPostService feedbackPostService;
+    private final FeedbackPostCompleteService feedbackPostSettlementService;
     private final FeedbackService feedbackService;
     private final QuestionService questionService;
     private final QuestionAnswerService questionAnswerService;
@@ -106,6 +107,8 @@ public class FeedbackFacade {
         feedbackPost.validateNotCompleted();
         feedback.accept(feedbackPost.getRewardAcorn());
         payReward(feedback, feedbackPost);
+        // 슬롯이 모두 찼고 방금 처리한 것이 마지막 미평가 피드백이면 모집글을 자동 완료한다
+        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
     }
 
     /** 응답 기한이 지난 제출 피드백을 모집글 단위로 자동 승인 (스케줄러 전용) */
@@ -122,6 +125,9 @@ public class FeedbackFacade {
         for (Feedback feedback : targets) {
             feedback.autoAccept(feedbackPost.getRewardAcorn());
             payReward(feedback, feedbackPost);
+        }
+        if (!targets.isEmpty()) {
+            feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
         }
         return targets.size();
     }
@@ -156,6 +162,8 @@ public class FeedbackFacade {
         feedbackPost.validateAccessAuth(memberId);
         feedbackPost.validateNotCompleted();
         feedback.reject(request);
+        // 거절분 도토리는 이의제기 결과와 상관없이 작성자에게 환급되므로, 거절로 평가가 끝나도 바로 완료한다
+        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
         // 이후 거부 사유 검증 로직 추가할 예정
     }
 
