@@ -153,6 +153,13 @@ public class FeedbackPost extends BaseTimeEntity {
         }
     }
 
+    /** 모집중인 글을 모집마감으로 변경 (모집 기간 종료 시 사용) */
+    public void close() {
+        if (this.status == FeedbackPostStatus.RECRUITING) {
+            this.status = FeedbackPostStatus.CLOSED;
+        }
+    }
+
     public void complete(UUID memberId) {
         validateNotCompleted();
         validateAccessAuth(memberId);
