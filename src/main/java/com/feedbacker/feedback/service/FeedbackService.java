@@ -107,7 +107,7 @@ public class FeedbackService {
     ) {
         boolean isTester = memberId.equals(feedback.getTester().getId());
         boolean isWriter = memberId.equals(feedbackPost.getWriterId());
-        if (!isTester && !(isWriter && feedback.isSubmitted())) {   // 제출 이후 상태(SUBMITTED/ACCEPTED/REJECTED)만
+        if (!isTester && !(isWriter && feedback.isSubmitted())) {   // 제출 이후 상태(SUBMITTED/ACCEPTED/REJECTED/OBJECTED*)만
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
     }

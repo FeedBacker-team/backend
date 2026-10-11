@@ -216,7 +216,8 @@ public class Feedback extends BaseTimeEntity {
     private void validateSubmittable(LocalDateTime now) {
         switch (this.status) {
             case WRITING -> { }
-            case SUBMITTED, ACCEPTED, REJECTED -> throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_SUBMITTED);
+            case SUBMITTED, ACCEPTED, REJECTED,
+                 OBJECTED, OBJECTION_ACCEPTED, OBJECTION_REJECTED -> throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_SUBMITTED);
             case CANCELED -> throw new BusinessException(FeedbackErrorCode.ABANDONED_PARTICIPATION);
             case EXPIRED -> throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
         }
@@ -252,7 +253,10 @@ public class Feedback extends BaseTimeEntity {
     public boolean isSubmitted() {
         return status == FeedbackStatus.SUBMITTED
                 || status == FeedbackStatus.ACCEPTED
-                || status == FeedbackStatus.REJECTED;
+                || status == FeedbackStatus.REJECTED
+                || status == FeedbackStatus.OBJECTED
+                || status == FeedbackStatus.OBJECTION_REJECTED
+                || status == FeedbackStatus.OBJECTION_ACCEPTED;
     }
 
     public FeedbackStatus statusForFeedbackPostWriter() {
