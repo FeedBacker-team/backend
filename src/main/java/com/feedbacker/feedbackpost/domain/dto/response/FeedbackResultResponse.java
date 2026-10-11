@@ -17,13 +17,12 @@ public record FeedbackResultResponse(
 ) {
     public static FeedbackResultResponse from(
             Feedback feedback,
-            QuestionAnswerResponse questionAnswer,
-            String testerProfileImage
+            QuestionAnswerResponse questionAnswer
     ) {
         return new FeedbackResultResponse(
                 feedback.getId(),
-                feedback.getTesterName(),
-                testerProfileImage,
+                feedback.getTester().getNickname(),
+                feedback.getTester().getProfileImage(),
                 feedback.getSubmitAt(),
                 feedback.getStatus(),
                 questionAnswer

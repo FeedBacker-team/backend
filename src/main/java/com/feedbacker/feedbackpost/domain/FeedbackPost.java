@@ -3,7 +3,6 @@ package com.feedbacker.feedbackpost.domain;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
 import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
-import com.feedbacker.feedbackpost.exception.ParticipationErrorCode;
 import com.feedbacker.global.common.BaseTimeEntity;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.global.image.ImageInfo;
@@ -135,10 +134,9 @@ public class FeedbackPost extends BaseTimeEntity {
 
     public void minusRemainSlotCount() {
         if (this.remainSlotCount <= 0) {
-            return;
+            throw new BusinessException(FeedbackPostErrorCode.SLOT_FULL);
         }
         this.remainSlotCount--;
-        // 마지막 슬롯이 채워지면 모집마감으로
         if (this.remainSlotCount == 0 && this.status == FeedbackPostStatus.RECRUITING) {
             this.status = FeedbackPostStatus.CLOSED;
         }
@@ -155,6 +153,13 @@ public class FeedbackPost extends BaseTimeEntity {
         }
     }
 
+    /** 모집중인 글을 모집마감으로 변경 (모집 기간 종료 시 사용) */
+    public void close() {
+        if (this.status == FeedbackPostStatus.RECRUITING) {
+            this.status = FeedbackPostStatus.CLOSED;
+        }
+    }
+
     public void complete(UUID memberId) {
         validateNotCompleted();
         validateAccessAuth(memberId);
@@ -164,7 +169,7 @@ public class FeedbackPost extends BaseTimeEntity {
 
     public void validateIsWriter(UUID memberId) {
         if (this.writerId.equals(memberId)) {
-            throw new BusinessException(ParticipationErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
+            throw new BusinessException(FeedbackPostErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
         }
     }
 

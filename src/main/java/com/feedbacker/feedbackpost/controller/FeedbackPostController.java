@@ -85,11 +85,11 @@ public class FeedbackPostController {
     }
 
     @GetMapping("/{feedbackPostId}/feedbacks")
-    public FeedbackPostProgressResponse getFeedbacks(
+    public FeedbackPostProgressResponse getProgress(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
-        return feedbackPostFacade.getFeedbacks(user.getMemberId(), feedbackPostId);
+        return feedbackPostFacade.getProgress(user.getMemberId(), feedbackPostId);
     }
 
     @PatchMapping("/{feedbackPostId}/complete")

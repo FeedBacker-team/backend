@@ -7,7 +7,6 @@ import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
 import com.feedbacker.feedbackpost.service.mapper.FeedbackFormMapper;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.feedbackpost.repository.FeedbackPostRepository;
-import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.project.domain.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -15,16 +15,14 @@ public record FeedbackProgressResponse(
         LocalDateTime responseDeadlineAt
 ) {
 
-    private static final long DEADLINE = 72;
-
     public static FeedbackProgressResponse from(Feedback feedback, String testerProfileImageUrl) {
         return new FeedbackProgressResponse(
                 feedback.getId(),
-                feedback.getTesterName(),
+                feedback.getTester().getNickname(),
                 testerProfileImageUrl,
-                feedback.getStatus(),
+                feedback.statusForFeedbackPostWriter(),
                 feedback.getSubmitAt(),
-                feedback.getSubmitAt().plusHours(DEADLINE)
+                feedback.getResponseDeadLineAt()
         );
     }
 }

@@ -9,17 +9,14 @@ import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
-import com.feedbacker.feedback.domain.type.AcornHistoryType;
 import com.feedbacker.feedback.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
-import com.feedbacker.feedbackpost.domain.Participation;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
-import com.feedbacker.feedbackpost.service.ParticipationService;
+import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
 import com.feedbacker.feedbackpost.service.QuestionService;
-import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberService;
@@ -28,18 +25,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
 public class FeedbackFacade {
 
     private final MemberService memberService;
-    private final ParticipationService participationService;
     private final FeedbackPostService feedbackPostService;
+    private final FeedbackPostCompleteService feedbackPostSettlementService;
     private final FeedbackService feedbackService;
     private final QuestionService questionService;
     private final QuestionAnswerService questionAnswerService;
@@ -49,10 +46,9 @@ public class FeedbackFacade {
     @Transactional
     public FeedbackSubmitResponse submit(UUID memberId, FeedbackSubmitRequest request) {
         Member tester = memberService.getMember(memberId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(request.feedbackPostId());
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(request.feedbackPostId());
         List<QuestionAnswer> answers = questionAnswerService.createAnswers(feedbackPost.getId(), request.questionAnswer());
         feedbackPostService.validateFeedbackSubmit(feedbackPost, tester.getId());
-        participationService.validateFeedbackSubmit(feedbackPost.getId(), tester.getId());
         return new FeedbackSubmitResponse(feedbackService.submit(
                 feedbackPost,
                 tester,
@@ -60,48 +56,33 @@ public class FeedbackFacade {
         ));
     }
 
-    /** 내 QA 참여 목록: 제출한 피드백 + 아직 제출하지 않은 참여(작성중/포기/만료)를 최신순으로 합친다 */
+    /** 내 QA 참여 목록: 작성중/포기/만료를 포함한 모든 피드백을 참여 최신순으로 반환한다 */
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getMine(UUID memberId) {
         LocalDateTime now = LocalDateTime.now();
         List<Feedback> feedbacks = feedbackService.getMyFeedbacks(memberId);
         Map<UUID, FeedbackPost> feedbackPosts = feedbackPostService.getFeedbackPostMap(
-                feedbacks.stream().map(Feedback::getFeedbackPostId).toList()
+                feedbacks.stream().map(feedback -> feedback.getFeedbackPost().getId()).toList()
         );
-        return Stream.concat(
-                        feedbacks.stream()
-                                .map(feedback -> {
-                                    FeedbackPost feedbackPost = feedbackPosts.get(feedback.getFeedbackPostId());
-                                    return Map.entry(
-                                            feedback.getSubmitAt(),
-                                            FeedbackResponse.from(
-                                                    feedback,
-                                                    feedbackPost,
-                                                    feedbackPostService.getThumbnailUrl(feedbackPost)
-                                            )
-                                    );
-                                }),
-                        participationService.getUnsubmittedParticipations(memberId).stream()
-                                .map(participation -> Map.entry(
-                                        participation.getReservedAt(),
-                                        FeedbackResponse.from(
-                                                participation,
-                                                now,
-                                                feedbackPostService.getThumbnailUrl(participation.getFeedbackPost())
-                                        )
-                                ))
-                )
-                .sorted(Map.Entry.<LocalDateTime, FeedbackResponse>comparingByKey().reversed())
-                .map(Map.Entry::getValue)
+        return feedbacks.stream()
+                .sorted(Comparator.comparing(Feedback::getParticipateAt).reversed())
+                .map(feedback -> {
+                    FeedbackPost feedbackPost = feedbackPosts.get(feedback.getFeedbackPost().getId());
+                    return FeedbackResponse.from(
+                            feedback,
+                            feedbackPost,
+                            feedbackPostService.getThumbnailUrl(feedbackPost),
+                            now
+                    );
+                })
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public FeedbackDetailResponse getDetail(UUID memberId, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPostId());
-        Member tester = memberService.getMember(feedback.getTesterId());
-        Participation participation = participationService.getParticipation(feedbackPost.getId(), tester.getId());
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPost().getId());
+        Member tester = memberService.getMember(feedback.getTester().getId());
         QuestionAnswerResponse questionAnswerResponse = questionAnswerService.toResponse(
                 questionService.getAllQuestion(feedbackPost.getId()),
                 questionAnswerService.getAllQuestionAnswer(feedback.getId())
@@ -110,7 +91,6 @@ public class FeedbackFacade {
         return FeedbackDetailResponse.from(
                 feedbackPost,
                 feedback,
-                participation,
                 memberService.toImageUrl(tester.getProfileImage()),
                 feedbackPostService.getThumbnail(feedbackPost),
                 questionAnswerResponse
@@ -119,14 +99,16 @@ public class FeedbackFacade {
 
     @Transactional
     public void accept(UUID memberId, UUID feedbackId) {
+        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
         // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
-        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPostId();
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedbackPost.validateAccessAuth(memberId);
         feedbackPost.validateNotCompleted();
         feedback.accept(feedbackPost.getRewardAcorn());
         payReward(feedback, feedbackPost);
+        // 슬롯이 모두 찼고 방금 처리한 것이 마지막 미평가 피드백이면 모집글을 자동 완료한다
+        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
     }
 
     /** 응답 기한이 지난 제출 피드백을 모집글 단위로 자동 승인 (스케줄러 전용) */
@@ -144,24 +126,44 @@ public class FeedbackFacade {
             feedback.autoAccept(feedbackPost.getRewardAcorn());
             payReward(feedback, feedbackPost);
         }
+        if (!targets.isEmpty()) {
+            feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
+        }
+        return targets.size();
+    }
+
+    /** 제출 기한이 지난 작성중 피드백을 모집글 단위로 만료시키고 슬롯을 반환 (스케줄러 전용) */
+    @Transactional
+    public int expireOverdue(UUID feedbackPostId) {
+        // 락 순서: 모집글 -> 피드백 (participate/giveUp/submit과 동일)
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        LocalDateTime now = LocalDateTime.now();
+        // 락을 잡은 뒤 조회해서, 그 사이 제출/포기된 피드백은 대상에서 빠진다
+        List<Feedback> targets = feedbackService.getExpiredFeedbacksForUpdate(feedbackPostId, now);
+        for (Feedback feedback : targets) {
+            feedback.expire(now);
+            feedbackPost.plusRemainSlotCount();
+        }
         return targets.size();
     }
 
     // 테스터 보상 지급 + 테스터 도토리 내역 저장. 작성자는 등록 시 예치 내역으로 이미 차감이 기록되어 있다
     private void payReward(Feedback feedback, FeedbackPost feedbackPost) {
-        Member tester = memberService.getMember(feedback.getTesterId());
+        Member tester = memberService.getMember(feedback.getTester().getId());
         acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
         acornHistoryService.saveReward(tester, feedback, feedbackPost);
     }
 
     @Transactional
     public void reject(UUID memberId, FeedbackRejectRequest request, UUID feedbackId) {
-        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPostId();
+        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedbackPost.validateAccessAuth(memberId);
         feedbackPost.validateNotCompleted();
         feedback.reject(request);
+        // 거절분 도토리는 이의제기 결과와 상관없이 작성자에게 환급되므로, 거절로 평가가 끝나도 바로 완료한다
+        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
         // 이후 거부 사유 검증 로직 추가할 예정
     }
 

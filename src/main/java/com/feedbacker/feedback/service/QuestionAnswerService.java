@@ -152,9 +152,7 @@ public class QuestionAnswerService {
                                     questionService.getAllQuestion(feedbackPost.getId()),
                                     getAllQuestionAnswer(feedback.getId())
                             );
-                    // 수정 예정
-                    Member member = memberService.getMember(feedback.getTesterId());
-                    return FeedbackResultResponse.from(feedback, questionAnswer, member.getProfileImage());
+                    return FeedbackResultResponse.from(feedback, questionAnswer);
                 })
                 .toList();
     }
