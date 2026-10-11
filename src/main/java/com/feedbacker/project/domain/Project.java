@@ -60,6 +60,9 @@ public class Project extends BaseTimeEntity {
     @Column(name = "view_count", nullable = false)
     private long viewCount = 0L;
 
+    @Column(name = "is_pinned", nullable = false)
+    private boolean pinned = false;
+
 
     private Project(
             Member owner,

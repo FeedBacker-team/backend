@@ -7,7 +7,6 @@ import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
 import com.feedbacker.feedbackpost.service.mapper.FeedbackFormMapper;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.feedbackpost.repository.FeedbackPostRepository;
-import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.project.domain.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -114,7 +113,7 @@ public class FeedbackPostService {
     }
 
     private Sort createSort(FeedbackPostSort sort) {
-        return switch (sort) {
+        Sort defaultSort = switch (sort) {
             case LATEST -> Sort.by(
                     Sort.Order.desc("createdAt"),
                     Sort.Order.desc("id")
@@ -125,6 +124,7 @@ public class FeedbackPostService {
                     Sort.Order.asc("id")
             );
         };
+        return Sort.by(Sort.Order.desc("pinned")).and(defaultSort);
     }
 
     private Specification<FeedbackPost> hasAnyTag(List<ProjectTag> tags) {

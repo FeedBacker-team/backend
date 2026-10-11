@@ -13,8 +13,10 @@ import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
 import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.repository.ProjectRepository;
+import com.feedbacker.project.repository.ProjectViewRepository;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class ProjectService {
     private final MemberRepository memberRepository;
     private final Validator validator;
     private final SupabaseStorageService storageService;
+    private final ProjectViewRepository projectViewRepository;
 
     //프로젝트 등록
     @Transactional
@@ -77,16 +80,26 @@ public class ProjectService {
     //조회수 증가
     @Transactional
     public ProjectDetailResponse getProjectDetail(UUID projectId, UUID viewerId) {
-        validateProjectId(projectId);
-        int updatedCount = projectRepository.increaseViewCount(
-                projectId, ProjectStatus.PUBLISHED
-        );
-
-        if (updatedCount == 0) {
-            throw projectNotFound();
+        Project project = findPublishedProject(projectId);
+        if (viewerId == null) {
+            return toDetailResponse(project, null);
         }
 
-        Project project = findPublishedProject(projectId);
+        if (!memberRepository.existsById(viewerId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 회원을 찾을 수 없습니다.");
+        }
+
+        int insertCount = projectViewRepository.insertIfAbsent(projectId, viewerId);
+
+        if (insertCount == 1) {
+            int updatedCount = projectRepository.increaseViewCount(projectId, ProjectStatus.PUBLISHED);
+
+            if (updatedCount == 0) {
+                throw projectNotFound();
+            }
+
+            project = findPublishedProject(projectId);
+        }
         return toDetailResponse(project, viewerId);
     }
 
@@ -173,7 +186,7 @@ public class ProjectService {
 
         }
         if (tags != null && !tags.isEmpty()) {
-            specification = specification.and(hasAnyTag(tags));
+            specification = specification.and(hasAllTag(tags));
         }
 
         PageRequest pageRequest = PageRequest.of(page, size, createSort(sort));
@@ -244,21 +257,25 @@ public class ProjectService {
         };
     }
 
-    private Specification<Project> hasAnyTag(
+    private Specification<Project> hasAllTag(
             List<ProjectTag> tags
-    ) {
+    ){
         return (root, query, criteriaBuilder) -> {
-            query.distinct(true);
+            Predicate condition = criteriaBuilder.conjunction();
 
-            Join<Project, ProjectTag> tagJoin =
-                    root.join("tags", JoinType.INNER);
+            for (ProjectTag tag : tags) {
+                condition = criteriaBuilder.and(
+                        condition,
+                        criteriaBuilder.isMember(tag, root.<List<ProjectTag>>get("tags"))
+                );
+            }
+            return condition;
 
-            return tagJoin.in(tags);
         };
     }
 
     private Sort createSort(ProjectSort sort) {
-        return switch (sort) {
+        Sort defaultSort = switch (sort) {
             case LATEST -> Sort.by(
                     Sort.Order.desc("createdAt"),
                     Sort.Order.desc("id")
@@ -270,6 +287,7 @@ public class ProjectService {
                     Sort.Order.desc("id")
             );
         };
+        return Sort.by(Sort.Order.desc("pinned")).and(defaultSort);
     }
 
     public List<MyProjectResponse> getMyProjects(UUID memberId) {
