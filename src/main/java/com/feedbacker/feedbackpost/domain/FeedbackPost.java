@@ -205,14 +205,4 @@ public class FeedbackPost extends BaseTimeEntity {
         }
     }
 
-    /** '완료'되지 않은 모집글이면 예외 (결과 조회 시 사용)
-     * 통과 : '완료' 상태
-     * 에러 : '모집중', '모집마감' 상태
-     */
-    public void validateCompleted() {
-        if (this.status != FeedbackPostStatus.COMPLETED) {
-            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_COMPLETED);
-        }
-    }
-
 }

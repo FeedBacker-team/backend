@@ -24,7 +24,7 @@ public record FeedbackResultResponse(
                 feedback.getTester().getNickname(),
                 feedback.getTester().getProfileImage(),
                 feedback.getSubmitAt(),
-                feedback.getStatus(),
+                feedback.statusForFeedbackPostWriter(),
                 questionAnswer
         );
     }
