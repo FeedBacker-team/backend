@@ -20,8 +20,8 @@ import java.util.UUID;
 public class AcornWalletService {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final int DEFAULT_ACORNS = 50;
-    private static final int BONUS_ACORNS = 100;
+    private static final int DEFAULT_ACORNS = 100;
+    private static final int BONUS_ACORNS = 200;
 
     private final AcornWalletRepository acornWalletRepository;
     private final AcornHistoryService acornHistoryService;
