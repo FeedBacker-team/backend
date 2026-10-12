@@ -24,8 +24,10 @@ public record ProjectCardResponse(
         LocalDate createdAt,
 
         @JsonProperty("view_count")
-        long viewCount
+        long viewCount,
 
+        @JsonProperty("is_pinned")
+        boolean pinned
         ) {
     public static ProjectCardResponse from(Project project, String thumbnailUrl) {
         return new ProjectCardResponse(
@@ -35,7 +37,8 @@ public record ProjectCardResponse(
                 thumbnailUrl,
                 project.getTags(),
                 project.getCreatedAt().toLocalDate(),
-                project.getViewCount()
+                project.getViewCount(),
+                project.isPinned()
         );
     }
 }
