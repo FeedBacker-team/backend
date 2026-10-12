@@ -36,7 +36,7 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false, length = 50)
     private String title;
 
-    @Column(length = 1000)
+    @Column(length = 2000)
     private String description;
 
     @Setter
