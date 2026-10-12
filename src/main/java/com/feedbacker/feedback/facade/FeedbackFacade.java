@@ -101,9 +101,8 @@ public class FeedbackFacade {
     public void accept(UUID memberId, UUID feedbackId) {
         UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
         // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        feedbackPost.validateAccessAuth(memberId);
         feedbackPost.validateNotCompleted();
         feedback.accept(feedbackPost.getRewardAcorn());
         payReward(feedback, feedbackPost);
@@ -157,9 +156,8 @@ public class FeedbackFacade {
     @Transactional
     public void reject(UUID memberId, FeedbackRejectRequest request, UUID feedbackId) {
         UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        feedbackPost.validateAccessAuth(memberId);
         feedbackPost.validateNotCompleted();
         feedback.reject(request);
         // 거절분 도토리는 이의제기 결과와 상관없이 작성자에게 환급되므로, 거절로 평가가 끝나도 바로 완료한다

@@ -226,9 +226,29 @@ public class FeedbackPostService {
         );
     }
 
+    /** 피드백을 조회하면서 동시에 피드백 모집글 작성자 본인인지 검사 */
+    public FeedbackPost getFeedbackPostAsWriter(UUID feedbackPostId, UUID memberId) {
+        FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
+        feedbackPost.validateAccessAuth(memberId);
+        return feedbackPost;
+    }
+
+    /** 락을 건 피드백을 조회하면서 동시에 피드백 모집글 작성자 본인인지 검사 */
+    public FeedbackPost getFeedbackPostAsWriterForUpdate(UUID feedbackPostId, UUID memberId) {
+        FeedbackPost feedbackPost = getFeedbackPostForUpdate(feedbackPostId);
+        feedbackPost.validateAccessAuth(memberId);
+        return feedbackPost;
+    }
 
     public FeedbackPost getFeedbackPost(UUID feedbackPostId) {
         return feedbackPostRepository.findById(feedbackPostId)
+                .orElseThrow(() -> new BusinessException(
+                        FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
+                ));
+    }
+
+    public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
+        return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));
@@ -248,13 +268,6 @@ public class FeedbackPostService {
     public String getThumbnailUrl(FeedbackPost feedbackPost) {
         ImageResponse thumbnail = getThumbnail(feedbackPost);
         return thumbnail != null ? thumbnail.url() : null;
-    }
-
-    public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
-        return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
-                .orElseThrow(() -> new BusinessException(
-                        FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
-                ));
     }
 
     /** 모집 기간(endAt)이 지났지만 아직 완료되지 않은 모집글 (자동 완료 스케줄러에서 사용) */
