@@ -1,0 +1,3 @@
+ALTER TABLE feedback_posts
+ALTER COLUMN title TYPE VARCHAR(100),
+    ALTER COLUMN description TYPE VARCHAR(2000);

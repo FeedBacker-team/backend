@@ -33,10 +33,10 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false)
     private String writerName;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(length = 1000)
+    @Column(length = 2000)
     private String description;
 
     @Setter
