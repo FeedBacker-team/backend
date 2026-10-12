@@ -138,7 +138,6 @@ public class FeedbackPostFacade {
         List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPostId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
         feedbackPost.validateAccessAuth(memberId);
-        feedbackPost.validateCompleted();
         List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
         List<FeedbackResultResponse> feedbackResults = questionAnswerService.getFeedbackResults(feedbacks, feedbackPost);
         return FeedbackPostResultResponse.from(
