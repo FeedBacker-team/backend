@@ -99,15 +99,27 @@ public class FeedbackFacade {
 
     @Transactional
     public void accept(UUID memberId, UUID feedbackId) {
-        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
-        // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
+        FeedbackPost feedbackPost = getFeedbackPostForReview(memberId, feedbackId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        feedbackPost.validateNotCompleted();
         feedback.accept(feedbackPost.getRewardAcorn());
         payReward(feedback, feedbackPost);
-        // 슬롯이 모두 찼고 방금 처리한 것이 마지막 미평가 피드백이면 모집글을 자동 완료한다
         feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
+    }
+
+    @Transactional
+    public void reject(UUID memberId, FeedbackRejectRequest request, UUID feedbackId) {
+        FeedbackPost feedbackPost = getFeedbackPostForReview(memberId, feedbackId);
+        Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
+        feedback.reject(request);
+        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
+        // 이후 거부 사유 검증 로직 추가할 예정
+    }
+
+    @Transactional
+    public void object(UUID memberId, FeedbackObjectRequest request, UUID feedbackId) {
+        Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
+        feedback.object(memberId, request);
+        // 이후 어드민에 이의제기 신청 알림 추가할 예정
     }
 
     /** 응답 기한이 지난 제출 피드백을 모집글 단위로 자동 승인 (스케줄러 전용) */
@@ -153,22 +165,13 @@ public class FeedbackFacade {
         acornHistoryService.saveReward(tester, feedback, feedbackPost);
     }
 
-    @Transactional
-    public void reject(UUID memberId, FeedbackRejectRequest request, UUID feedbackId) {
+    /** 평가(승인/거절)할 피드백의 모집글을 락 걸어 조회. 작성자 본인이고 완료 전이어야 한다 */
+    private FeedbackPost getFeedbackPostForReview(UUID memberId, UUID feedbackId) {
         UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
+        // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
-        Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedbackPost.validateNotCompleted();
-        feedback.reject(request);
-        // 거절분 도토리는 이의제기 결과와 상관없이 작성자에게 환급되므로, 거절로 평가가 끝나도 바로 완료한다
-        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
-        // 이후 거부 사유 검증 로직 추가할 예정
+        return feedbackPost;
     }
 
-    @Transactional
-    public void object(UUID memberId, FeedbackObjectRequest request, UUID feedbackId) {
-        Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
-        feedback.object(memberId, request);
-        // 이후 어드민에 이의제기 신청 알림 추가할 예정
-    }
 }
