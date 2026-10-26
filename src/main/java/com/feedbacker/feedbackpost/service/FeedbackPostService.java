@@ -226,17 +226,17 @@ public class FeedbackPostService {
         );
     }
 
-    /** 피드백을 조회하면서 동시에 피드백 모집글 작성자 본인인지 검사 */
+    /** 피드백을 조회 & 피드백 모집글 작성자 본인인지 검사 */
     public FeedbackPost getFeedbackPostAsWriter(UUID feedbackPostId, UUID memberId) {
         FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
-        feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateIsWriter(memberId);
         return feedbackPost;
     }
 
-    /** 락을 건 피드백을 조회하면서 동시에 피드백 모집글 작성자 본인인지 검사 */
+    /** 락을 건 피드백을 조회 & 피드백 모집글 작성자 본인인지 검사 */
     public FeedbackPost getFeedbackPostAsWriterForUpdate(UUID feedbackPostId, UUID memberId) {
         FeedbackPost feedbackPost = getFeedbackPostForUpdate(feedbackPostId);
-        feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateIsWriter(memberId);
         return feedbackPost;
     }
 
@@ -247,6 +247,7 @@ public class FeedbackPostService {
                 ));
     }
 
+    /** 락을 건 피드백을 조회 */
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
         return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
@@ -278,19 +279,8 @@ public class FeedbackPostService {
         );
     }
 
-    public void validateFeedbackSubmit(FeedbackPost feedbackPost, UUID memberId) {
-        feedbackPost.validateIsWriter(memberId);
-        feedbackPost.validateNotCompleted();
-    }
-
-    public void validateParticipation(FeedbackPost feedbackPost, UUID memberId) {
-        feedbackPost.validateIsWriter(memberId);
-        feedbackPost.validateRecruiting();
-        feedbackPost.validateRecruitingPeriod(LocalDateTime.now());
-    }
-
-    public UUID save(FeedbackPost feedbackPost) {
-        FeedbackPost savedFeedback = feedbackPostRepository.save(feedbackPost);
-        return savedFeedback.getId();
+    public UUID create(FeedbackPost feedbackPost) {
+        FeedbackPost newFeedbackPost = feedbackPostRepository.save(feedbackPost);
+        return newFeedbackPost.getId();
     }
 }

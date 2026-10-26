@@ -39,7 +39,6 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(length = 1000)
     private String description;
 
-    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FeedbackPostStatus status;
@@ -61,7 +60,6 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer slotCapacity;
 
-    @Setter
     @Column(nullable = false)
     private Integer remainSlotCount;
 
@@ -99,7 +97,6 @@ public class FeedbackPost extends BaseTimeEntity {
             List<ImageInfo> images,
             List<Question> questions,
             Integer slotCapacity,
-            Integer remainSlotCount,
             Integer depositAcorn,
             Integer rewardAcorn,
             LocalDateTime startAt,
@@ -115,7 +112,7 @@ public class FeedbackPost extends BaseTimeEntity {
         this.serviceUrl = serviceUrl;
         this.images = images == null ? new ArrayList<>() : new ArrayList<>(images);
         this.slotCapacity = slotCapacity;
-        this.remainSlotCount = remainSlotCount;
+        this.remainSlotCount = slotCapacity;
         this.depositAcorn = depositAcorn;
         this.rewardAcorn = rewardAcorn;
         this.startAt = startAt;
@@ -132,7 +129,14 @@ public class FeedbackPost extends BaseTimeEntity {
         question.setFeedbackPost(this);
     }
 
-    public void minusRemainSlotCount() {
+    public void reserveSlot(UUID memberId) {
+        validateIsNotWriter(memberId);
+        validateRecruiting();
+        validateRecruitingPeriod(LocalDateTime.now());
+        minusRemainSlotCount();
+    }
+
+    private void minusRemainSlotCount() {
         if (this.remainSlotCount <= 0) {
             throw new BusinessException(FeedbackPostErrorCode.SLOT_FULL);
         }
@@ -153,39 +157,40 @@ public class FeedbackPost extends BaseTimeEntity {
         }
     }
 
-    /** 모집중인 글을 모집마감으로 변경 (모집 기간 종료 시 사용) */
     public void close() {
         if (this.status == FeedbackPostStatus.RECRUITING) {
             this.status = FeedbackPostStatus.CLOSED;
         }
     }
 
-    public void complete(UUID memberId) {
+    public void complete() {
         validateNotCompleted();
-        validateAccessAuth(memberId);
         status = FeedbackPostStatus.COMPLETED;
         completeAt = LocalDateTime.now();
     }
 
-    public void validateIsWriter(UUID memberId) {
+    /** 피드백 모집글 작성자가 아닌지 검사 (작성자가 아니면 통과) */
+    public void validateIsNotWriter(UUID memberId) {
         if (this.writerId.equals(memberId)) {
             throw new BusinessException(FeedbackPostErrorCode.SELF_PARTICIPATION_NOT_ALLOWED);
         }
     }
 
-    public void validateAccessAuth(UUID memberId) {
+    /** 피드백 모집글 작성자 본인인지 검사 (작성자이면 통과) */
+    public void validateIsWriter(UUID memberId) {
         if (!this.writerId.equals(memberId)) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ACCESS_DENIED);
         }
     }
 
+    /** 피드백 모집글이 '모집' 상태인지 검사 */
     public void validateRecruiting() {
         if (this.status != FeedbackPostStatus.RECRUITING) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_RECRUITING);
         }
     }
 
-    /** 모집 기간(startAt <= now < endAt) 안인지 검증 (참여 시 사용) */
+    /** 모집 기간(startAt <= now < endAt) 안인지 검증 */
     public void validateRecruitingPeriod(LocalDateTime now) {
         if (now.isBefore(this.startAt)) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_STARTED);
@@ -195,14 +200,15 @@ public class FeedbackPost extends BaseTimeEntity {
         }
     }
 
-    /** 이미 '완료'된 모집글이면 예외 (완료 처리·피드백 제출 시 사용)
-     * 통과 : '모집중', '모집마감' 상태
-     * 에러 : '완료' 상태
-     */
+    /** '완료'상태인 모집글이면 예외 */
     public void validateNotCompleted() {
         if (this.status == FeedbackPostStatus.COMPLETED) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ALREADY_COMPLETED);
         }
     }
 
+    public void validateSubmittable(UUID memberId) {
+        validateIsNotWriter(memberId);
+        validateNotCompleted();
+    }
 }

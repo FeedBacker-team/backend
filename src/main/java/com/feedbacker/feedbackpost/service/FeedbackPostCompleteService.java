@@ -22,7 +22,7 @@ public class FeedbackPostCompleteService {
     /** 모집글 완료 처리 + 작성자에게 남은 예치 도토리 환급. 모집글 락을 잡은 트랜잭션 안에서 호출한다 */
     public void complete(FeedbackPost feedbackPost) {
         UUID writerId = feedbackPost.getWriterId();
-        feedbackPost.complete(writerId);
+        feedbackPost.complete();
         // 환급 = 예치 - (승인 수 * 건당 보상)
         int refundAcorn = feedbackPost.getDepositAcorn() - getPaidAcorn(feedbackPost);
         if (refundAcorn > 0) {

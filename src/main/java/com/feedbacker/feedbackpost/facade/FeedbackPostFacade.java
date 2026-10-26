@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -48,13 +47,11 @@ public class FeedbackPostFacade {
     @Transactional
     public FeedbackPostCreateResponse create(UUID memberId, FeedbackPostCreateRequest request) {
         Member member = memberService.getMember(memberId);
-        Project project = projectService.getProject(request.projectId());
-        project.validateOwner(member.getId());
-        projectService.validateHasFeedbackPost(project.getId());
+        Project project = projectService.getProjectForCreatingFeedbackPost(request.projectId(), member.getId());
         acornWalletService.withdraw(member.getId(), request.depositAcorn());
-        UUID feedbackPostId = feedbackPostService.save(request.toEntity(project));
-        acornHistoryService.saveDeposit(member, feedbackPostId, request.depositAcorn());
-        return new FeedbackPostCreateResponse(feedbackPostId);
+        UUID newFeedbackPostId = feedbackPostService.create(request.toEntity(project));
+        acornHistoryService.saveDeposit(member, newFeedbackPostId, request.depositAcorn());
+        return new FeedbackPostCreateResponse(newFeedbackPostId);
     }
 
     @Transactional(readOnly = true)
@@ -72,8 +69,7 @@ public class FeedbackPostFacade {
     public void participate(UUID memberId, UUID feedbackPostId) {
         Member member = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
-        feedbackPostService.validateParticipation(feedbackPost, member.getId());
-        feedbackPost.minusRemainSlotCount();
+        feedbackPost.reserveSlot(member.getId());
         feedbackService.participate(feedbackPost, member);
     }
 
@@ -88,13 +84,10 @@ public class FeedbackPostFacade {
     public FeedbackPostProgressResponse getProgress(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriter(feedbackPostId, memberId);
         List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPost.getId());
-        Map<UUID, String> profileImageUrls = memberService.getProfileImageUrls(
-                feedbacks.stream().map(feedback -> feedback.getTester().getId()).toList()
-        );
         List<FeedbackProgressResponse> feedbackProgress = feedbacks.stream()
                 .map(feedback -> FeedbackProgressResponse.from(
                         feedback,
-                        profileImageUrls.get(feedback.getTester().getId())
+                        memberService.toImageUrl(feedback.getTester().getProfileImage())
                 ))
                 .toList();
         return FeedbackPostProgressResponse.from(
@@ -109,6 +102,20 @@ public class FeedbackPostFacade {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
         feedbackService.validateExistActive(feedbackPost.getId());
         feedbackPostCompleteService.complete(feedbackPost);
+    }
+
+    @Transactional(readOnly = true)
+    public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriter(feedbackPostId, memberId);
+        List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPostId);
+        List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
+        List<FeedbackResultResponse> feedbackResults = questionAnswerService.getFeedbackResults(feedbacks, feedbackPost);
+        return FeedbackPostResultResponse.from(
+                feedbackResults,
+                feedbackPost,
+                feedbackPostCompleteService.getPaidAcorn(feedbackPost),
+                images
+        );
     }
 
     /** 모집 기간이 끝난 모집글을 자동 완료·환급 (스케줄러 전용). 완료 처리했으면 true */
@@ -131,17 +138,4 @@ public class FeedbackPostFacade {
         return true;
     }
 
-    @Transactional(readOnly = true)
-    public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriter(feedbackPostId, memberId);
-        List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPostId);
-        List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
-        List<FeedbackResultResponse> feedbackResults = questionAnswerService.getFeedbackResults(feedbacks, feedbackPost);
-        return FeedbackPostResultResponse.from(
-                feedbackResults,
-                feedbackPost,
-                feedbackPostCompleteService.getPaidAcorn(feedbackPost),
-                images
-        );
-    }
 }

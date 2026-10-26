@@ -36,7 +36,7 @@ public class FeedbackFacade {
 
     private final MemberService memberService;
     private final FeedbackPostService feedbackPostService;
-    private final FeedbackPostCompleteService feedbackPostSettlementService;
+    private final FeedbackPostCompleteService feedbackPostCompleteService;
     private final FeedbackService feedbackService;
     private final QuestionService questionService;
     private final QuestionAnswerService questionAnswerService;
@@ -48,7 +48,7 @@ public class FeedbackFacade {
         Member tester = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(request.feedbackPostId());
         List<QuestionAnswer> answers = questionAnswerService.createAnswers(feedbackPost.getId(), request.questionAnswer());
-        feedbackPostService.validateFeedbackSubmit(feedbackPost, tester.getId());
+        feedbackPost.validateSubmittable(tester.getId());
         return new FeedbackSubmitResponse(feedbackService.submit(
                 feedbackPost,
                 tester,
@@ -103,7 +103,7 @@ public class FeedbackFacade {
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedback.accept(feedbackPost.getRewardAcorn());
         payReward(feedback, feedbackPost);
-        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
+        feedbackPostCompleteService.completeIfAllReviewed(feedbackPost);
     }
 
     @Transactional
@@ -111,7 +111,7 @@ public class FeedbackFacade {
         FeedbackPost feedbackPost = getFeedbackPostForReview(memberId, feedbackId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedback.reject(request);
-        feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
+        feedbackPostCompleteService.completeIfAllReviewed(feedbackPost);
         // 이후 거부 사유 검증 로직 추가할 예정
     }
 
@@ -138,7 +138,7 @@ public class FeedbackFacade {
             payReward(feedback, feedbackPost);
         }
         if (!targets.isEmpty()) {
-            feedbackPostSettlementService.completeIfAllReviewed(feedbackPost);
+            feedbackPostCompleteService.completeIfAllReviewed(feedbackPost);
         }
         return targets.size();
     }
