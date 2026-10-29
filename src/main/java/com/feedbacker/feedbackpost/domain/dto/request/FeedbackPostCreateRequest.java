@@ -154,7 +154,6 @@ public record FeedbackPostCreateRequest(
                 .images(newImages)
                 .questions(questions)
                 .slotCapacity(this.slotCapacity)
-                .remainSlotCount(this.slotCapacity)
                 .depositAcorn(this.depositAcorn)
                 .rewardAcorn(this.rewardAcorn)
                 .startAt(resolveStartAt())

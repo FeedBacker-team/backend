@@ -22,6 +22,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     @Query("select f from Feedback f where f.id = :id")
     Optional<Feedback> findByIdForUpdate(@Param("id") UUID id);
 
+    @EntityGraph(attributePaths = "feedbackPost")
     List<Feedback> findAllByTesterId(UUID testerId);
 
     Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);

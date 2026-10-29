@@ -1,6 +1,7 @@
-package com.feedbacker.feedback.service;
+package com.feedbacker.feedback.service.scheduler;
 
 import com.feedbacker.feedback.facade.FeedbackFacade;
+import com.feedbacker.feedback.service.FeedbackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

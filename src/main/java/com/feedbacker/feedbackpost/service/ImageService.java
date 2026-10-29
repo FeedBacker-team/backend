@@ -15,27 +15,27 @@ public class ImageService {
 
     private final SupabaseStorageService storageService;
 
-    public ImageResponse toThumbnailResponse(List<ImageInfo> images) {
+    public ImageResponse toPostThumbnailResponse(List<ImageInfo> images) {
         return Stream.ofNullable(images)
                 .flatMap(List::stream)
                 .filter(image -> image.type() == ImageType.POST_THUMBNAIL)
                 .findFirst()
-                .map(image -> new ImageResponse(
-                        image.type(),
-                        image.order(),
-                        storageService.createPublicUrl(image.path())
-                ))
+                .map(this::toResponse)
                 .orElse(null);
     }
 
     public List<ImageResponse> toResponses(List<ImageInfo> images) {
         return Stream.ofNullable(images)
                 .flatMap(List::stream)
-                .map(image -> new ImageResponse(
-                        image.type(),
-                        image.order(),
-                        storageService.createPublicUrl(image.path())
-                ))
+                .map(this::toResponse)
                 .toList();
+    }
+
+    private ImageResponse toResponse(ImageInfo image) {
+        return new ImageResponse(
+                image.type(),
+                image.order(),
+                storageService.createPublicUrl(image.path())
+        );
     }
 }

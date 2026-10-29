@@ -11,19 +11,14 @@ import com.feedbacker.project.domain.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.project.domain.ProjectTag;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -45,7 +40,7 @@ public class FeedbackPostService {
         return feedbackPostRepository.findAllByWriterId(memberId).stream()
                 .map(post -> FeedbackSimpleResponse.from(
                         post,
-                        imageService.toThumbnailResponse(post.getImages())
+                        getThumbnail(post)
                 ))
                 .toList();
     }
@@ -87,29 +82,12 @@ public class FeedbackPostService {
                 createSort(sort)
         );
 
-        Page<FeedbackPostCardResponse> feedbackPostPage =
-                feedbackPostRepository
-                        .findAll(specification, pageRequest)
-                        .map(feedbackPost -> {
-                            ImageResponse thumbnail =
-                                    imageService.toThumbnailResponse(
-                                            feedbackPost.getImages()
-                                    );
-
-                            String thumbnailUrl =
-                                    thumbnail != null
-                                            ? thumbnail.url()
-                                            : feedbackPost
-                                            .getProject()
-                                            .getThumbnailImage();
-
-                            return FeedbackPostCardResponse.from(
-                                    feedbackPost,
-                                    thumbnailUrl
-                            );
-                        });
-
-        return FeedbackPostListResponse.from(feedbackPostPage);
+        return FeedbackPostListResponse.from(
+                feedbackPostRepository.findAll(specification, pageRequest)
+                        .map(feedbackPost -> FeedbackPostCardResponse.from(
+                                feedbackPost,
+                                getThumbnailUrl(feedbackPost)
+                        )));
     }
 
     private Sort createSort(FeedbackPostSort sort) {
@@ -255,14 +233,9 @@ public class FeedbackPostService {
                 ));
     }
 
-    public Map<UUID, FeedbackPost> getFeedbackPostMap(Collection<UUID> feedbackPostIds) {
-        return feedbackPostRepository.findAllById(feedbackPostIds).stream()
-                .collect(Collectors.toMap(FeedbackPost::getId, Function.identity()));
-    }
-
     /** 모집글 썸네일. 썸네일 이미지가 없으면 null */
     public ImageResponse getThumbnail(FeedbackPost feedbackPost) {
-        return imageService.toThumbnailResponse(feedbackPost.getImages());
+        return imageService.toPostThumbnailResponse(feedbackPost.getImages());
     }
 
     /** 모집글 썸네일의 공개 URL. 썸네일 이미지가 없으면 null */

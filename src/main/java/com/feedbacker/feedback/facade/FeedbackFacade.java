@@ -27,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -46,9 +45,8 @@ public class FeedbackFacade {
     @Transactional
     public FeedbackSubmitResponse submit(UUID memberId, FeedbackSubmitRequest request) {
         Member tester = memberService.getMember(memberId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(request.feedbackPostId());
+        FeedbackPost feedbackPost = getFeedbackPostForSubmit(request.feedbackPostId(), tester.getId());
         List<QuestionAnswer> answers = questionAnswerService.createAnswers(feedbackPost.getId(), request.questionAnswer());
-        feedbackPost.validateSubmittable(tester.getId());
         return new FeedbackSubmitResponse(feedbackService.submit(
                 feedbackPost,
                 tester,
@@ -59,20 +57,15 @@ public class FeedbackFacade {
     /** 내 QA 참여 목록: 작성중/포기/만료를 포함한 모든 피드백을 참여 최신순으로 반환한다 */
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getMine(UUID memberId) {
-        LocalDateTime now = LocalDateTime.now();
-        List<Feedback> feedbacks = feedbackService.getMyFeedbacks(memberId);
-        Map<UUID, FeedbackPost> feedbackPosts = feedbackPostService.getFeedbackPostMap(
-                feedbacks.stream().map(feedback -> feedback.getFeedbackPost().getId()).toList()
-        );
-        return feedbacks.stream()
+        return feedbackService.getMyFeedbacks(memberId).stream()
                 .sorted(Comparator.comparing(Feedback::getParticipateAt).reversed())
                 .map(feedback -> {
-                    FeedbackPost feedbackPost = feedbackPosts.get(feedback.getFeedbackPost().getId());
+                    FeedbackPost feedbackPost = feedback.getFeedbackPost();
                     return FeedbackResponse.from(
                             feedback,
                             feedbackPost,
                             feedbackPostService.getThumbnailUrl(feedbackPost),
-                            now
+                            LocalDateTime.now()
                     );
                 })
                 .toList();
@@ -171,6 +164,12 @@ public class FeedbackFacade {
         // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
         feedbackPost.validateNotCompleted();
+        return feedbackPost;
+    }
+
+    private FeedbackPost getFeedbackPostForSubmit(UUID feedbackPostId, UUID testerId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        feedbackPost.validateSubmittable(testerId);
         return feedbackPost;
     }
 
