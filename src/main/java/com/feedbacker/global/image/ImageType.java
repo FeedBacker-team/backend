@@ -1,4 +1,4 @@
-package com.feedbacker.feedbackpost.domain.type;
+package com.feedbacker.global.image;
 
 public enum ImageType {
     PROJECT,  // 프로젝트의 이미지

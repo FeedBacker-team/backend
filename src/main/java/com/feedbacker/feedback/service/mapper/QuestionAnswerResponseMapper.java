@@ -6,7 +6,7 @@ import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
 import com.feedbacker.feedback.domain.dto.response.SubjectiveQuestionAnswerResponse;
 import com.feedbacker.feedbackpost.domain.Question;
 import com.feedbacker.feedbackpost.domain.type.QuestionType;
-import com.feedbacker.feedbackpost.service.ImageService;
+import com.feedbacker.global.image.ImageService;
 import com.feedbacker.global.image.ImageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

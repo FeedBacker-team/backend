@@ -1,8 +1,5 @@
-package com.feedbacker.feedbackpost.service;
+package com.feedbacker.global.image;
 
-import com.feedbacker.feedbackpost.domain.type.ImageType;
-import com.feedbacker.global.image.ImageInfo;
-import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.global.storage.SupabaseStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -15,7 +15,7 @@ import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
-import com.feedbacker.feedbackpost.service.ImageService;
+import com.feedbacker.global.image.ImageService;
 import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
