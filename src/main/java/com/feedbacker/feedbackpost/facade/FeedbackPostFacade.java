@@ -1,7 +1,7 @@
 package com.feedbacker.feedbackpost.facade;
 
 import com.feedbacker.feedback.domain.Feedback;
-import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.acorn.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -50,7 +50,7 @@ public class FeedbackPostFacade {
         Project project = projectService.getProjectForCreatingFeedbackPost(request.projectId(), member.getId());
         acornWalletService.withdraw(member.getId(), request.depositAcorn());
         UUID newFeedbackPostId = feedbackPostService.create(request.toEntity(project));
-        acornHistoryService.saveDeposit(member, newFeedbackPostId, request.depositAcorn());
+        acornHistoryService.recordDeposit(member, newFeedbackPostId, request.depositAcorn());
         return new FeedbackPostCreateResponse(newFeedbackPostId);
     }
 

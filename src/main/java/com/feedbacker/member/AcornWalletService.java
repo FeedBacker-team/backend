@@ -1,10 +1,8 @@
 package com.feedbacker.member;
 
-import com.feedbacker.feedback.domain.type.AcornHistoryType;
-import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.acorn.domain.type.AcornHistoryType;
+import com.feedbacker.acorn.service.AcornHistoryService;
 import com.feedbacker.global.common.CustomException;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -37,7 +35,7 @@ public class AcornWalletService {
         int amount = bonus ? BONUS_ACORNS : DEFAULT_ACORNS;
         AcornWallet wallet = acornWalletRepository.save(AcornWallet.create(member, amount));
         // 가입 보상도 도토리 내역에 남김 (이메일·카카오 공용)
-        acornHistoryService.saveEarn(member, AcornHistoryType.SIGNUP_REWARD, amount);
+        acornHistoryService.recordEarn(member, AcornHistoryType.SIGNUP_REWARD, amount);
         return wallet;
     }
 

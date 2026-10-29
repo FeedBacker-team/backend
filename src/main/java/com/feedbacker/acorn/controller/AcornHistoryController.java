@@ -1,7 +1,7 @@
-package com.feedbacker.feedback.controller;
+package com.feedbacker.acorn.controller;
 
-import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
-import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.acorn.domain.dto.AcornHistoryResponse;
+import com.feedbacker.acorn.service.AcornHistoryService;
 import com.feedbacker.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

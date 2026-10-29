@@ -1,6 +1,7 @@
-package com.feedbacker.feedback.domain;
+package com.feedbacker.acorn.domain;
 
-import com.feedbacker.feedback.domain.type.AcornHistoryType;
+import com.feedbacker.acorn.domain.type.AcornHistoryType;
+import com.feedbacker.feedback.domain.Feedback;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
@@ -58,54 +59,63 @@ public class AcornHistory {
         this.changeAcorn = changeAcorn;
     }
 
+    /** 도토리 증가 내역 */
+    private static AcornHistory increase(
+            Member member,
+            AcornHistoryType type,
+            UUID feedbackPostId,
+            UUID feedbackId,
+            int amount
+    ) {
+        return AcornHistory.builder()
+                .member(member)
+                .feedbackPostId(feedbackPostId)
+                .feedbackId(feedbackId)
+                .type(type)
+                .changeAcorn(Math.abs(amount))
+                .build();
+    }
+
+    /** 도토리 감소 내역 */
+    private static AcornHistory decrease(
+            Member member,
+            AcornHistoryType type,
+            UUID feedbackPostId,
+            UUID feedbackId,
+            int amount
+    ) {
+        return AcornHistory.builder()
+                .member(member)
+                .feedbackPostId(feedbackPostId)
+                .feedbackId(feedbackId)
+                .type(type)
+                .changeAcorn(-Math.abs(amount))
+                .build();
+    }
 
     /** 기본 도토리 지급 메서드 */
     public static AcornHistory earn(Member member, AcornHistoryType type, Integer changeAcorn) {
-        return AcornHistory.builder()
-                .member(member)
-                .type(type)
-                .changeAcorn(changeAcorn)
-                .build();
+        return increase(member, type, null, null, changeAcorn);
     }
 
     /** 기본 도토리 차감 메서드 */
     public static AcornHistory withdraw(Member member, AcornHistoryType type, Integer changeAcorn) {
-        return AcornHistory.builder()
-                .member(member)
-                .type(type)
-                .changeAcorn(changeAcorn < 0 ? -changeAcorn : changeAcorn)
-                .build();
+        return decrease(member, type, null, null, changeAcorn);
     }
 
     /** 피드백 승인 시 테스터 보상 내역 */
     public static AcornHistory reward(Member tester, Feedback feedback, FeedbackPost feedbackPost) {
-        return AcornHistory.builder()
-                .member(tester)
-                .feedbackPostId(feedbackPost.getId())
-                .feedbackId(feedback.getId())
-                .type(AcornHistoryType.FEEDBACK_ACCEPT)
-                .changeAcorn(feedbackPost.getRewardAcorn())
-                .build();
+        return increase(tester, AcornHistoryType.FEEDBACK_ACCEPT, feedbackPost.getId(), feedback.getId(), feedbackPost.getRewardAcorn());
     }
 
     /** 모집글 등록 시 작성자 예치(차감) 내역 */
     public static AcornHistory deposit(Member writer, UUID feedbackPostId, Integer depositAcorn) {
-        return AcornHistory.builder()
-                .member(writer)
-                .feedbackPostId(feedbackPostId)
-                .type(AcornHistoryType.FEEDBACK_DEPOSIT)
-                .changeAcorn(-depositAcorn)
-                .build();
+        return decrease(writer, AcornHistoryType.FEEDBACK_DEPOSIT, feedbackPostId, null, depositAcorn);
     }
 
     /** 모집글 완료 시 작성자 환급 내역 */
     public static AcornHistory refund(Member writer, UUID feedbackPostId, Integer refundAcorn) {
-        return AcornHistory.builder()
-                .member(writer)
-                .feedbackPostId(feedbackPostId)
-                .type(AcornHistoryType.FEEDBACK_REFUND)
-                .changeAcorn(refundAcorn)
-                .build();
+        return increase(writer, AcornHistoryType.FEEDBACK_REFUND, feedbackPostId, null, refundAcorn);
     }
 
 }

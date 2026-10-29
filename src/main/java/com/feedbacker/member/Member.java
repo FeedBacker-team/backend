@@ -1,6 +1,6 @@
 package com.feedbacker.member;
 
-import com.feedbacker.feedback.domain.AcornHistory;
+import com.feedbacker.acorn.domain.AcornHistory;
 import com.feedbacker.global.common.BaseTimeEntity;
 import com.feedbacker.project.domain.ProjectTag;
 import jakarta.persistence.*;

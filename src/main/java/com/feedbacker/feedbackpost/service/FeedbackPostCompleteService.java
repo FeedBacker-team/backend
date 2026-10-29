@@ -1,6 +1,6 @@
 package com.feedbacker.feedbackpost.service;
 
-import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.acorn.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.member.AcornWalletService;
@@ -27,7 +27,7 @@ public class FeedbackPostCompleteService {
         int refundAcorn = feedbackPost.getDepositAcorn() - getPaidAcorn(feedbackPost);
         if (refundAcorn > 0) {
             acornWalletService.earn(writerId, refundAcorn);
-            acornHistoryService.saveRefund(memberService.getMember(writerId), feedbackPost.getId(), refundAcorn);
+            acornHistoryService.recordRefund(memberService.getMember(writerId), feedbackPost.getId(), refundAcorn);
         }
     }
 

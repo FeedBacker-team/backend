@@ -1,10 +1,10 @@
-package com.feedbacker.feedback.service;
+package com.feedbacker.acorn.service;
 
-import com.feedbacker.feedback.domain.AcornHistory;
+import com.feedbacker.acorn.domain.AcornHistory;
 import com.feedbacker.feedback.domain.Feedback;
-import com.feedbacker.feedback.domain.dto.response.AcornHistoryResponse;
-import com.feedbacker.feedback.domain.type.AcornHistoryType;
-import com.feedbacker.feedback.repository.AcornHistoryRepository;
+import com.feedbacker.acorn.domain.dto.AcornHistoryResponse;
+import com.feedbacker.acorn.domain.type.AcornHistoryType;
+import com.feedbacker.acorn.repository.AcornHistoryRepository;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.member.Member;
@@ -22,27 +22,27 @@ public class AcornHistoryService {
     private final AcornHistoryRepository acornHistoryRepository;
     
     @Transactional
-    public void saveEarn(Member member, AcornHistoryType type, Integer changeAcorn) {
+    public void recordEarn(Member member, AcornHistoryType type, Integer changeAcorn) {
         acornHistoryRepository.save(AcornHistory.earn(member, type, changeAcorn));
     }
 
     @Transactional
-    public void saveWithdraw(Member member, AcornHistoryType type, Integer changeAcorn) {
+    public void recordWithdraw(Member member, AcornHistoryType type, Integer changeAcorn) {
         acornHistoryRepository.save(AcornHistory.withdraw(member, type, changeAcorn));
     }
 
     @Transactional
-    public void saveReward(Member tester, Feedback feedback, FeedbackPost feedbackPost) {
+    public void recordReward(Member tester, Feedback feedback, FeedbackPost feedbackPost) {
         acornHistoryRepository.save(AcornHistory.reward(tester, feedback, feedbackPost));
     }
 
     @Transactional
-    public void saveDeposit(Member writer, UUID feedbackPostId, Integer depositAcorn) {
+    public void recordDeposit(Member writer, UUID feedbackPostId, Integer depositAcorn) {
         acornHistoryRepository.save(AcornHistory.deposit(writer, feedbackPostId, depositAcorn));
     }
 
     @Transactional
-    public void saveRefund(Member writer, UUID feedbackPostId, Integer refundAcorn) {
+    public void recordRefund(Member writer, UUID feedbackPostId, Integer refundAcorn) {
         acornHistoryRepository.save(AcornHistory.refund(writer, feedbackPostId, refundAcorn));
     }
 

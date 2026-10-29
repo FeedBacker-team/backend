@@ -9,7 +9,7 @@ import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
-import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.acorn.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -155,7 +155,7 @@ public class FeedbackFacade {
     private void payReward(Feedback feedback, FeedbackPost feedbackPost) {
         Member tester = memberService.getMember(feedback.getTester().getId());
         acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
-        acornHistoryService.saveReward(tester, feedback, feedbackPost);
+        acornHistoryService.recordReward(tester, feedback, feedbackPost);
     }
 
     /** 평가(승인/거절)할 피드백의 모집글을 락 걸어 조회. 작성자 본인이고 완료 전이어야 한다 */
