@@ -39,8 +39,7 @@ public class FeedbackPostCompleteService {
         if (feedbackPost.getRemainSlotCount() > 0) {
             return false;
         }
-        if (feedbackService.hasWritingFeedback(feedbackPost.getId())
-                || feedbackService.hasSubmittedFeedback(feedbackPost.getId())) {
+        if (feedbackService.hasPendingFeedback(feedbackPost.getId())) {
             return false;
         }
         complete(feedbackPost);

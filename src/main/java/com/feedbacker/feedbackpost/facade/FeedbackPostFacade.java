@@ -128,8 +128,7 @@ public class FeedbackPostFacade {
             return false;
         }
         // 작성중인 참여·검토 대기 피드백이 남아 있으면 만료/자동 승인된 뒤 다음 주기에 완료한다
-        if (feedbackService.hasWritingFeedback(feedbackPost.getId())
-                || feedbackService.hasSubmittedFeedback(feedbackPost.getId())) {
+        if (feedbackService.hasPendingFeedback(feedbackPost.getId())) {
             // 완료는 미루되, 모집 기간은 끝났으므로 모집마감으로 바꿔 둔다
             feedbackPost.close();
             return false;

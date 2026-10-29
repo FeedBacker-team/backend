@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +39,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
 
     boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+
+    boolean existsByFeedbackPostIdAndStatusIn(UUID feedbackPostId, Collection<FeedbackStatus> statuses);
 
     int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 

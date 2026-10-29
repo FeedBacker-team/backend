@@ -84,6 +84,11 @@ public class FeedbackService {
         return feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.WRITING);
     }
 
+    /** 작성중이거나 검토 대기 중인 피드백이 남아 있으면 true */
+    public boolean hasPendingFeedback(UUID feedbackPostId) {
+        return feedbackRepository.existsByFeedbackPostIdAndStatusIn(feedbackPostId, FeedbackStatus.PENDING);
+    }
+
     public List<UUID> getFeedbackPostIdsWithOverdueFeedback(LocalDateTime now) {
         return feedbackRepository.findFeedbackPostIdsWithOverdue(FeedbackStatus.SUBMITTED, now);
     }
