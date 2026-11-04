@@ -48,3 +48,6 @@ replay_pid*
 
 ### Local logs ###
 logs/
+
+### Local only (테스트 등) ###
+local/
