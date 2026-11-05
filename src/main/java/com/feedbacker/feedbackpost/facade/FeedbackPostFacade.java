@@ -23,13 +23,17 @@ import com.feedbacker.member.MemberService;
 import com.feedbacker.project.domain.Project;
 import com.feedbacker.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FeedbackPostFacade {
@@ -67,10 +71,40 @@ public class FeedbackPostFacade {
 
     @Transactional
     public void participate(UUID memberId, UUID feedbackPostId) {
+        long txStartedAt = System.nanoTime(); // [부하 테스트용 측정] 커넥션을 얻고 트랜잭션이 시작된 시각
         Member member = memberService.getMember(memberId);
+        long lockRequestedAt = System.nanoTime();
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        long lockAcquiredAt = System.nanoTime();
+        logParticipateTimingAfterCompletion(txStartedAt, lockRequestedAt, lockAcquiredAt);
         feedbackPost.reserveSlot(member.getId());
         feedbackService.participate(feedbackPost, member);
+    }
+
+    /**
+     * [부하 테스트용 측정 코드] 락은 커밋(또는 롤백) 때 풀리므로, 트랜잭션이 끝난 뒤 구간별 시간을 남긴다.
+     * connWait: 요청 도착 → 커넥션 획득, lockWait: 모집글 행 락 요청 → 획득(DB 왕복 1회 포함),
+     * lockHold: 락 획득 → 커밋/롤백 완료
+     */
+    private void logParticipateTimingAfterCompletion(long txStartedAt, long lockRequestedAt, long lockAcquiredAt) {
+        Long requestStartedAt = ParticipateTiming.startedAt();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                long completedAt = System.nanoTime();
+                long start = requestStartedAt != null ? requestStartedAt : txStartedAt;
+                log.info("[participate-timing] result={} connWaitMs={} lockWaitMs={} lockHoldMs={} totalMs={}",
+                        status == STATUS_COMMITTED ? "COMMITTED" : "ROLLED_BACK",
+                        toMillis(txStartedAt - start),
+                        toMillis(lockAcquiredAt - lockRequestedAt),
+                        toMillis(completedAt - lockAcquiredAt),
+                        toMillis(completedAt - start));
+            }
+        });
+    }
+
+    private static long toMillis(long nanos) {
+        return nanos / 1_000_000;
     }
 
     @Transactional

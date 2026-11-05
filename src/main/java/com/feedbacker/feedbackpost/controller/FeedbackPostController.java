@@ -4,6 +4,7 @@ import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
 import com.feedbacker.feedbackpost.domain.dto.response.*;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.feedbackpost.facade.FeedbackPostFacade;
+import com.feedbacker.feedbackpost.facade.ParticipateTiming;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.project.domain.ProjectTag;
@@ -66,7 +67,12 @@ public class FeedbackPostController {
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
-        feedbackPostFacade.participate(user.getMemberId(), feedbackPostId);
+        ParticipateTiming.start();
+        try {
+            feedbackPostFacade.participate(user.getMemberId(), feedbackPostId);
+        } finally {
+            ParticipateTiming.clear();
+        }
     }
 
     @PatchMapping("/{feedbackPostId}/giveup")
