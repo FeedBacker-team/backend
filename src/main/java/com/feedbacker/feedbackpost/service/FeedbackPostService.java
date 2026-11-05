@@ -226,6 +226,23 @@ public class FeedbackPostService {
                 ));
     }
 
+    /** 참여 사전 검증용으로 락 없이 읽기 전용 조회 */
+    public FeedbackPost getFeedbackPostReadOnly(UUID feedbackPostId) {
+        return feedbackPostRepository.findByIdReadOnly(feedbackPostId)
+                .orElseThrow(() -> new BusinessException(
+                        FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
+                ));
+    }
+
+    /** 슬롯 1개 차감. 동시에 다른 요청이 마지막 슬롯을 가져갔으면 SLOT_FULL */
+    public void decreaseRemainSlot(UUID feedbackPostId) {
+        int updated = feedbackPostRepository.decreaseRemainSlot(
+                feedbackPostId, FeedbackPostStatus.RECRUITING, FeedbackPostStatus.CLOSED, LocalDateTime.now());
+        if (updated == 0) {
+            throw new BusinessException(FeedbackPostErrorCode.SLOT_FULL);
+        }
+    }
+
     /** 락을 건 피드백을 조회 */
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
         return feedbackPostRepository.findByIdForUpdate(feedbackPostId)

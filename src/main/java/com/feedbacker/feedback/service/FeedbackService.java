@@ -10,6 +10,7 @@ import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -38,7 +39,12 @@ public class FeedbackService {
     @Transactional
     public void participate(FeedbackPost feedbackPost, Member tester) {
         validateAlreadyParticipate(feedbackPost.getId(), tester.getId());
-        feedbackRepository.save(Feedback.create(feedbackPost, tester));
+        try {
+            // 모집글 락 없이 저장하므로, 같은 사람의 동시 요청은 (모집글, 테스터) 유니크 제약으로 막는다
+            feedbackRepository.saveAndFlush(Feedback.create(feedbackPost, tester));
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(FeedbackErrorCode.ALREADY_RESERVED);
+        }
     }
 
     public List<Feedback> getMyFeedbacks(UUID memberId) {

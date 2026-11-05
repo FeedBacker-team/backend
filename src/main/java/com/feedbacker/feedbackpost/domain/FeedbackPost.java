@@ -129,20 +129,16 @@ public class FeedbackPost extends BaseTimeEntity {
         question.setFeedbackPost(this);
     }
 
-    public void reserveSlot(UUID memberId) {
+    /**
+     * 참여 가능한지 검증 (락 없이 수행하는 사전 검증).
+     * 슬롯 차감(0이 되면 모집마감)은 FeedbackPostRepository.decreaseRemainSlot이 조건부 UPDATE로 처리한다.
+     */
+    public void validateParticipable(UUID memberId, LocalDateTime now) {
         validateIsNotWriter(memberId);
         validateRecruiting();
-        validateRecruitingPeriod(LocalDateTime.now());
-        minusRemainSlotCount();
-    }
-
-    private void minusRemainSlotCount() {
+        validateRecruitingPeriod(now);
         if (this.remainSlotCount <= 0) {
             throw new BusinessException(FeedbackPostErrorCode.SLOT_FULL);
-        }
-        this.remainSlotCount--;
-        if (this.remainSlotCount == 0 && this.status == FeedbackPostStatus.RECRUITING) {
-            this.status = FeedbackPostStatus.CLOSED;
         }
     }
 
