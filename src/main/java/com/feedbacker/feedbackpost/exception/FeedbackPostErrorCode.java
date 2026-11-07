@@ -18,7 +18,8 @@ public enum FeedbackPostErrorCode implements ErrorCode {
     FEEDBACK_POST_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료된 게시글입니다."),
     FEEDBACK_POST_NOT_COMPLETED(HttpStatus.CONFLICT, "완료된 게시글만 결과를 조회할 수 있습니다."),
     SELF_PARTICIPATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "본인 게시글에는 참여할 수 없습니다."),
-    SLOT_FULL(HttpStatus.CONFLICT, "참여 가능한 슬롯이 없습니다.");
+    SLOT_FULL(HttpStatus.CONFLICT, "참여 가능한 슬롯이 없습니다."),
+    PARTICIPATION_BUSY(HttpStatus.SERVICE_UNAVAILABLE, "참여 요청이 몰려 있습니다. 잠시 후 다시 시도해 주세요.");
 
     private final HttpStatus status;
     private final String message;

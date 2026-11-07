@@ -4,6 +4,7 @@ import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
 import com.feedbacker.feedbackpost.domain.dto.response.*;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.feedbackpost.facade.FeedbackPostFacade;
+import com.feedbacker.feedbackpost.facade.ParticipateBulkhead;
 import com.feedbacker.feedbackpost.facade.ParticipateTiming;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.global.security.CustomUserDetails;
@@ -23,6 +24,7 @@ public class FeedbackPostController {
 
     private final FeedbackPostFacade feedbackPostFacade;
     private final FeedbackPostService feedbackPostService;
+    private final ParticipateBulkhead participateBulkhead;
 
     @GetMapping
     public ResponseEntity<FeedbackPostListResponse> getFeedbackPosts(
@@ -69,7 +71,8 @@ public class FeedbackPostController {
     ) {
         ParticipateTiming.start();
         try {
-            feedbackPostFacade.participate(user.getMemberId(), feedbackPostId);
+            // 트랜잭션(커넥션 획득) 전에 벌크헤드 허가를 받는다
+            participateBulkhead.run(() -> feedbackPostFacade.participate(user.getMemberId(), feedbackPostId));
         } finally {
             ParticipateTiming.clear();
         }
