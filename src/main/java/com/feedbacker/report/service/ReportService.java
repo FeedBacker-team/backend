@@ -14,11 +14,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ReportService {
+
+    // 신고가 제재 판단에 유효한 기간
+    private static final Period VALID_PERIOD = Period.ofYears(1);
 
     private final ReportRepository reportRepository;
     private final MemberRepository memberRepository;
@@ -44,6 +49,12 @@ public class ReportService {
                 .reasons(request.reasons())
                 .detailReasons(request.detailReasons())
                 .build());
+    }
+
+    /** 생성된 지 VALID_PERIOD가 지난 신고를 무효 처리 (스케줄러 전용) */
+    @Transactional
+    public int invalidateExpiredReports(LocalDateTime now) {
+        return reportRepository.invalidateCreatedBefore(now.minus(VALID_PERIOD));
     }
 
     /** 신고 대상이 존재하는지 확인하고, 신고 당한 회원 아이디를 반환 */
