@@ -1,6 +1,8 @@
 package com.feedbacker.report.domain;
 
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.global.exception.BusinessException;
+import com.feedbacker.report.exception.ReportErrorCode;
 import com.feedbacker.report.domain.type.ReportAction;
 import com.feedbacker.report.domain.type.ReportReason;
 import com.feedbacker.report.domain.type.ReportType;
@@ -92,5 +94,56 @@ public class Report extends BaseTimeEntity {
         this.targetId = targetId;
         this.reasons = reasons == null ? new ArrayList<>() : new ArrayList<>(reasons);
         this.detailReasons = detailReasons == null ? new ArrayList<>() : new ArrayList<>(detailReasons);
+    }
+
+    /** 제재 조치 적용 (기각 상태였다면 기각을 취소하고 적용) */
+    public void applyAction(ReportAction action, UUID adminId, String adminMemo) {
+        if (action == null || action == ReportAction.NONE) {
+            throw new BusinessException(ReportErrorCode.INVALID_REPORT_ACTION);
+        }
+        if (this.actions.contains(action)) {
+            throw new BusinessException(ReportErrorCode.ACTION_ALREADY_APPLIED);
+        }
+        List<ReportAction> next = new ArrayList<>(this.actions);
+        next.remove(ReportAction.NONE);
+        next.add(action);
+        this.actions = next;
+        markProcessed(adminId, adminMemo);
+    }
+
+    /** 기각 (아무 조치 없이 처리 완료) */
+    public void reject(UUID adminId, String adminMemo) {
+        if (hasSanction()) {
+            throw new BusinessException(ReportErrorCode.REPORT_ALREADY_SANCTIONED);
+        }
+        this.actions = new ArrayList<>(List.of(ReportAction.NONE));
+        markProcessed(adminId, adminMemo);
+    }
+
+    /** 컨텐츠 삭제 조치 취소 */
+    public void restoreContent(UUID adminId, String adminMemo) {
+        if (!this.actions.contains(ReportAction.CONTENT_DELETED)) {
+            throw new BusinessException(ReportErrorCode.CONTENT_NOT_DELETED);
+        }
+        List<ReportAction> next = new ArrayList<>(this.actions);
+        next.remove(ReportAction.CONTENT_DELETED);
+        if (next.isEmpty()) {
+            next.add(ReportAction.NONE);
+        }
+        this.actions = next;
+        markProcessed(adminId, adminMemo);
+    }
+
+    private boolean hasSanction() {
+        return this.actions.stream().anyMatch(action -> action != ReportAction.NONE);
+    }
+
+    private void markProcessed(UUID adminId, String adminMemo) {
+        this.processed = true;
+        this.processedBy = adminId;
+        this.processedAt = LocalDateTime.now();
+        if (adminMemo != null && !adminMemo.isBlank()) {
+            this.adminMemo = adminMemo;
+        }
     }
 }

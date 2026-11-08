@@ -18,11 +18,17 @@ import java.util.UUID;
 
 @Repository
 public interface FeedbackPostRepository extends JpaRepository<FeedbackPost, UUID>, JpaSpecificationExecutor<FeedbackPost> {
-    List<FeedbackPost> findAllByWriterId(UUID writerId);
+    List<FeedbackPost> findAllByWriterIdAndDeletedFalse(UUID writerId);
+
+    Optional<FeedbackPost> findByIdAndDeletedFalse(UUID id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from FeedbackPost f where f.id = :id and f.deleted = false")
+    Optional<FeedbackPost> findByIdForUpdate(@Param("id") UUID id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from FeedbackPost f where f.id = :id")
-    Optional<FeedbackPost> findByIdForUpdate(@Param("id") UUID id);
+    Optional<FeedbackPost> findByIdIncludingDeletedForUpdate(@Param("id") UUID id);
 
     @Query("select f.id from FeedbackPost f where f.status in :statuses and f.endAt <= :now")
     List<UUID> findEndedIds(

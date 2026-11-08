@@ -59,6 +59,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
               from FeedbackPost fp
               where fp.project = p
                 and fp.status in :activeStatuses
+                and fp.deleted = false
           )
         order by p.createdAt desc
         """)
@@ -74,6 +75,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
         from FeedbackPost fp
         where fp.project.id = :projectId
           and fp.status in :statuses
+          and fp.deleted = false
         order by fp.createdAt desc, fp.id desc
         """)
     List<FeedbackPost> findActiveQa(
@@ -91,6 +93,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
         from FeedbackPost fp
         where fp.project.id = :projectId
           and fp.status in :statuses
+          and fp.deleted = false
         """)
     boolean existsActiveQa(
             @Param("projectId") UUID projectId,
@@ -105,6 +108,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
         where p.owner.id = :memberId
           and p.status = :projectStatus
           and fp.status in :activeStatuses
+          and fp.deleted = false
         order by fp.createdAt desc, fp.id desc
         """)
     List<FeedbackPost> findActiveQaByOwner(

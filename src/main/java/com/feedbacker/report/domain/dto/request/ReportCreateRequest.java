@@ -34,4 +34,13 @@ public record ReportCreateRequest(
         }
         return reasons.stream().allMatch(reason -> reason == null || type.allows(reason));
     }
+
+    @AssertTrue(message = "기타 사유를 선택하면 상세 사유를 입력해야 합니다.")
+    @JsonIgnore
+    public boolean isDetailPresentForOther() {
+        if (reasons == null || !reasons.contains(ReportReason.OTHER)) {
+            return true;
+        }
+        return detailReasons != null && detailReasons.stream().anyMatch(detail -> detail != null && !detail.isBlank());
+    }
 }

@@ -81,6 +81,9 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(name = "is_pinned", nullable = false)
     private boolean pinned = false;
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
@@ -161,6 +164,20 @@ public class FeedbackPost extends BaseTimeEntity {
         if (this.status == FeedbackPostStatus.RECRUITING) {
             this.status = FeedbackPostStatus.CLOSED;
         }
+    }
+
+    public void delete() {
+        if (this.deleted) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ALREADY_DELETED);
+        }
+        this.deleted = true;
+    }
+
+    public void restore() {
+        if (!this.deleted) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_DELETED);
+        }
+        this.deleted = false;
     }
 
     public void complete() {

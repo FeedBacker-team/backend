@@ -144,6 +144,13 @@ public class Project extends BaseTimeEntity {
 
     }
 
+    public void restore() {
+        if (status != ProjectStatus.DELETED) {
+            throw new IllegalStateException("삭제된 프로젝트가 아닙니다.");
+        }
+        this.status = ProjectStatus.PUBLISHED;
+    }
+
     public void increaseViewCount() {
         validateNotDeleted();
         this.viewCount++;

@@ -119,7 +119,7 @@ public class FeedbackFacade {
     @Transactional
     public int autoAcceptOverdue(UUID feedbackPostId) {
         // 락 순서: 모집글 -> 피드백 (accept/complete와 동일)
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostIncludingDeletedForUpdate(feedbackPostId);
         // 이미 완료(정산)된 모집글은 환급이 끝났으므로 보상을 추가 지급하지 않는다
         if (feedbackPost.getStatus() == FeedbackPostStatus.COMPLETED) {
             return 0;
@@ -140,7 +140,7 @@ public class FeedbackFacade {
     @Transactional
     public int expireOverdue(UUID feedbackPostId) {
         // 락 순서: 모집글 -> 피드백 (participate/giveUp/submit과 동일)
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostIncludingDeletedForUpdate(feedbackPostId);
         LocalDateTime now = LocalDateTime.now();
         // 락을 잡은 뒤 조회해서, 그 사이 제출/포기된 피드백은 대상에서 빠진다
         List<Feedback> targets = feedbackService.getExpiredFeedbacksForUpdate(feedbackPostId, now);

@@ -79,6 +79,9 @@ public class Member extends BaseTimeEntity {
 
     private LocalDateTime deactivatedAt;
 
+    // 이 시각 전까지 이용 정지 (null이면 정지 이력 없음)
+    private LocalDateTime bannedUntil;
+
     private Member(String email, String password, AuthProvider provider, String providerId) {
         this.email = email;
         this.password = password;
@@ -115,6 +118,27 @@ public class Member extends BaseTimeEntity {
     public void changeHumidity(BigDecimal humidity) {
         this.humidity = humidity;
         this.grade = TreeGrade.fromHumidity(humidity);
+    }
+
+    /** 습도 감소 */
+    public void decreaseHumidity(BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("감소할 습도는 양수여야 합니다.");
+        }
+        changeHumidity(this.humidity.subtract(amount).max(BigDecimal.ZERO));
+    }
+
+    /** days일 동안 이용 정지 (이미 정지 중이면 남은 기간에 이어서 연장) */
+    public void ban(int days, LocalDateTime now) {
+        if (days <= 0) {
+            throw new IllegalArgumentException("정지 일수는 양수여야 합니다.");
+        }
+        LocalDateTime base = isBanned(now) ? this.bannedUntil : now;
+        this.bannedUntil = base.plusDays(days);
+    }
+
+    public boolean isBanned(LocalDateTime now) {
+        return bannedUntil != null && bannedUntil.isAfter(now);
     }
 
     /** 필수 프로필(닉네임, 직군)을 입력했는지 */

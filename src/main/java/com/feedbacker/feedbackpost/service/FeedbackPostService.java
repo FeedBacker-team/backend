@@ -38,7 +38,7 @@ public class FeedbackPostService {
 
     @Transactional(readOnly = true)
     public List<FeedbackSimpleResponse> getMine(UUID memberId) {
-        return feedbackPostRepository.findAllByWriterId(memberId).stream()
+        return feedbackPostRepository.findAllByWriterIdAndDeletedFalse(memberId).stream()
                 .map(post -> FeedbackSimpleResponse.from(
                         post,
                         getThumbnail(post)
@@ -63,7 +63,8 @@ public class FeedbackPostService {
         validateSearchCondition(tags, sort, page, size);
 
         Specification<FeedbackPost> specification =
-                isCurrentlyRecruiting(LocalDateTime.now());
+                isCurrentlyRecruiting(LocalDateTime.now())
+                        .and(isNotDeleted());
 
         if (keyword != null && !keyword.isBlank()) {
             specification = specification.and(
@@ -138,6 +139,11 @@ public class FeedbackPostService {
                     )
             );
         };
+    }
+
+    private Specification<FeedbackPost> isNotDeleted() {
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.isFalse(root.get("deleted"));
     }
 
     private Specification<FeedbackPost> isCurrentlyRecruiting(LocalDateTime now) {
@@ -220,7 +226,7 @@ public class FeedbackPostService {
     }
 
     public FeedbackPost getFeedbackPost(UUID feedbackPostId) {
-        return feedbackPostRepository.findById(feedbackPostId)
+        return feedbackPostRepository.findByIdAndDeletedFalse(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));
@@ -229,6 +235,14 @@ public class FeedbackPostService {
     /** 락을 건 피드백을 조회 */
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
         return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
+                .orElseThrow(() -> new BusinessException(
+                        FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
+                ));
+    }
+
+    /** 삭제된 모집글도 포함해서 락 조회. 참여자 만료·자동 승인·자동 완료 정산이 끝까지 돌아야 해서 스케줄러에서만 사용 */
+    public FeedbackPost getFeedbackPostIncludingDeletedForUpdate(UUID feedbackPostId) {
+        return feedbackPostRepository.findByIdIncludingDeletedForUpdate(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));

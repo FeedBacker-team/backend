@@ -121,7 +121,7 @@ public class FeedbackPostFacade {
     /** 모집 기간이 끝난 모집글을 자동 완료·환급 (스케줄러 전용). 완료 처리했으면 true */
     @Transactional
     public boolean autoCompleteEnded(UUID feedbackPostId) {
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostIncludingDeletedForUpdate(feedbackPostId);
         // 락을 잡은 뒤 다시 확인해서, 그 사이 작성자가 직접 완료한 모집글은 건너뛴다
         if (feedbackPost.getStatus() == FeedbackPostStatus.COMPLETED
                 || LocalDateTime.now().isBefore(feedbackPost.getEndAt())) {
