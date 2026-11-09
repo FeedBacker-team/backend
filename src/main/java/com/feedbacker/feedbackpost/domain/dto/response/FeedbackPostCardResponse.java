@@ -44,7 +44,10 @@ public record FeedbackPostCardResponse (
     List<ProjectTag> tags,
 
     @JsonProperty("thumbnail_url")
-    String thumbnailUrl
+    String thumbnailUrl,
+
+    @JsonProperty("is_pinned")
+    boolean pinned
 )
 {
     public static FeedbackPostCardResponse from(
@@ -65,7 +68,8 @@ public record FeedbackPostCardResponse (
                 feedbackPost.getRemainSlotCount(),
                 feedbackPost.getRewardAcorn(),
                 feedbackPost.getProject().getTags(),
-                thumbnailUrl
+                thumbnailUrl,
+                feedbackPost.isPinned()
         );
     }
 }
