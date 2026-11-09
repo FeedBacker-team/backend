@@ -5,7 +5,6 @@ import com.feedbacker.feedbackpost.domain.dto.response.*;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.feedbackpost.facade.FeedbackPostFacade;
 import com.feedbacker.feedbackpost.facade.ParticipateBulkhead;
-import com.feedbacker.feedbackpost.facade.ParticipateTiming;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.project.domain.ProjectTag;
@@ -69,13 +68,8 @@ public class FeedbackPostController {
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable UUID feedbackPostId
     ) {
-        ParticipateTiming.start();
-        try {
-            // 트랜잭션(커넥션 획득) 전에 벌크헤드 허가를 받는다
-            participateBulkhead.run(() -> feedbackPostFacade.participate(user.getMemberId(), feedbackPostId));
-        } finally {
-            ParticipateTiming.clear();
-        }
+        // 트랜잭션(커넥션 획득) 전에 벌크헤드 허가를 받는다
+        participateBulkhead.run(() -> feedbackPostFacade.participate(user.getMemberId(), feedbackPostId));
     }
 
     @PatchMapping("/{feedbackPostId}/giveup")

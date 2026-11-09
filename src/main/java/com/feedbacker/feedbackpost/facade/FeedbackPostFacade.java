@@ -71,14 +71,11 @@ public class FeedbackPostFacade {
      */
     @Transactional
     public void participate(UUID memberId, UUID feedbackPostId) {
-        ParticipateTiming timing = ParticipateTiming.begin(); // [부하 테스트용 측정]
         Member member = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostReadOnly(feedbackPostId);
         feedbackPost.validateParticipable(member.getId(), LocalDateTime.now());
         feedbackService.participate(feedbackPost, member);
-        timing.lockRequested();
         feedbackPostService.decreaseRemainSlot(feedbackPost.getId());
-        timing.lockAcquired();
     }
 
     @Transactional
