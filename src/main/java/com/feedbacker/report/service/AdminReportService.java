@@ -7,7 +7,6 @@ import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.repository.ProjectRepository;
 import com.feedbacker.report.domain.Report;
-import com.feedbacker.report.domain.dto.request.ReportBanRequest;
 import com.feedbacker.report.domain.dto.request.ReportProcessRequest;
 import com.feedbacker.report.domain.dto.request.ReportSanctionRequest;
 import com.feedbacker.report.domain.dto.response.ReportDetailResponse;
@@ -33,8 +32,10 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AdminReportService {
 
-    // 경고 1회당 감소하는 습도
-    private static final BigDecimal WARNING_HUMIDITY_DECREASE = new BigDecimal("5");
+    // 경고 시 감소하는 습도
+    private static final BigDecimal WARNING_HUMIDITY_DECREASE = new BigDecimal("3");
+    // 밴 시 정지 일수
+    private static final int BAN_DAYS = 3;
 
     private final ReportRepository reportRepository;
     private final MemberRepository memberRepository;
@@ -56,35 +57,27 @@ public class AdminReportService {
         return ReportDetailResponse.from(findReport(reportId));
     }
 
-    @Transactional
-    public void warn(UUID adminId, UUID reportId, ReportProcessRequest request) {
-        Report report = findReport(reportId);
-        report.applyAction(ReportAction.WARNING, adminId, memoOf(request));
-        findSuspect(report).decreaseHumidity(WARNING_HUMIDITY_DECREASE);
-        // TODO: 신고 당한 사람에게 알림 전송
-    }
-
-    @Transactional
-    public void ban(UUID adminId, UUID reportId, ReportBanRequest request) {
-        Report report = findReport(reportId);
-        report.applyAction(ReportAction.BANNED, adminId, request.adminMemo());
-        findSuspect(report).ban(request.days(), LocalDateTime.now());
-        // TODO: 신고 당한 사람에게 알림 전송
-    }
-
+    /** 경고·밴은 함께, 커스텀은 단독으로 적용 (조합 검증은 ReportSanctionRequest에서) */
     @Transactional
     public void sanction(UUID adminId, UUID reportId, ReportSanctionRequest request) {
         Report report = findReport(reportId);
-        report.applyAction(ReportAction.CUSTOM, adminId, request.adminMemo());
+        request.actions().forEach(action -> report.applyAction(action, adminId, request.adminMemo()));
 
         Member suspect = findSuspect(report);
+        LocalDateTime now = LocalDateTime.now();
+        if (request.hasAction(ReportAction.WARNING)) {
+            suspect.decreaseHumidity(WARNING_HUMIDITY_DECREASE);
+        }
+        if (request.hasAction(ReportAction.BANNED)) {
+            suspect.ban(BAN_DAYS, now);
+        }
+        // 커스텀: 입력한 수치 그대로 적용
         if (request.humidityDecrease() != null) {
             suspect.decreaseHumidity(request.humidityDecrease());
         }
         if (request.banDays() != null) {
-            suspect.ban(request.banDays(), LocalDateTime.now());
+            suspect.ban(request.banDays(), now);
         }
-        // TODO: 신고 당한 사람에게 알림 전송
     }
 
     @Transactional

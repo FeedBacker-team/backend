@@ -1,7 +1,6 @@
 package com.feedbacker.report.controller;
 
 import com.feedbacker.global.security.CustomUserDetails;
-import com.feedbacker.report.domain.dto.request.ReportBanRequest;
 import com.feedbacker.report.domain.dto.request.ReportProcessRequest;
 import com.feedbacker.report.domain.dto.request.ReportSanctionRequest;
 import com.feedbacker.report.domain.dto.response.ReportDetailResponse;
@@ -39,27 +38,7 @@ public class AdminReportController {
         return adminReportService.getReport(reportId);
     }
 
-    /** 경고 처리 (습도 5 감소) */
-    @PostMapping("/{reportId}/warn")
-    public void warn(
-            @AuthenticationPrincipal CustomUserDetails admin,
-            @PathVariable UUID reportId,
-            @Valid @RequestBody(required = false) ReportProcessRequest request
-    ) {
-        adminReportService.warn(admin.getMemberId(), reportId, request);
-    }
-
-    /** 밴 처리 (n일 정지) */
-    @PostMapping("/{reportId}/ban")
-    public void ban(
-            @AuthenticationPrincipal CustomUserDetails admin,
-            @PathVariable UUID reportId,
-            @Valid @RequestBody ReportBanRequest request
-    ) {
-        adminReportService.ban(admin.getMemberId(), reportId, request);
-    }
-
-    /** 커스텀 제재 (습도 감소 및/또는 정지) */
+    /** 제재 (경고·밴은 함께, 커스텀은 단독) */
     @PostMapping("/{reportId}/sanction")
     public void sanction(
             @AuthenticationPrincipal CustomUserDetails admin,
