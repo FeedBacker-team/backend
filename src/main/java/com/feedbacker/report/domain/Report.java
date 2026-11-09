@@ -96,16 +96,16 @@ public class Report extends BaseTimeEntity {
         this.detailReasons = detailReasons == null ? new ArrayList<>() : new ArrayList<>(detailReasons);
     }
 
-    /** 제재 조치 적용 (기각 상태였다면 기각을 취소하고 적용) */
+    /** 제재 조치 적용 (기각·원복 상태였다면 그 표시를 지우고 적용) */
     public void applyAction(ReportAction action, UUID adminId, String adminMemo) {
-        if (action == null || action == ReportAction.NONE) {
+        if (action == null || action.isResultMarker()) {
             throw new BusinessException(ReportErrorCode.INVALID_REPORT_ACTION);
         }
         if (this.actions.contains(action)) {
             throw new BusinessException(ReportErrorCode.ACTION_ALREADY_APPLIED);
         }
         List<ReportAction> next = new ArrayList<>(this.actions);
-        next.remove(ReportAction.NONE);
+        next.removeIf(ReportAction::isResultMarker);
         next.add(action);
         this.actions = next;
         markProcessed(adminId, adminMemo);
@@ -120,22 +120,17 @@ public class Report extends BaseTimeEntity {
         markProcessed(adminId, adminMemo);
     }
 
-    /** 컨텐츠 삭제 조치 취소 */
-    public void restoreContent(UUID adminId, String adminMemo) {
-        if (!this.actions.contains(ReportAction.CONTENT_DELETED)) {
-            throw new BusinessException(ReportErrorCode.CONTENT_NOT_DELETED);
+    /** 적용된 제재 전체 원복 (원복 후 다시 제재하거나 기각할 수 있음) */
+    public void revert(UUID adminId, String adminMemo) {
+        if (!hasSanction()) {
+            throw new BusinessException(ReportErrorCode.REPORT_NOT_SANCTIONED);
         }
-        List<ReportAction> next = new ArrayList<>(this.actions);
-        next.remove(ReportAction.CONTENT_DELETED);
-        if (next.isEmpty()) {
-            next.add(ReportAction.NONE);
-        }
-        this.actions = next;
+        this.actions = new ArrayList<>(List.of(ReportAction.REVERTED));
         markProcessed(adminId, adminMemo);
     }
 
     private boolean hasSanction() {
-        return this.actions.stream().anyMatch(action -> action != ReportAction.NONE);
+        return this.actions.stream().anyMatch(action -> !action.isResultMarker());
     }
 
     private void markProcessed(UUID adminId, String adminMemo) {

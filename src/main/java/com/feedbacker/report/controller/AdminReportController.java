@@ -58,14 +58,14 @@ public class AdminReportController {
         adminReportService.deleteContent(admin.getMemberId(), reportId, request);
     }
 
-    /** 삭제 원상 복구 */
-    @PostMapping("/{reportId}/content-restoration")
-    public void restoreContent(
+    /** 전체 원복 (습도 감소, 정지, 컨텐츠 삭제를 모두 되돌림) */
+    @PostMapping("/{reportId}/revert")
+    public void revert(
             @AuthenticationPrincipal CustomUserDetails admin,
             @PathVariable UUID reportId,
             @Valid @RequestBody(required = false) ReportProcessRequest request
     ) {
-        adminReportService.restoreContent(admin.getMemberId(), reportId, request);
+        adminReportService.revert(admin.getMemberId(), reportId, request);
     }
 
     /** 기각 처리 */

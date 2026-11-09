@@ -19,7 +19,7 @@ public enum ReportErrorCode implements ErrorCode {
     ACTION_ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 적용된 조치입니다."),
     REPORT_ALREADY_SANCTIONED(HttpStatus.CONFLICT, "이미 제재가 적용된 신고는 기각할 수 없습니다."),
     CONTENT_DELETION_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "회원 신고는 컨텐츠 삭제 대상이 아닙니다."),
-    CONTENT_NOT_DELETED(HttpStatus.CONFLICT, "삭제 조치가 적용되지 않은 신고입니다.");
+    REPORT_NOT_SANCTIONED(HttpStatus.CONFLICT, "원복할 제재가 없는 신고입니다.");
 
     private final HttpStatus status;
     private final String message;

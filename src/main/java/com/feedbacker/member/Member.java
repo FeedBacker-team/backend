@@ -120,12 +120,22 @@ public class Member extends BaseTimeEntity {
         this.grade = TreeGrade.fromHumidity(humidity);
     }
 
-    /** 습도 감소 */
-    public void decreaseHumidity(BigDecimal amount) {
+    /** 습도 감소 (0 미만으로는 내려가지 않음). 실제로 감소한 양을 반환 */
+    public BigDecimal decreaseHumidity(BigDecimal amount) {
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("감소할 습도는 양수여야 합니다.");
         }
-        changeHumidity(this.humidity.subtract(amount).max(BigDecimal.ZERO));
+        BigDecimal before = this.humidity;
+        changeHumidity(before.subtract(amount).max(BigDecimal.ZERO));
+        return before.subtract(this.humidity);
+    }
+
+    /** 습도 증가 (제재 원복용) */
+    public void increaseHumidity(BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("증가할 습도는 양수여야 합니다.");
+        }
+        changeHumidity(this.humidity.add(amount));
     }
 
     /** days일 동안 이용 정지 (이미 정지 중이면 남은 기간에 이어서 연장) */
@@ -135,6 +145,15 @@ public class Member extends BaseTimeEntity {
         }
         LocalDateTime base = isBanned(now) ? this.bannedUntil : now;
         this.bannedUntil = base.plusDays(days);
+    }
+
+    /** 정지 기간을 days일 단축 (제재 원복용). 남은 기간이 없으면 정지 해제 */
+    public void shortenBan(int days, LocalDateTime now) {
+        if (!isBanned(now)) {
+            return;
+        }
+        LocalDateTime shortened = this.bannedUntil.minusDays(days);
+        this.bannedUntil = shortened.isAfter(now) ? shortened : null;
     }
 
     public boolean isBanned(LocalDateTime now) {
