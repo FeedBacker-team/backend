@@ -111,6 +111,11 @@ public class Member extends BaseTimeEntity {
         }
     }
 
+    /** 2-5 비밀번호 재설정 (encodedPassword는 암호화된 값) */
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
     /** 습도 변경 시 나무 등급도 같이 갱신 */
     public void changeHumidity(BigDecimal humidity) {
         this.humidity = humidity;
