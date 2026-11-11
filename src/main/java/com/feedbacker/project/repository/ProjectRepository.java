@@ -117,4 +117,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
             @Param("activeStatuses")
             Collection<FeedbackPostStatus> activeStatuses
     );
+
+    boolean existsByIdAndStatus(UUID projectId, ProjectStatus status);
 }

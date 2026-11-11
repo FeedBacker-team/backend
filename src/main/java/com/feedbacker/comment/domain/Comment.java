@@ -150,7 +150,7 @@ public class Comment extends BaseTimeEntity {
         return this.editedAt != null;
     }
 
-    /** 작성자 삭제 (소프트). 답글이 없는 경우의 물리 삭제 여부는 서비스에서 판단한다. */
+    /** 작성자 삭제. 항상 소프트 삭제하며 답글은 그대로 남는다. */
     public void delete(UUID memberId) {
         validateIsWriter(memberId);
         validateActive();

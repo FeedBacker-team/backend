@@ -30,7 +30,7 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    /** 게시글의 루트 댓글 목록 조회 (페이지 방식). 경로의 id 는 게시글 아이디 */
+    /** 게시글의 루트 댓글 목록 조회 (페이지 방식). targetId 는 게시글 아이디 */
     @GetMapping("/{targetId}")
     public CommentListResponse getComments(
             @AuthenticationPrincipal CustomUserDetails user,
