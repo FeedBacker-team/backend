@@ -69,6 +69,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/feedback-posts/mine").authenticated()
                         // 모집글 상세는 비로그인 열람 가능
                         .requestMatchers(HttpMethod.GET, "/api/feedback-posts/{feedbackPostId}").permitAll()
+                        // 댓글·답글 조회는 비로그인 열람 가능
+                        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
                         .anyRequest().authenticated()
 
                 )
