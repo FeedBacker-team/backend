@@ -1,6 +1,7 @@
 package com.feedbacker.project.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.feedbacker.member.Member;
 import com.feedbacker.project.domain.Project;
 import com.feedbacker.project.domain.ProjectTag;
 
@@ -57,11 +58,11 @@ public record ProjectDetailResponse(
             ActiveQaResponse activeQa,
             String thumbnailImageUrl
     ) {
-        UUID ownerId = project.getOwner().getId();
-
-        boolean isOwner =
-                viewerId != null && ownerId.equals(viewerId);
-
+        Member owner = project.getOwner();
+        UUID ownerId = owner == null ? null : owner.getId();
+        String ownerNickname = owner == null ? "탈퇴한 사용자" : owner.getNickname();
+        String profileImagePath = owner == null ? null : owner.getProfileImage();
+        boolean isOwner = viewerId != null && viewerId.equals(ownerId);
         return new ProjectDetailResponse(
                 project.getId(),
                 project.getTitle(),
@@ -70,8 +71,8 @@ public record ProjectDetailResponse(
                 project.getServiceLink(),
                 thumbnailImageUrl,
                 ownerId,
-                project.getOwner().getNickname(),
-                project.getOwner().getProfileImage(),
+                ownerNickname,
+                profileImagePath,
                 project.getViewCount(),
                 project.getCreatedAt(),
                 project.getUpdatedAt(),

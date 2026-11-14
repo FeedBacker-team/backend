@@ -79,28 +79,36 @@ public class ProjectService {
 
     //조회수 증가
     @Transactional
-    public ProjectDetailResponse getProjectDetail(UUID projectId, UUID viewerId) {
+    public long recordProjectView(UUID projectId, UUID memberId, UUID guestId) {
         Project project = findPublishedProject(projectId);
-        if (viewerId == null) {
-            return toDetailResponse(project, null);
-        }
 
-        if (!memberRepository.existsById(viewerId)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 회원을 찾을 수 없습니다.");
-        }
+        int recordedCount;
 
-        int insertCount = projectViewRepository.insertIfAbsent(projectId, viewerId);
-
-        if (insertCount == 1) {
-            int updatedCount = projectRepository.increaseViewCount(projectId, ProjectStatus.PUBLISHED);
-
-            if (updatedCount == 0) {
-                throw projectNotFound();
+        if (memberId != null) {
+            if (!memberRepository.existsById(memberId)) {
+                throw new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "인증된 회원을 찾을 수 없습니다."
+                );
             }
-
-            project = findPublishedProject(projectId);
+            recordedCount = projectViewRepository.recordMemberView(projectId, memberId);
+        } else {
+            if (guestId == null) {
+                throw new IllegalArgumentException("비회원 방문번호가 필요합니다.");
+            }
+            recordedCount = projectViewRepository.recordGuestView(projectId, guestId);
         }
-        return toDetailResponse(project, viewerId);
+
+        // 오늘 이미 집계됐다면 현재 조회수만 반환
+        if (recordedCount == 0) {
+            return project.getViewCount();
+        }
+
+        if (projectRepository.increaseViewCount(projectId, ProjectStatus.PUBLISHED) == 0) {
+            throw projectNotFound();
+        }
+
+        // 기존 increaseViewCount()는 갱신 후 영속성 컨텍스트를 비우므로 다시 조회
+        return findPublishedProject(projectId).getViewCount();
     }
 
     //조회수 증가 없는 프로젝트 조회
@@ -335,7 +343,8 @@ public class ProjectService {
     }
 
     private void validateOwner(Project project, UUID memberId) {
-        if (!project.getOwner().getId().equals(memberId)) {
+        Member owner = project.getOwner();
+        if (memberId == null || owner == null || !memberId.equals(owner.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "프로젝트 소유자만 수정하거나 삭제할 수 있습니다.");
         }
 
