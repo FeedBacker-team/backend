@@ -1,0 +1,11 @@
+.git
+.gradle
+build
+.idea
+out
+*.iml
+*.log
+.DS_Store
+.env
+.env.*
+compose.yaml

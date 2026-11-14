@@ -1,0 +1,147 @@
+package com.feedbacker.feedbackpost.facade;
+
+import com.feedbacker.feedback.domain.Feedback;
+import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.feedback.service.FeedbackService;
+import com.feedbacker.feedback.service.QuestionAnswerService;
+import com.feedbacker.feedbackpost.domain.FeedbackPost;
+import com.feedbacker.feedbackpost.domain.dto.request.FeedbackPostCreateRequest;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostCreateResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostDetailResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostProgressResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackPostResultResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackProgressResponse;
+import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
+import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
+import com.feedbacker.feedbackpost.service.FeedbackPostService;
+import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
+import com.feedbacker.feedbackpost.service.ImageService;
+import com.feedbacker.global.image.ImageResponse;
+import com.feedbacker.member.AcornWalletService;
+import com.feedbacker.member.Member;
+import com.feedbacker.member.MemberService;
+import com.feedbacker.project.domain.Project;
+import com.feedbacker.project.service.ProjectService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class FeedbackPostFacade {
+
+    private final FeedbackPostService feedbackPostService;
+    private final FeedbackPostCompleteService feedbackPostCompleteService;
+    private final ProjectService projectService;
+    private final MemberService memberService;
+    private final AcornWalletService acornWalletService;
+    private final AcornHistoryService acornHistoryService;
+    private final FeedbackService feedbackService;
+    private final ImageService imageService;
+    private final QuestionAnswerService questionAnswerService;
+
+    @Transactional
+    public FeedbackPostCreateResponse create(UUID memberId, FeedbackPostCreateRequest request) {
+        Member member = memberService.getMember(memberId);
+        Project project = projectService.getProject(request.projectId());
+        project.validateOwner(member.getId());
+        projectService.validateHasFeedbackPost(project.getId());
+        acornWalletService.withdraw(member.getId(), request.depositAcorn());
+        UUID feedbackPostId = feedbackPostService.save(request.toEntity(project));
+        acornHistoryService.saveDeposit(member, feedbackPostId, request.depositAcorn());
+        return new FeedbackPostCreateResponse(feedbackPostId);
+    }
+
+    @Transactional(readOnly = true)
+    public FeedbackPostDetailResponse getDetail(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedbackPostId);
+        Feedback feedback = memberId == null ? null : feedbackService.findMyFeedback(feedbackPostId, memberId);
+        return FeedbackPostDetailResponse.from(
+                feedback,
+                feedbackPost,
+                imageService.toResponses(feedbackPost.getImages())
+        );
+    }
+
+    @Transactional
+    public void participate(UUID memberId, UUID feedbackPostId) {
+        Member member = memberService.getMember(memberId);
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        feedbackPostService.validateParticipation(feedbackPost, member.getId());
+        feedbackPost.minusRemainSlotCount();
+        feedbackService.participate(feedbackPost, member);
+    }
+
+    @Transactional
+    public void giveUp(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        feedbackService.giveUp(feedbackPost.getId(), memberId);
+        feedbackPost.plusRemainSlotCount();
+    }
+
+    @Transactional(readOnly = true)
+    public FeedbackPostProgressResponse getProgress(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriter(feedbackPostId, memberId);
+        List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPost.getId());
+        Map<UUID, String> profileImageUrls = memberService.getProfileImageUrls(
+                feedbacks.stream().map(feedback -> feedback.getTester().getId()).toList()
+        );
+        List<FeedbackProgressResponse> feedbackProgress = feedbacks.stream()
+                .map(feedback -> FeedbackProgressResponse.from(
+                        feedback,
+                        profileImageUrls.get(feedback.getTester().getId())
+                ))
+                .toList();
+        return FeedbackPostProgressResponse.from(
+                feedbackPost,
+                feedbackPostService.getThumbnail(feedbackPost),
+                feedbackProgress
+        );
+    }
+
+    @Transactional
+    public void complete(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
+        feedbackService.validateExistActive(feedbackPost.getId());
+        feedbackPostCompleteService.complete(feedbackPost);
+    }
+
+    /** 모집 기간이 끝난 모집글을 자동 완료·환급 (스케줄러 전용). 완료 처리했으면 true */
+    @Transactional
+    public boolean autoCompleteEnded(UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        // 락을 잡은 뒤 다시 확인해서, 그 사이 작성자가 직접 완료한 모집글은 건너뛴다
+        if (feedbackPost.getStatus() == FeedbackPostStatus.COMPLETED
+                || LocalDateTime.now().isBefore(feedbackPost.getEndAt())) {
+            return false;
+        }
+        // 작성중인 참여·검토 대기 피드백이 남아 있으면 만료/자동 승인된 뒤 다음 주기에 완료한다
+        if (feedbackService.hasWritingFeedback(feedbackPost.getId())
+                || feedbackService.hasSubmittedFeedback(feedbackPost.getId())) {
+            // 완료는 미루되, 모집 기간은 끝났으므로 모집마감으로 바꿔 둔다
+            feedbackPost.close();
+            return false;
+        }
+        feedbackPostCompleteService.complete(feedbackPost);
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriter(feedbackPostId, memberId);
+        List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPostId);
+        List<ImageResponse> images = imageService.toResponses(feedbackPost.getImages());
+        List<FeedbackResultResponse> feedbackResults = questionAnswerService.getFeedbackResults(feedbacks, feedbackPost);
+        return FeedbackPostResultResponse.from(
+                feedbackResults,
+                feedbackPost,
+                feedbackPostCompleteService.getPaidAcorn(feedbackPost),
+                images
+        );
+    }
+}

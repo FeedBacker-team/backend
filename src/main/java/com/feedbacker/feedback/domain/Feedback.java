@@ -1,0 +1,270 @@
+package com.feedbacker.feedback.domain;
+
+import com.feedbacker.feedback.domain.dto.request.FeedbackObjectRequest;
+import com.feedbacker.feedback.domain.dto.request.FeedbackRejectRequest;
+import com.feedbacker.feedback.domain.type.FeedbackStatus;
+import com.feedbacker.feedback.domain.type.ObjectType;
+import com.feedbacker.feedback.domain.type.RejectType;
+import com.feedbacker.feedback.exception.FeedbackErrorCode;
+import com.feedbacker.feedbackpost.domain.FeedbackPost;
+import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.global.exception.BusinessException;
+import com.feedbacker.member.Member;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+
+@Entity
+@Table(
+        name = "feedbacks",
+        // DB에서 feedback_post_id 와 tester_id의 조합은 유니크
+        uniqueConstraints = @UniqueConstraint(name = "uk_feedback_post_tester", columnNames = {"feedback_post_id", "tester_id"}),
+        // 인덱싱
+        indexes = {
+                @Index(name = "idx_feedback_tester", columnList = "tester_id"),
+                @Index(name = "idx_feedback_status_expire", columnList = "status, expire_at")  // 만료 스케줄러용
+        }
+)
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Feedback extends BaseTimeEntity {
+
+    private static final long SUBMISSION_LIMIT_HOURS = 24L;   // 참여 후 제출 기한
+    private static final long RESPONSE_LIMIT_HOURS = 72L;     // 제출 후 작성자 응답 기한
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "feedback_id")
+    private UUID id;
+
+    /** 피드백을 진행한 테스터 값 (외래키) */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tester_id", nullable = false)
+    private Member tester;
+
+    /** 피드백을 진행한 피드백 모집글 값 (외래키) */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "feedback_post_id", nullable = false)
+    private FeedbackPost feedbackPost;
+
+    /** 테스터가 작성한 질문 답변 리스트 */
+    @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<QuestionAnswer> answers = new ArrayList<>();
+
+    /** 피드백의 상태 */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private FeedbackStatus status;
+
+    /** 보상으로 받은 도토리 수 */
+    @Setter
+    @Column
+    private Integer rewardAcorn;
+
+    /** 피드백 거부 받았을시 거부 유형 */
+    @Enumerated(EnumType.STRING)
+    @Column
+    private RejectType rejectType;
+
+    /** 거부 상세 사유 */
+    @Column(columnDefinition = "TEXT")
+    private String rejectDetail;
+
+    /** 거부를 이의제기 할 시 유형 */
+    @Enumerated(EnumType.STRING)
+    @Column
+    private ObjectType objectType;
+
+    /** 거부를 이의제기 할 시 상세 사유 */
+    @Column(columnDefinition = "TEXT")
+    private String objectReason;
+
+    /** 이의제기 검토 결과 */
+    @Column(columnDefinition = "TEXT")
+    private String objectResult;
+
+    /** 피드백 모집글에 참여한 시각 */
+    @Column(nullable = false)
+    private LocalDateTime participateAt;
+
+    /** 피드백 제출 시각 */
+    @Column
+    private LocalDateTime submitAt;
+
+    /** 피드백 제출 마감 기한 */
+    @Column(nullable = false)
+    private LocalDateTime expireAt;
+
+    /** 피드백 포기 시각 */
+    @Column
+    private LocalDateTime cancelAt;
+
+    /** 피드백 제출 후 응답(수락/거절) 마감 기한*/
+    @Column
+    private LocalDateTime responseDeadLineAt;
+
+    /** 피드백 제출 후 응답(수락/거절) 진행 시각*/
+    @Column
+    private LocalDateTime responseAt;
+
+    @Builder
+    public Feedback(
+            Member tester,
+            FeedbackPost feedbackPost,
+            List<QuestionAnswer> answers
+    ) {
+        this.tester = tester;
+        this.feedbackPost = feedbackPost;
+        this.status = FeedbackStatus.WRITING;
+        this.participateAt = LocalDateTime.now();
+        this.expireAt = this.participateAt.plusHours(SUBMISSION_LIMIT_HOURS);
+    }
+
+    public static Feedback create(
+            FeedbackPost feedbackPost,
+            Member tester
+    ) {
+        return Feedback.builder()
+                .tester(tester)
+                .feedbackPost(feedbackPost)
+                .build();
+    }
+
+    public void accept(Integer rewardAcorn) {
+        // 피드백이 '제출'상태가 아닌지 검증
+        if (this.status != FeedbackStatus.SUBMITTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
+        // 응답 기한이 지났는지 검증
+        if (this.responseDeadLineAt.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_PROCESS_EXPIRED);
+        }
+        markAccepted(rewardAcorn);
+    }
+
+    /** 응답 기한이 지난 '제출' 상태 피드백을 자동 승인 (기한 검증 없음) */
+    public void autoAccept(Integer rewardAcorn) {
+        if (this.status != FeedbackStatus.SUBMITTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
+        markAccepted(rewardAcorn);
+    }
+
+    private void markAccepted(Integer rewardAcorn) {
+        this.rewardAcorn = rewardAcorn;
+        this.responseAt = LocalDateTime.now();
+        this.status = FeedbackStatus.ACCEPTED;
+    }
+
+    public void reject(FeedbackRejectRequest request) {
+        // 피드백이 '제출'상태가 아닌지 검증
+        if (this.status != FeedbackStatus.SUBMITTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_PROCESSED);
+        }
+        // 응답 기한이 지났는지 검증
+        if (this.responseDeadLineAt.isBefore(LocalDateTime.now())) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_PROCESS_EXPIRED);
+        }
+        // '거절 사유' 텍스트 앞뒤 공백 제거후 글자수 검증
+        String cleaned = request.rejectDetail().strip();
+        if (cleaned.length() < 100) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_REJECT_DETAIL_TOO_SHORT);
+        }
+        this.rejectType = request.rejectType();
+        this.rejectDetail = cleaned;
+        this.responseAt = LocalDateTime.now();
+        this.status = FeedbackStatus.REJECTED;
+    }
+
+    public void object(UUID memberId, FeedbackObjectRequest request) {
+        // 피드백 작성자인지 검증
+        if (!this.tester.getId().equals(memberId)) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
+        }
+        // 피드백 상태가 '거절'상태가 아닌지 검증
+        if (this.status != FeedbackStatus.REJECTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_REJECTED);
+        }
+        // 이전에 이의제기를 작성했는지 검증
+        if (this.objectReason != null) {
+            throw new BusinessException(FeedbackErrorCode.OBJECTION_ALREADY_SUBMITTED);
+        }
+        this.objectReason = request.objectReason();
+        this.objectType = request.objectType();
+        this.status = FeedbackStatus.OBJECTED;
+    }
+
+    public void submit(List<QuestionAnswer> answers) {
+        LocalDateTime now = LocalDateTime.now();
+        validateSubmittable(now);
+        answers.forEach(this::addAnswer);
+        this.status = FeedbackStatus.SUBMITTED;
+        this.submitAt = now;
+        this.responseDeadLineAt = now.plusHours(RESPONSE_LIMIT_HOURS);
+    }
+
+    private void addAnswer(QuestionAnswer answer) {
+        this.answers.add(answer);
+        answer.setFeedback(this);
+    }
+
+    private void validateSubmittable(LocalDateTime now) {
+        switch (this.status) {
+            case WRITING -> { }
+            case SUBMITTED, ACCEPTED, REJECTED,
+                 OBJECTED, OBJECTION_ACCEPTED, OBJECTION_REJECTED -> throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_SUBMITTED);
+            case CANCELED -> throw new BusinessException(FeedbackErrorCode.ABANDONED_PARTICIPATION);
+            case EXPIRED -> throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+        }
+        if (!now.isBefore(this.expireAt)) {
+            throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+        }
+    }
+
+    public void cancel() {
+        LocalDateTime now = LocalDateTime.now();
+        if (this.status != FeedbackStatus.WRITING) {
+            throw new BusinessException(FeedbackErrorCode.CANNOT_GIVE_UP);
+        }
+        if (!now.isBefore(this.expireAt)) {
+            throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+        }
+        this.status = FeedbackStatus.CANCELED;
+        this.cancelAt = now;
+    }
+
+    /** 제출 기한이 지난 '작성중' 피드백을 만료 처리 (스케줄러 전용) */
+    public void expire(LocalDateTime now) {
+        if (this.status != FeedbackStatus.WRITING) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_WRITING);
+        }
+        if (now.isBefore(this.expireAt)) {
+            throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_NOT_REACHED);
+        }
+        this.status = FeedbackStatus.EXPIRED;
+    }
+
+    /** 피드백이 '제출' 이후이면 true, 아니면 false */
+    public boolean isSubmitted() {
+        return status == FeedbackStatus.SUBMITTED
+                || status == FeedbackStatus.ACCEPTED
+                || status == FeedbackStatus.REJECTED
+                || status == FeedbackStatus.OBJECTED
+                || status == FeedbackStatus.OBJECTION_REJECTED
+                || status == FeedbackStatus.OBJECTION_ACCEPTED;
+    }
+
+    public FeedbackStatus statusForFeedbackPostWriter() {
+        return switch (this.status) {
+            case FeedbackStatus.OBJECTED,
+                 FeedbackStatus.OBJECTION_REJECTED,
+                 FeedbackStatus.OBJECTION_ACCEPTED -> FeedbackStatus.REJECTED;
+            default -> this.status;
+        };
+    }
+}
