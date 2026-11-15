@@ -42,6 +42,11 @@ public class Member extends BaseTimeEntity {
     @Column(length = 20)
     private Role role;
 
+    // 관리자 지정은 DB에서 직접 변경
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Authority authority = Authority.USER;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AuthProvider provider;
@@ -87,6 +92,7 @@ public class Member extends BaseTimeEntity {
         this.password = password;
         this.provider = provider;
         this.providerId = providerId;
+        this.authority = Authority.USER;
         this.humidity = DEFAULT_HUMIDITY;
         this.grade = TreeGrade.fromHumidity(DEFAULT_HUMIDITY);
     }
