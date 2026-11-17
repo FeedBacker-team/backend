@@ -1,8 +1,6 @@
 package com.feedbacker.report.service;
 
-import com.feedbacker.feedbackpost.domain.FeedbackPost;
-import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
-import com.feedbacker.feedbackpost.repository.FeedbackPostRepository;
+import com.feedbacker.feedbackpost.service.FeedbackPostForceDeleteService;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberRepository;
@@ -11,6 +9,8 @@ import com.feedbacker.project.repository.ProjectRepository;
 import com.feedbacker.report.domain.Report;
 import com.feedbacker.report.domain.ReportSanction;
 import com.feedbacker.report.domain.dto.request.ReportProcessRequest;
+import com.feedbacker.report.domain.policy.SanctionPolicy;
+import com.feedbacker.report.domain.policy.SanctionPolicy.BanDuration;
 import com.feedbacker.report.domain.dto.request.ReportSanctionRequest;
 import com.feedbacker.report.domain.dto.response.ReportDetailResponse;
 import com.feedbacker.report.domain.dto.response.ReportListResponse;
@@ -37,16 +37,11 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AdminReportService {
 
-    // 경고 시 감소하는 습도
-    private static final BigDecimal WARNING_HUMIDITY_DECREASE = new BigDecimal("3");
-    // 밴 시 정지 일수
-    private static final int BAN_DAYS = 3;
-
     private final ReportRepository reportRepository;
     private final ReportSanctionRepository reportSanctionRepository;
     private final MemberRepository memberRepository;
     private final ProjectRepository projectRepository;
-    private final FeedbackPostRepository feedbackPostRepository;
+    private final FeedbackPostForceDeleteService feedbackPostForceDeleteService;
 
     public ReportListResponse getReports(Boolean isProcessed, int page, int size) {
         if (page < 0 || size <= 0 || size > 100) {
@@ -63,7 +58,6 @@ public class AdminReportService {
         return ReportDetailResponse.from(findReport(reportId));
     }
 
-    /** 경고·밴은 함께, 커스텀은 단독으로 적용 (조합 검증은 ReportSanctionRequest에서) */
     @Transactional
     public void sanction(UUID adminId, UUID reportId, ReportSanctionRequest request) {
         Report report = findReport(reportId);
@@ -71,40 +65,89 @@ public class AdminReportService {
 
         Member suspect = findSuspect(report);
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime since = now.minusYears(SanctionPolicy.COUNT_PERIOD_YEARS);
+
+        // 제제 로직 실행
+        // 경고인 경우
         if (request.hasAction(ReportAction.WARNING)) {
-            BigDecimal decreased = suspect.decreaseHumidity(WARNING_HUMIDITY_DECREASE);
-            recordSanction(report, ReportAction.WARNING, decreased, null, null, adminId);
+            applyWarning(report, suspect, adminId, since);
         }
+        // 밴인 경우
         if (request.hasAction(ReportAction.BANNED)) {
-            suspect.ban(BAN_DAYS, now);
-            recordSanction(report, ReportAction.BANNED, null, BAN_DAYS, suspect.getBannedUntil(), adminId);
+            applyPolicyBan(report, suspect, adminId, since, now);
         }
-        // 커스텀: 입력한 수치 그대로 적용
+        // 커스텀인 경우
         if (request.hasAction(ReportAction.CUSTOM)) {
-            BigDecimal decreased = request.humidityDecrease() == null
-                    ? null
-                    : suspect.decreaseHumidity(request.humidityDecrease());
-            LocalDateTime banEndAt = null;
-            if (request.banDays() != null) {
-                suspect.ban(request.banDays(), now);
-                banEndAt = suspect.getBannedUntil();
-            }
-            recordSanction(report, ReportAction.CUSTOM, decreased, request.banDays(), banEndAt, adminId);
+            applyCustom(report, suspect, adminId, request, now);
         }
     }
 
+    /** 경고: 최근 1년 경고 횟수에 따라 습도 차등 감소 */
+    private void applyWarning(Report report, Member suspect, UUID adminId, LocalDateTime since) {
+        int nth = (int) reportSanctionRepository.countWarningsSince(suspect.getId(), since) + 1;
+        BigDecimal decreased = suspect.decreaseHumidity(SanctionPolicy.humidityDecreaseFor(nth));
+        reportSanctionRepository.save(sanctionOf(report, ReportAction.WARNING, adminId)
+                .humidityDecreased(decreased)
+                .build());
+    }
+
+    /** 밴: 최근 1년 밴 횟수에 따라 정지 기간 차등 적용 */
+    private void applyPolicyBan(Report report, Member suspect, UUID adminId,
+                                LocalDateTime since, LocalDateTime now) {
+        int nth = (int) reportSanctionRepository.countBansSince(suspect.getId(), since) + 1;
+        ReportSanction.ReportSanctionBuilder sanction = sanctionOf(report, ReportAction.BANNED, adminId);
+        applyBan(suspect, SanctionPolicy.banDurationFor(nth), now, sanction);
+        reportSanctionRepository.save(sanction.build());
+    }
+
+    /** 커스텀: 입력한 수치 그대로 적용 */
+    private void applyCustom(Report report, Member suspect, UUID adminId,
+                             ReportSanctionRequest request, LocalDateTime now) {
+        ReportSanction.ReportSanctionBuilder sanction = sanctionOf(report, ReportAction.CUSTOM, adminId);
+        if (request.humidityDecrease() != null) {
+            sanction.humidityDecreased(suspect.decreaseHumidity(request.humidityDecrease()));
+        }
+        if (request.banDays() != null) {
+            applyBan(suspect, BanDuration.ofDays(request.banDays()), now, sanction);
+        }
+        reportSanctionRepository.save(sanction.build());
+    }
+
+    /** 정지를 적용하고 그 결과를 제재 기록에 채운다. 이미 영구 정지 중이면 정지 종료 시각(banEndAt)을 비워 둔다 */
+    private void applyBan(Member suspect, BanDuration duration, LocalDateTime now,
+                          ReportSanction.ReportSanctionBuilder sanction) {
+        LocalDateTime before = suspect.getBannedUntil();
+        // applied = 밴을 적용할 것인가 (이미 영구정지 상태면 false)
+        boolean applied = duration.permanent()
+                ? suspect.banPermanently()
+                : suspect.ban(duration.days(), now);
+        sanction.banDays(duration.days())
+                .permanent(duration.permanent())
+                .bannedUntilBefore(before)
+                .banEndAt(applied ? suspect.getBannedUntil() : null);
+    }
+
+    /**
+     * 신고 당한 컨텐츠를 소프트 삭제 (30일 후 물리 삭제).
+     * 피드백 모집글은 바로 정산까지 처리한다 (제출된 피드백 보상 지급, 남은 예치 도토리 소멸)
+     */
     @Transactional
     public void deleteContent(UUID adminId, UUID reportId, ReportProcessRequest request) {
         Report report = findReport(reportId);
         report.applyAction(ReportAction.CONTENT_DELETED, adminId, memoOf(request));
 
+        Integer acornForfeited = null;
         switch (report.getType()) {
             case PROJECT_POST -> findProject(report).delete();
-            case FEEDBACK_POST -> findFeedbackPost(report).delete();
+            case FEEDBACK_POST -> acornForfeited = feedbackPostForceDeleteService.forceDelete(report.getTargetId());
             case MEMBER -> throw new BusinessException(ReportErrorCode.CONTENT_DELETION_NOT_SUPPORTED);
+            // TODO: 댓글 기능 추가후 추가
             case COMMENT -> throw new BusinessException(ReportErrorCode.REPORT_TYPE_NOT_SUPPORTED);
         }
-        recordSanction(report, ReportAction.CONTENT_DELETED, null, null, null, adminId);
+        reportSanctionRepository.save(sanctionOf(report, ReportAction.CONTENT_DELETED, adminId)
+                .acornForfeited(acornForfeited)
+                .build());
+
         // TODO: 신고 당한 사람에게 알림 전송
     }
 
@@ -127,15 +170,28 @@ public class AdminReportService {
                 if (sanction.hasHumidityDecrease()) {
                     suspect.increaseHumidity(sanction.getHumidityDecreased());
                 }
-                // 이미 기간이 끝난 정지는 되돌릴 게 없음
-                if (sanction.hasBan() && sanction.getBanEndAt().isAfter(now)) {
-                    suspect.shortenBan(sanction.getBanDays(), now);
+                if (sanction.isBanApplied()) {
+                    revertBan(suspect, sanction, now);
                 }
             }
             if (sanction.getAction() == ReportAction.CONTENT_DELETED) {
-                restoreContent(report);
+                restoreContent(report, sanction);
             }
             sanction.revert(adminId, now);
+        }
+    }
+
+    /** 영구 정지는 적용 직전 시각으로 되돌리고, 기간 정지는 부여한 일수만큼 단축한다 */
+    private void revertBan(Member suspect, ReportSanction sanction, LocalDateTime now) {
+        if (sanction.isPermanent()) {
+            if (suspect.isPermanentlyBanned()) {
+                suspect.restoreBan(sanction.getBannedUntilBefore());
+            }
+            return;
+        }
+        // 이미 기간이 끝난 정지는 되돌릴 게 없음 (영구 정지 중이면 shortenBan이 무시한다)
+        if (sanction.getBanEndAt().isAfter(now)) {
+            suspect.shortenBan(sanction.getBanDays(), now);
         }
     }
 
@@ -159,30 +215,21 @@ public class AdminReportService {
                 .orElseThrow(() -> new BusinessException(ReportErrorCode.REPORT_TARGET_NOT_FOUND));
     }
 
-    private FeedbackPost findFeedbackPost(Report report) {
-        return feedbackPostRepository.findById(report.getTargetId())
-                .orElseThrow(() -> new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND));
-    }
-
-    private void restoreContent(Report report) {
+    private void restoreContent(Report report, ReportSanction sanction) {
         switch (report.getType()) {
             case PROJECT_POST -> findProject(report).restore();
-            case FEEDBACK_POST -> findFeedbackPost(report).restore();
+            case FEEDBACK_POST -> feedbackPostForceDeleteService.restore(report.getTargetId(), sanction.getAcornForfeited());
             case COMMENT -> { } // TODO: 신고 당한 사람에게 알림 전송
             case MEMBER -> { } // 멤버는 삭제되지 않음
         }
     }
 
-    private void recordSanction(Report report, ReportAction action, BigDecimal humidityDecreased,
-                                Integer banDays, LocalDateTime banEndAt, UUID adminId) {
-        reportSanctionRepository.save(ReportSanction.builder()
+    private ReportSanction.ReportSanctionBuilder sanctionOf(Report report, ReportAction action, UUID adminId) {
+        return ReportSanction.builder()
                 .reportId(report.getId())
+                .suspectId(report.getSuspectId())
                 .action(action)
-                .humidityDecreased(humidityDecreased)
-                .banDays(banDays)
-                .banEndAt(banEndAt)
-                .processedBy(adminId)
-                .build());
+                .processedBy(adminId);
     }
 
     private String memoOf(ReportProcessRequest request) {

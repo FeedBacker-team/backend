@@ -1,5 +1,6 @@
 package com.feedbacker.global.jwt;
 
+import com.feedbacker.member.Member;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -28,6 +29,10 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         if (request.getAttribute(JwtAuthenticationFilter.BANNED_UNTIL_ATTRIBUTE) instanceof LocalDateTime bannedUntil) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            if (Member.isPermanentBanUntil(bannedUntil)) {
+                response.getWriter().write("{\"message\": \"영구 정지된 계정입니다.\"}");
+                return;
+            }
             response.getWriter().write("{\"message\": \"이용이 정지된 계정입니다. ("
                     + bannedUntil.format(BANNED_UNTIL_FORMAT) + "까지)\"}");
             return;

@@ -77,4 +77,12 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Feedback f "
+            + "where f.feedbackPost.id = :feedbackPostId and f.status in :statuses")
+    List<Feedback> findAllByFeedbackPostIdAndStatusInForUpdate(
+            @Param("feedbackPostId") UUID feedbackPostId,
+            @Param("statuses") Collection<FeedbackStatus> statuses
+    );
 }

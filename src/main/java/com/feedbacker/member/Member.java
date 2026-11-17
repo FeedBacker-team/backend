@@ -23,6 +23,9 @@ public class Member extends BaseTimeEntity {
 
     public static final BigDecimal DEFAULT_HUMIDITY = new BigDecimal("30.00");
 
+    // 영구 정지는 정지 종료 시각을 이 값으로 고정
+    public static final LocalDateTime PERMANENT_BAN_UNTIL = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
@@ -144,18 +147,39 @@ public class Member extends BaseTimeEntity {
         changeHumidity(this.humidity.add(amount));
     }
 
-    /** days일 동안 이용 정지 (이미 정지 중이면 남은 기간에 이어서 연장) */
-    public void ban(int days, LocalDateTime now) {
+    /**
+     * days일 동안 이용 정지 (이미 정지 중이면 남은 기간에 이어서 연장).
+     * 영구 정지 중이면 연장하지 않고 false 반환
+     */
+    public boolean ban(int days, LocalDateTime now) {
         if (days <= 0) {
             throw new IllegalArgumentException("정지 일수는 양수여야 합니다.");
         }
+        if (isPermanentlyBanned()) {
+            return false;
+        }
         LocalDateTime base = isBanned(now) ? this.bannedUntil : now;
         this.bannedUntil = base.plusDays(days);
+        return true;
     }
 
-    /** 정지 기간을 days일 단축 (제재 원복용). 남은 기간이 없으면 정지 해제 */
+    /** 영구 정지. 이미 영구 정지 중이면 false 반환 */
+    public boolean banPermanently() {
+        if (isPermanentlyBanned()) {
+            return false;
+        }
+        this.bannedUntil = PERMANENT_BAN_UNTIL;
+        return true;
+    }
+
+    /** 정지 종료 시각을 지정한 값으로 되돌림 (영구 정지 원복용) */
+    public void restoreBan(LocalDateTime bannedUntil) {
+        this.bannedUntil = bannedUntil;
+    }
+
+    /** 정지 기간을 days일 단축 (제재 원복용). 남은 기간이 없으면 정지 해제, 영구 정지 중이면 변경 없음 */
     public void shortenBan(int days, LocalDateTime now) {
-        if (!isBanned(now)) {
+        if (!isBanned(now) || isPermanentlyBanned()) {
             return;
         }
         LocalDateTime shortened = this.bannedUntil.minusDays(days);
@@ -164,6 +188,15 @@ public class Member extends BaseTimeEntity {
 
     public boolean isBanned(LocalDateTime now) {
         return bannedUntil != null && bannedUntil.isAfter(now);
+    }
+
+    public boolean isPermanentlyBanned() {
+        return isPermanentBanUntil(bannedUntil);
+    }
+
+    /** 정지 종료 시각이 영구 정지를 뜻하는지 */
+    public static boolean isPermanentBanUntil(LocalDateTime bannedUntil) {
+        return PERMANENT_BAN_UNTIL.equals(bannedUntil);
     }
 
     /** 필수 프로필(닉네임, 직군)을 입력했는지 */

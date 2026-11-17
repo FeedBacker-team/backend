@@ -89,6 +89,11 @@ public class FeedbackService {
         return feedbackRepository.existsByFeedbackPostIdAndStatusIn(feedbackPostId, FeedbackStatus.PENDING);
     }
 
+    /** 작성중이거나 검토 대기 중인 피드백을 락 걸어 조회 (모집글 강제 삭제 정산용) */
+    public List<Feedback> getPendingFeedbacksForUpdate(UUID feedbackPostId) {
+        return feedbackRepository.findAllByFeedbackPostIdAndStatusInForUpdate(feedbackPostId, FeedbackStatus.PENDING);
+    }
+
     public List<UUID> getFeedbackPostIdsWithOverdueFeedback(LocalDateTime now) {
         return feedbackRepository.findFeedbackPostIdsWithOverdue(FeedbackStatus.SUBMITTED, now);
     }

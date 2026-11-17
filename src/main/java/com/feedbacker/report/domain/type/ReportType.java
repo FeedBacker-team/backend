@@ -6,16 +6,20 @@ import java.util.Set;
 import static com.feedbacker.report.domain.type.ReportReason.*;
 
 public enum ReportType {
-    MEMBER(EnumSet.of(                       // 회원
+    // 회원
+    MEMBER(EnumSet.of(
             ABUSIVE_LANGUAGE, HARASSMENT, SPAM, IMPERSONATION,
             SEXUAL_CONTENT, FEEDBACK_ABUSE, FRAUD, OTHER)),
-    PROJECT_POST(EnumSet.of(                 // 프로젝트 게시글
+    // 프로젝트 게시글
+    PROJECT_POST(EnumSet.of(
             SPAM, ABUSIVE_LANGUAGE, SEXUAL_CONTENT, PRIVACY_VIOLATION,
             COPYRIGHT_INFRINGEMENT, FRAUD, OFF_TOPIC, OTHER)),
-    FEEDBACK_POST(EnumSet.of(                // 피드백 모집 게시글
+    // 피드백 모집 게시글
+    FEEDBACK_POST(EnumSet.of(
             SPAM, ABUSIVE_LANGUAGE, SEXUAL_CONTENT, PRIVACY_VIOLATION,
             COPYRIGHT_INFRINGEMENT, FRAUD, OFF_TOPIC, OTHER)),
-    COMMENT(EnumSet.of(                      // 댓글
+    // 댓글
+    COMMENT(EnumSet.of(
             ABUSIVE_LANGUAGE, HARASSMENT, SPAM, SEXUAL_CONTENT,
             PRIVACY_VIOLATION, OFF_TOPIC, MALICIOUS_CRITICISM, OTHER));
 

@@ -238,6 +238,15 @@ public class Feedback extends BaseTimeEntity {
         this.cancelAt = now;
     }
 
+    /** 모집글 강제 삭제로 '작성중' 피드백을 취소 처리 (보상 없음, 기한 검증 없음) */
+    public void cancelByForceDelete(LocalDateTime now) {
+        if (this.status != FeedbackStatus.WRITING) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_WRITING);
+        }
+        this.status = FeedbackStatus.CANCELED;
+        this.cancelAt = now;
+    }
+
     /** 제출 기한이 지난 '작성중' 피드백을 만료 처리 (스케줄러 전용) */
     public void expire(LocalDateTime now) {
         if (this.status != FeedbackStatus.WRITING) {

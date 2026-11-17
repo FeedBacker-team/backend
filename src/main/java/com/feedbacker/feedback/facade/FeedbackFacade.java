@@ -9,7 +9,7 @@ import com.feedbacker.feedback.domain.dto.response.FeedbackDetailResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackResponse;
 import com.feedbacker.feedback.domain.dto.response.FeedbackSubmitResponse;
 import com.feedbacker.feedback.domain.dto.response.QuestionAnswerResponse;
-import com.feedbacker.acorn.service.AcornHistoryService;
+import com.feedbacker.feedback.service.FeedbackRewardService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -17,7 +17,6 @@ import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
 import com.feedbacker.feedbackpost.service.QuestionService;
-import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +38,7 @@ public class FeedbackFacade {
     private final FeedbackService feedbackService;
     private final QuestionService questionService;
     private final QuestionAnswerService questionAnswerService;
-    private final AcornHistoryService acornHistoryService;
-    private final AcornWalletService acornWalletService;
+    private final FeedbackRewardService feedbackRewardService;
 
     @Transactional
     public FeedbackSubmitResponse submit(UUID memberId, FeedbackSubmitRequest request) {
@@ -95,7 +93,7 @@ public class FeedbackFacade {
         FeedbackPost feedbackPost = getFeedbackPostForReview(memberId, feedbackId);
         Feedback feedback = feedbackService.getFeedbackForUpdate(feedbackId);
         feedback.accept(feedbackPost.getRewardAcorn());
-        payReward(feedback, feedbackPost);
+        feedbackRewardService.payReward(feedback, feedbackPost);
         feedbackPostCompleteService.completeIfAllReviewed(feedbackPost);
     }
 
@@ -128,7 +126,7 @@ public class FeedbackFacade {
         List<Feedback> targets = feedbackService.getOverdueFeedbacksForUpdate(feedbackPostId, LocalDateTime.now());
         for (Feedback feedback : targets) {
             feedback.autoAccept(feedbackPost.getRewardAcorn());
-            payReward(feedback, feedbackPost);
+            feedbackRewardService.payReward(feedback, feedbackPost);
         }
         if (!targets.isEmpty()) {
             feedbackPostCompleteService.completeIfAllReviewed(feedbackPost);
@@ -149,13 +147,6 @@ public class FeedbackFacade {
             feedbackPost.plusRemainSlotCount();
         }
         return targets.size();
-    }
-
-    // 테스터 보상 지급 + 테스터 도토리 내역 저장. 작성자는 등록 시 예치 내역으로 이미 차감이 기록되어 있다
-    private void payReward(Feedback feedback, FeedbackPost feedbackPost) {
-        Member tester = memberService.getMember(feedback.getTester().getId());
-        acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
-        acornHistoryService.recordReward(tester, feedback, feedbackPost);
     }
 
     /** 평가(승인/거절)할 피드백의 모집글을 락 걸어 조회. 작성자 본인이고 완료 전이어야 한다 */

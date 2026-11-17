@@ -84,6 +84,10 @@ public class FeedbackPost extends BaseTimeEntity {
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 
+    // 소프트 삭제 시각 (30일 후 물리 삭제 기준)
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
@@ -171,6 +175,7 @@ public class FeedbackPost extends BaseTimeEntity {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_ALREADY_DELETED);
         }
         this.deleted = true;
+        this.deletedAt = LocalDateTime.now();
     }
 
     public void restore() {
@@ -178,6 +183,21 @@ public class FeedbackPost extends BaseTimeEntity {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_DELETED);
         }
         this.deleted = false;
+        this.deletedAt = null;
+    }
+
+    /**
+     * 강제 삭제 때 정산(완료) 처리한 모집글을 다시 정산 전 상태로 되돌림 (제재 원복용).
+     * 모집 기간 안이고 남은 슬롯이 있으면 모집중, 아니면 마감
+     */
+    public void reopen(LocalDateTime now) {
+        if (this.status != FeedbackPostStatus.COMPLETED) {
+            throw new IllegalStateException("정산(완료)된 모집글만 다시 열 수 있습니다.");
+        }
+        this.completeAt = null;
+        this.status = now.isBefore(this.endAt) && this.remainSlotCount > 0
+                ? FeedbackPostStatus.RECRUITING
+                : FeedbackPostStatus.CLOSED;
     }
 
     public void complete() {
