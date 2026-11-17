@@ -107,7 +107,9 @@ public class AdminReportService {
         if (request.humidityDecrease() != null) {
             sanction.humidityDecreased(suspect.decreaseHumidity(request.humidityDecrease()));
         }
-        if (request.banDays() != null) {
+        if (request.permanent()) {
+            applyBan(suspect, BanDuration.ofPermanent(), now, sanction);
+        } else if (request.banDays() != null) {
             applyBan(suspect, BanDuration.ofDays(request.banDays()), now, sanction);
         }
         reportSanctionRepository.save(sanction.build());

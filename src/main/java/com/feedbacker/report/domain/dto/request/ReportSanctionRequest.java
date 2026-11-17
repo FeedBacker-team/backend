@@ -17,7 +17,7 @@ import java.util.Set;
 /**
  * 제재 요청.
  * - WARNING(습도 고정 감소), BANNED(고정 일수 정지)는 함께 선택 가능, 수치 입력 없음
- * - CUSTOM은 단독으로만 선택 가능 (humidityDecrease, banDays 중 하나 이상 입력)
+ * - CUSTOM은 단독으로만 선택 가능 (humidityDecrease, banDays, permanent=true 중 하나 이상 입력)
  */
 public record ReportSanctionRequest(
 
@@ -26,6 +26,9 @@ public record ReportSanctionRequest(
 
         @Positive(message = "정지 일수는 양수여야 합니다.")
         Integer banDays,
+
+        // CUSTOM에서만 사용. 생략하면 false
+        boolean permanent,
 
         @Positive(message = "감소할 습도는 양의 정수여야 합니다.")
         @Digits(integer = 3, fraction = 0, message = "감소할 습도는 정수여야 합니다.")
@@ -54,10 +57,10 @@ public record ReportSanctionRequest(
         return !isCustom() || actions.size() == 1;
     }
 
-    @AssertTrue(message = "커스텀 제재는 습도 감소 또는 정지 일수 중 하나 이상을 입력해야 합니다.")
+    @AssertTrue(message = "커스텀 제재는 습도 감소, 정지 일수 또는 영구 정지 중 하나 이상을 입력해야 합니다.")
     @JsonIgnore
     public boolean isCustomValuePresent() {
-        return !isCustom() || humidityDecrease != null || banDays != null;
+        return !isCustom() || humidityDecrease != null || banDays != null || permanent;
     }
 
     @AssertTrue(message = "습도 감소량은 커스텀 제재에서만 입력할 수 있습니다.")
@@ -70,6 +73,18 @@ public record ReportSanctionRequest(
     @JsonIgnore
     public boolean isBanDaysOnlyForCustom() {
         return banDays == null || isCustom();
+    }
+
+    @AssertTrue(message = "영구 정지는 커스텀 제재에서만 지정할 수 있습니다.")
+    @JsonIgnore
+    public boolean isPermanentOnlyForCustom() {
+        return !permanent || isCustom();
+    }
+
+    @AssertTrue(message = "영구 정지와 정지 일수를 동시에 지정할 수 없습니다.")
+    @JsonIgnore
+    public boolean isBanDurationValid() {
+        return !permanent || banDays == null;
     }
 
     public boolean hasAction(ReportAction action) {
