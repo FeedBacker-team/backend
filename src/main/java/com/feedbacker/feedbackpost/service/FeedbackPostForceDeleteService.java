@@ -6,6 +6,9 @@ import com.feedbacker.feedback.service.FeedbackRewardService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
+import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
+import com.feedbacker.feedbackpost.repository.FeedbackPostRepository;
+import com.feedbacker.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,7 @@ import java.util.UUID;
 public class FeedbackPostForceDeleteService {
 
     private final FeedbackPostService feedbackPostService;
+    private final FeedbackPostRepository feedbackPostRepository;
     private final FeedbackService feedbackService;
     private final FeedbackRewardService feedbackRewardService;
     private final FeedbackPostCompleteService feedbackPostCompleteService;
@@ -67,18 +71,40 @@ public class FeedbackPostForceDeleteService {
      */
     @Transactional
     public void restore(UUID feedbackPostId, Integer acornForfeited) {
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostIncludingDeletedForUpdate(feedbackPostId);
+        LocalDateTime now = LocalDateTime.now();
+        FeedbackPost feedbackPost = getRestorableForUpdate(feedbackPostId, now);
         feedbackPost.restore();
         if (acornForfeited == null) {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
         feedbackPost.reopen(now);
         if (!now.isBefore(feedbackPost.getEndAt())) {
             feedbackPostCompleteService.complete(feedbackPost);
             return;
         }
         feedbackPostCompleteService.completeIfAllReviewed(feedbackPost);
+    }
+
+    /**
+     * 원복 가능한지 미리 검증한다 (다른 원복 작업을 시작하기 전에 호출).
+     * 모집글 락을 잡으므로, 이 트랜잭션이 끝날 때까지 물리 삭제가 끼어들 수 없다
+     */
+    @Transactional
+    public void validateRestorable(UUID feedbackPostId) {
+        getRestorableForUpdate(feedbackPostId, LocalDateTime.now());
+    }
+
+    /**
+     * 락을 잡은 뒤 원복 기한을 검사한다. 물리 삭제도 같은 행에 락을 잡고 조건을 재검증하므로 둘은 순서대로 실행된다.
+     * 행이 없으면 이미 물리 삭제된 것이므로 기한 만료로 처리한다
+     */
+    private FeedbackPost getRestorableForUpdate(UUID feedbackPostId, LocalDateTime now) {
+        FeedbackPost feedbackPost = feedbackPostRepository.findByIdIncludingDeletedForUpdate(feedbackPostId)
+                .orElseThrow(() -> new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_RESTORE_EXPIRED));
+        if (feedbackPost.isRestoreExpired(now.minusDays(FeedbackPostPurgeService.RETENTION_DAYS))) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_RESTORE_EXPIRED);
+        }
+        return feedbackPost;
     }
 }

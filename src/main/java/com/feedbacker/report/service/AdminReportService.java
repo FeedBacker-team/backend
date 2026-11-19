@@ -16,6 +16,7 @@ import com.feedbacker.report.domain.dto.response.ReportDetailResponse;
 import com.feedbacker.report.domain.dto.response.ReportListResponse;
 import com.feedbacker.report.domain.dto.response.ReportSummaryResponse;
 import com.feedbacker.report.domain.type.ReportAction;
+import com.feedbacker.report.domain.type.ReportType;
 import com.feedbacker.report.exception.ReportErrorCode;
 import com.feedbacker.report.repository.ReportRepository;
 import com.feedbacker.report.repository.ReportSanctionRepository;
@@ -162,6 +163,7 @@ public class AdminReportService {
         LocalDateTime now = LocalDateTime.now();
         List<ReportSanction> sanctions =
                 reportSanctionRepository.findAllByReportIdAndRevertedAtIsNullOrderByCreatedAtDesc(reportId);
+        validateContentRestorable(report, sanctions);
         Member suspect = null;
 
         for (ReportSanction sanction : sanctions) {
@@ -215,6 +217,18 @@ public class AdminReportService {
     private Project findProject(Report report) {
         return projectRepository.findById(report.getTargetId())
                 .orElseThrow(() -> new BusinessException(ReportErrorCode.REPORT_TARGET_NOT_FOUND));
+    }
+
+    /**
+     * 습도·정지를 되돌리기 전에 컨텐츠 원복 가능 여부를 먼저 확인한다.
+     * 보관 기간이 지났거나 물리 삭제된 모집글이면 원복 전체를 막는다
+     */
+    private void validateContentRestorable(Report report, List<ReportSanction> sanctions) {
+        boolean hasContentDeleted = sanctions.stream()
+                .anyMatch(sanction -> sanction.getAction() == ReportAction.CONTENT_DELETED);
+        if (hasContentDeleted && report.getType() == ReportType.FEEDBACK_POST) {
+            feedbackPostForceDeleteService.validateRestorable(report.getTargetId());
+        }
     }
 
     private void restoreContent(Report report, ReportSanction sanction) {

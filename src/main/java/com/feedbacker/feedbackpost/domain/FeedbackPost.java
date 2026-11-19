@@ -189,6 +189,16 @@ public class FeedbackPost extends BaseTimeEntity {
                 && !this.deletedAt.isAfter(threshold);
     }
 
+    /**
+     * 원복 기한이 지났는지. 물리 삭제와 같은 기준(deletedAt + 보관 기간)을 써서,
+     * 물리 삭제 대상이 되는 순간부터 원복할 수 없다
+     */
+    public boolean isRestoreExpired(LocalDateTime threshold) {
+        return this.deleted
+                && this.deletedAt != null
+                && !this.deletedAt.isAfter(threshold);
+    }
+
     public void restore() {
         if (!this.deleted) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_DELETED);
