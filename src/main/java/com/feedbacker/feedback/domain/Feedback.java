@@ -12,6 +12,8 @@ import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,20 +38,24 @@ public class Feedback extends BaseTimeEntity {
 
     private static final long SUBMISSION_LIMIT_HOURS = 24L;   // 참여 후 제출 기한
     private static final long RESPONSE_LIMIT_HOURS = 72L;     // 제출 후 작성자 응답 기한
+    private static final String DELETED_TESTER_NAME = "탈퇴한 사용자";
+    public static final String DELETED_FEEDBACK_POST_TITLE = "삭제된 게시글 입니다.";
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "feedback_id")
     private UUID id;
 
-    /** 피드백을 진행한 테스터 값 (외래키) */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "tester_id", nullable = false)
+    /** 피드백을 진행한 테스터 값 (외래키). 회원이 삭제되면 NULL */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tester_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Member tester;
 
-    /** 피드백을 진행한 피드백 모집글 값 (외래키) */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "feedback_post_id", nullable = false)
+    /** 피드백을 진행한 피드백 모집글 값 (외래키). 모집글이 삭제되면 NULL */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "feedback_post_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private FeedbackPost feedbackPost;
 
     /** 테스터가 작성한 질문 답변 리스트 */
@@ -183,7 +189,7 @@ public class Feedback extends BaseTimeEntity {
 
     public void object(UUID memberId, FeedbackObjectRequest request) {
         // 피드백 작성자인지 검증
-        if (!this.tester.getId().equals(memberId)) {
+        if (!isTester(memberId)) {
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
         }
         // 피드백 상태가 '거절'상태가 아닌지 검증
@@ -256,6 +262,41 @@ public class Feedback extends BaseTimeEntity {
             throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_NOT_REACHED);
         }
         this.status = FeedbackStatus.EXPIRED;
+    }
+
+    /** 테스터(회원)가 삭제되지 않았으면 true */
+    public boolean hasTester() {
+        return this.tester != null;
+    }
+
+    /** 피드백 모집글이 삭제되지 않았으면 true */
+    public boolean hasFeedbackPost() {
+        return this.feedbackPost != null;
+    }
+
+    /** 해당 회원이 이 피드백의 테스터이면 true. 테스터가 삭제됐으면 항상 false */
+    public boolean isTester(UUID memberId) {
+        return this.tester != null && this.tester.getId().equals(memberId);
+    }
+
+    /** 테스터 id. 테스터가 삭제됐으면 null */
+    public UUID getTesterId() {
+        return this.tester != null ? this.tester.getId() : null;
+    }
+
+    /** 피드백 모집글 id. 모집글이 삭제됐으면 null */
+    public UUID getFeedbackPostId() {
+        return this.feedbackPost != null ? this.feedbackPost.getId() : null;
+    }
+
+    /** 테스터 닉네임. 테스터가 삭제됐으면 대체 문구 */
+    public String getTesterNickname() {
+        return this.tester != null ? this.tester.getNickname() : DELETED_TESTER_NAME;
+    }
+
+    /** 테스터 프로필 이미지 경로. 테스터가 삭제됐으면 null */
+    public String getTesterProfileImage() {
+        return this.tester != null ? this.tester.getProfileImage() : null;
     }
 
     /** 피드백이 '제출' 이후이면 true, 아니면 false */

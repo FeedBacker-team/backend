@@ -253,8 +253,11 @@ public class FeedbackPostService {
         return imageService.toPostThumbnailResponse(feedbackPost.getImages());
     }
 
-    /** 모집글 썸네일의 공개 URL. 썸네일 이미지가 없으면 null */
+    /** 모집글 썸네일의 공개 URL. 모집글이 없거나(삭제) 썸네일 이미지가 없으면 null */
     public String getThumbnailUrl(FeedbackPost feedbackPost) {
+        if (feedbackPost == null) {
+            return null;
+        }
         ImageResponse thumbnail = getThumbnail(feedbackPost);
         return thumbnail != null ? thumbnail.url() : null;
     }

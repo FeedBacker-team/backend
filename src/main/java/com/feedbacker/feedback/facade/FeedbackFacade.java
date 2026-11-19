@@ -13,6 +13,8 @@ import com.feedbacker.feedback.service.FeedbackRewardService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
+import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
+import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
@@ -72,8 +74,7 @@ public class FeedbackFacade {
     @Transactional(readOnly = true)
     public FeedbackDetailResponse getDetail(UUID memberId, UUID feedbackId) {
         Feedback feedback = feedbackService.getFeedback(feedbackId);
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(feedback.getFeedbackPost().getId());
-        Member tester = memberService.getMember(feedback.getTester().getId());
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPost(getFeedbackPostIdOrThrow(feedback));
         QuestionAnswerResponse questionAnswerResponse = questionAnswerService.toResponse(
                 questionService.getAllQuestion(feedbackPost.getId()),
                 questionAnswerService.getAllQuestionAnswer(feedback.getId())
@@ -82,7 +83,7 @@ public class FeedbackFacade {
         return FeedbackDetailResponse.from(
                 feedbackPost,
                 feedback,
-                memberService.toImageUrl(tester.getProfileImage()),
+                memberService.toImageUrl(feedback.getTesterProfileImage()),
                 feedbackPostService.getThumbnail(feedbackPost),
                 questionAnswerResponse
         );
@@ -151,11 +152,19 @@ public class FeedbackFacade {
 
     /** 평가(승인/거절)할 피드백의 모집글을 락 걸어 조회. 작성자 본인이고 완료 전이어야 한다 */
     private FeedbackPost getFeedbackPostForReview(UUID memberId, UUID feedbackId) {
-        UUID feedbackPostId = feedbackService.getFeedback(feedbackId).getFeedbackPost().getId();
+        UUID feedbackPostId = getFeedbackPostIdOrThrow(feedbackService.getFeedback(feedbackId));
         // 락 순서: 모집글 -> 피드백 (complete와 동일하게 맞춰 완료 직후 정산을 직렬화)
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriterForUpdate(feedbackPostId, memberId);
         feedbackPost.validateNotCompleted();
         return feedbackPost;
+    }
+
+    /** 피드백의 모집글 id. 모집글이 삭제됐으면 예외 */
+    private UUID getFeedbackPostIdOrThrow(Feedback feedback) {
+        if (!feedback.hasFeedbackPost()) {
+            throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND);
+        }
+        return feedback.getFeedbackPostId();
     }
 
     private FeedbackPost getFeedbackPostForSubmit(UUID feedbackPostId, UUID testerId) {

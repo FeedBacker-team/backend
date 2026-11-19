@@ -18,7 +18,7 @@ public record FeedbackProgressResponse(
     public static FeedbackProgressResponse from(Feedback feedback, String testerProfileImageUrl) {
         return new FeedbackProgressResponse(
                 feedback.getId(),
-                feedback.getTester().getNickname(),
+                feedback.getTesterNickname(),
                 testerProfileImageUrl,
                 feedback.statusForFeedbackPostWriter(),
                 feedback.getSubmitAt(),

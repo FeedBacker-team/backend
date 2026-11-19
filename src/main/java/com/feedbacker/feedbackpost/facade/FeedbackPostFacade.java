@@ -87,7 +87,7 @@ public class FeedbackPostFacade {
         List<FeedbackProgressResponse> feedbackProgress = feedbacks.stream()
                 .map(feedback -> FeedbackProgressResponse.from(
                         feedback,
-                        memberService.toImageUrl(feedback.getTester().getProfileImage())
+                        memberService.toImageUrl(feedback.getTesterProfileImage())
                 ))
                 .toList();
         return FeedbackPostProgressResponse.from(

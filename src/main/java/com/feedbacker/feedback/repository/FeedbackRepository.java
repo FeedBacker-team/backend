@@ -45,7 +45,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
     @Query("select distinct f.feedbackPost.id from Feedback f "
-            + "where f.status = :status and f.responseDeadLineAt <= :now")
+            + "where f.feedbackPost is not null "
+            + "and f.status = :status and f.responseDeadLineAt <= :now")
     List<UUID> findFeedbackPostIdsWithOverdue(
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
@@ -62,7 +63,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     );
 
     @Query("select distinct f.feedbackPost.id from Feedback f "
-            + "where f.status = :status and f.expireAt <= :now")
+            + "where f.feedbackPost is not null "
+            + "and f.status = :status and f.expireAt <= :now")
     List<UUID> findFeedbackPostIdsWithExpired(
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
