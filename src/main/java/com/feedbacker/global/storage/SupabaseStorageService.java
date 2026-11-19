@@ -1,6 +1,7 @@
 package com.feedbacker.global.storage;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +12,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -67,6 +70,23 @@ public class SupabaseStorageService {
         }
 
         return folder + "/" + fileName;
+    }
+
+    /**
+     * 스토리지에서 파일 여러 개를 한 번에 삭제한다
+     * @param paths "folder/uuidFileName" 목록
+     */
+    public void deleteImages(List<String> paths) {
+        if (paths == null || paths.isEmpty()) {
+            return;
+        }
+        validateConfiguration();
+        restClient.method(HttpMethod.DELETE)
+                .uri("/storage/v1/object/{bucket}", bucket)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("prefixes", paths))
+                .retrieve()
+                .toBodilessEntity();
     }
 
     /**
