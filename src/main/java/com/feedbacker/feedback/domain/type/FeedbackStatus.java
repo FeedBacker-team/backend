@@ -16,4 +16,7 @@ public enum FeedbackStatus {
 
     /** 모집글 완료를 막는 상태 (작성중 또는 검토 대기) */
     public static final Set<FeedbackStatus> PENDING = EnumSet.of(WRITING, SUBMITTED);
+
+    /** 모집글 물리 삭제를 막는 상태 (작성중, 검토 대기, 이의제기 검토 대기) */
+    public static final Set<FeedbackStatus> UNRESOLVED = EnumSet.of(WRITING, SUBMITTED, OBJECTED);
 }

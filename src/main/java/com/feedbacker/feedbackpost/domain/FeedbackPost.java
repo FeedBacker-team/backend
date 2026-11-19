@@ -178,6 +178,17 @@ public class FeedbackPost extends BaseTimeEntity {
         this.deletedAt = LocalDateTime.now();
     }
 
+    /**
+     * 물리 삭제 가능 여부. 소프트 삭제된 지 30일 이후이고, 정산(완료)까지 끝난 모집글만 true.
+     * 남은 피드백 상태 검증은 별도로 한다
+     */
+    public boolean isPurgeable(LocalDateTime threshold) {
+        return this.deleted
+                && this.status == FeedbackPostStatus.COMPLETED
+                && this.deletedAt != null
+                && !this.deletedAt.isAfter(threshold);
+    }
+
     public void restore() {
         if (!this.deleted) {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_DELETED);
