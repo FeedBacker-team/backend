@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users/me/projects").authenticated()
                         // 프로젝트 목록·상세는 비로그인 열람 가능
                         .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/projects/{projectId}/views").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/tags").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/feedback-posts").permitAll()
                         // 내 모집글 목록은 로그인 필수 (아래 상세 공개 규칙보다 먼저 와야 함)
