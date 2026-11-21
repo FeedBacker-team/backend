@@ -80,6 +80,15 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("now") LocalDateTime now
     );
 
+    /** 테스터의 피드백 중 해당 상태인 피드백의 모집글 id. 락 순서를 고정하기 위해 id 순으로 정렬한다 */
+    @Query("select distinct f.feedbackPost.id from Feedback f "
+            + "where f.tester.id = :testerId and f.feedbackPost is not null and f.status in :statuses "
+            + "order by f.feedbackPost.id")
+    List<UUID> findFeedbackPostIdsByTesterIdAndStatusIn(
+            @Param("testerId") UUID testerId,
+            @Param("statuses") Collection<FeedbackStatus> statuses
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Feedback f "
             + "where f.feedbackPost.id = :feedbackPostId and f.status in :statuses")

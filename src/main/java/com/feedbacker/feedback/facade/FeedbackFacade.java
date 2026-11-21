@@ -150,6 +150,35 @@ public class FeedbackFacade {
         return targets.size();
     }
 
+    /**
+     * 테스터(회원)를 삭제하기 전에 테스터가 참여한 피드백을 정리한다. 회원 삭제와 같은 트랜잭션에서, 회원 삭제보다 먼저 호출한다.
+     * - 작성중 피드백은 취소하고 슬롯 반환
+     * - 이의제기 중인 피드백은 이의제기를 취소하고 거절로 되돌림 (거절 보상분은 모집글 완료 시 작성자에게 환급된다)
+     * - 제출(검토 대기)·승인·거절 피드백은 그대로 둔다. 테스터가 삭제된 뒤 승인되면 보상은 지급되지 않는다
+     */
+    @Transactional
+    public void settleForTesterDelete(UUID testerId) {
+        LocalDateTime now = LocalDateTime.now();
+        // 여러 모집글에 락을 잡으므로 id 순으로 처리해 락 순서를 고정한다
+        for (UUID feedbackPostId : feedbackService.getFeedbackPostIdsToSettleForTesterDelete(testerId)) {
+            // 락 순서: 모집글 -> 피드백
+            FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostIncludingDeletedForUpdate(feedbackPostId);
+            // 락을 잡은 뒤 다시 조회해서, 그 사이 바뀐 상태를 기준으로 처리한다
+            Feedback feedback = feedbackService.findMyFeedbackForUpdate(feedbackPostId, testerId);
+            if (feedback == null) {
+                continue;
+            }
+            switch (feedback.getStatus()) {
+                case WRITING -> {
+                    feedback.cancelByForceDelete(now);
+                    feedbackPost.plusRemainSlotCount();
+                }
+                case OBJECTED -> feedback.cancelObjectionByTesterWithdrawal();
+                default -> { }
+            }
+        }
+    }
+
     /** 평가(승인/거절)할 피드백의 모집글을 락 걸어 조회. 작성자 본인이고 완료 전이어야 한다 */
     private FeedbackPost getFeedbackPostForReview(UUID memberId, UUID feedbackId) {
         UUID feedbackPostId = getFeedbackPostIdOrThrow(feedbackService.getFeedback(feedbackId));

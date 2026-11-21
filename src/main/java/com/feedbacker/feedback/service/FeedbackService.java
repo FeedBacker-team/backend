@@ -158,6 +158,18 @@ public class FeedbackService {
         feedback.cancel();
     }
 
+    /** 테스터 탈퇴 시 정리할(작성중·이의제기) 피드백이 있는 모집글 id (id 순) */
+    public List<UUID> getFeedbackPostIdsToSettleForTesterDelete(UUID testerId) {
+        return feedbackRepository.findFeedbackPostIdsByTesterIdAndStatusIn(
+                testerId, EnumSet.of(FeedbackStatus.WRITING, FeedbackStatus.OBJECTED));
+    }
+
+    /** 모집글에 대한 테스터의 피드백을 락 걸어 조회. 없으면 null */
+    public Feedback findMyFeedbackForUpdate(UUID feedbackPostId, UUID testerId) {
+        return feedbackRepository.findByFeedbackPostIdAndTesterIdForUpdate(feedbackPostId, testerId)
+                .orElse(null);
+    }
+
     public void validateExistActive(UUID feedbackPostId) {
         // '작성중' 상태인 피드백이 존재하는지 검사
         if (hasWritingFeedback(feedbackPostId)) {

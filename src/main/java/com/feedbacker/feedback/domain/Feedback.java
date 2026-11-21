@@ -265,6 +265,18 @@ public class Feedback extends BaseTimeEntity {
         this.status = FeedbackStatus.OBJECTION_ACCEPTED;
     }
 
+    /**
+     * 테스터 탈퇴로 '이의제기' 피드백을 취소하고 거절 상태로 되돌린다 (거절 확정).
+     * 이의제기 유형·사유는 기록으로 남긴다
+     */
+    public void cancelObjectionByTesterWithdrawal() {
+        if (this.status != FeedbackStatus.OBJECTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_OBJECTED);
+        }
+        this.objectResult = "테스터 탈퇴로 이의제기가 취소되었습니다.";
+        this.status = FeedbackStatus.REJECTED;
+    }
+
     /** 제출 기한이 지난 '작성중' 피드백을 만료 처리 (스케줄러 전용) */
     public void expire(LocalDateTime now) {
         if (this.status != FeedbackStatus.WRITING) {
