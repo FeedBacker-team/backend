@@ -14,7 +14,8 @@ CREATE TABLE reports (
     is_valid BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP(6),
     updated_at TIMESTAMP(6),
-    CONSTRAINT uk_reports_reporter_type_target UNIQUE (reporter_id, type, target_id)
+    CONSTRAINT uk_reports_reporter_type_target UNIQUE (reporter_id, type, target_id),
+    CONSTRAINT fk_reports_suspect FOREIGN KEY (suspect_id) REFERENCES member (id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_reports_processed_created_at ON reports (is_processed, created_at DESC);

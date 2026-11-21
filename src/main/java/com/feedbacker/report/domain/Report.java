@@ -31,7 +31,7 @@ public class Report extends BaseTimeEntity {
     @Column(nullable = false)
     private UUID reporterId;
 
-    // 신고 당한 사람의 아이디
+    // 신고 당한 사람의 아이디 (DB FK: member 삭제 시 CASCADE로 Report도 삭제)
     @Column(nullable = false)
     private UUID suspectId;
 

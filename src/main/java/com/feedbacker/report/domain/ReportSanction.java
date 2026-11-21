@@ -24,6 +24,7 @@ public class ReportSanction extends BaseTimeEntity {
     @Column(name = "report_sanction_id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
+    // 제재 대상 신고 (DB FK: report 삭제 시 CASCADE로 ReportSanction도 삭제)
     @Column(nullable = false)
     private UUID reportId;
 
