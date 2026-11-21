@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,6 +98,12 @@ public class FeedbackService {
     /** 작성중이거나 검토 대기 중인 피드백을 락 걸어 조회 (모집글 강제 삭제 정산용) */
     public List<Feedback> getPendingFeedbacksForUpdate(UUID feedbackPostId) {
         return feedbackRepository.findAllByFeedbackPostIdAndStatusInForUpdate(feedbackPostId, FeedbackStatus.PENDING);
+    }
+
+    /** 이의제기 중인 피드백을 락 걸어 조회 (작성자 탈퇴 정산용) */
+    public List<Feedback> getObjectedFeedbacksForUpdate(UUID feedbackPostId) {
+        return feedbackRepository.findAllByFeedbackPostIdAndStatusInForUpdate(
+                feedbackPostId, EnumSet.of(FeedbackStatus.OBJECTED));
     }
 
     public List<UUID> getFeedbackPostIdsWithOverdueFeedback(LocalDateTime now) {

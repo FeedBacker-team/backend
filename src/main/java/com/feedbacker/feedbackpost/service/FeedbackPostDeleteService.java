@@ -16,10 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/** 신고 제재로 인한 피드백 모집글 강제 삭제와 원복 */
+/** 피드백 모집글 삭제 정산 (신고 제재 강제 삭제·원복, 작성자 삭제) */
 @Service
 @RequiredArgsConstructor
-public class FeedbackPostForceDeleteService {
+public class FeedbackPostDeleteService {
 
     private final FeedbackPostService feedbackPostService;
     private final FeedbackPostRepository feedbackPostRepository;
@@ -45,20 +45,37 @@ public class FeedbackPostForceDeleteService {
             return null;
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        for (Feedback feedback : feedbackService.getPendingFeedbacksForUpdate(feedbackPostId)) {
-            if (feedback.getStatus() == FeedbackStatus.SUBMITTED) {
-                feedback.autoAccept(feedbackPost.getRewardAcorn());
-                feedbackRewardService.payReward(feedback, feedbackPost);
-            } else {
-                feedback.cancelByForceDelete(now);
-                feedbackPost.plusRemainSlotCount();
-            }
-        }
+        settlePendingFeedbacks(feedbackPost, LocalDateTime.now());
 
         int forfeited = feedbackPost.getDepositAcorn() - feedbackPostCompleteService.getPaidAcorn(feedbackPost);
         feedbackPost.complete();
         return forfeited;
+    }
+
+    /**
+     * 작성자(회원)를 삭제하기 전에 작성자의 모든 모집글을 정산한다. 회원 삭제와 같은 트랜잭션에서, 회원 삭제보다 먼저 호출한다.
+     * 모집글 자체는 회원 삭제 시 cascade로 물리 삭제된다
+     * - 완료 전 모집글은 강제 삭제와 같은 방식으로 정산하고 완료 처리 (남은 예치 도토리는 환급하지 않고 소멸)
+     * - 이의제기 중인 피드백은 어드민 검토 없이 인용 처리하고 보상 지급 (모집글이 물리 삭제되어 이후 검토할 수 없다).
+     *   소프트 삭제된 모집글은 이미 정산(완료)됐지만 강제 삭제가 이의제기를 그대로 두므로, 이를 처리하기 위해 조회 대상에 포함한다
+     */
+    @Transactional
+    public void settleForWriterDelete(UUID writerId) {
+        LocalDateTime now = LocalDateTime.now();
+        // 여러 모집글에 락을 잡으므로 id 순으로 처리해 락 순서를 고정한다
+        for (UUID feedbackPostId : feedbackPostRepository.findIdsByWriterIdIncludingDeleted(writerId)) {
+            // 락 순서: 모집글 -> 피드백
+            FeedbackPost feedbackPost = feedbackPostRepository.findByIdIncludingDeletedForUpdate(feedbackPostId)
+                    .orElse(null);
+            if (feedbackPost == null) {     // 조회 이후 물리 삭제됨
+                continue;
+            }
+            if (feedbackPost.getStatus() != FeedbackPostStatus.COMPLETED) {
+                settlePendingFeedbacks(feedbackPost, now);
+                feedbackPost.complete();
+            }
+            acceptObjections(feedbackPost);
+        }
     }
 
     /**
@@ -106,5 +123,30 @@ public class FeedbackPostForceDeleteService {
             throw new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_RESTORE_EXPIRED);
         }
         return feedbackPost;
+    }
+
+    /**
+     * 작성중·검토 대기 피드백을 정리한다. 모집글 락을 잡은 트랜잭션 안에서 호출한다
+     * - 제출된 피드백은 승인 처리하고 테스터에게 보상 지급
+     * - 작성중 피드백은 보상 없이 취소 (슬롯 반환)
+     */
+    private void settlePendingFeedbacks(FeedbackPost feedbackPost, LocalDateTime now) {
+        for (Feedback feedback : feedbackService.getPendingFeedbacksForUpdate(feedbackPost.getId())) {
+            if (feedback.getStatus() == FeedbackStatus.SUBMITTED) {
+                feedback.autoAccept(feedbackPost.getRewardAcorn());
+                feedbackRewardService.payReward(feedback, feedbackPost);
+            } else {
+                feedback.cancelByForceDelete(now);
+                feedbackPost.plusRemainSlotCount();
+            }
+        }
+    }
+
+    /** 이의제기 중인 피드백을 인용 처리하고 보상 지급 (작성자 삭제 정산용) */
+    private void acceptObjections(FeedbackPost feedbackPost) {
+        for (Feedback feedback : feedbackService.getObjectedFeedbacksForUpdate(feedbackPost.getId())) {
+            feedback.acceptObjectionByWriterWithdrawal(feedbackPost.getRewardAcorn());
+            feedbackRewardService.payReward(feedback, feedbackPost);
+        }
     }
 }

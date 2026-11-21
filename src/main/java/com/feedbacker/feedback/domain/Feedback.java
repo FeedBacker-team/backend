@@ -253,6 +253,18 @@ public class Feedback extends BaseTimeEntity {
         this.cancelAt = now;
     }
 
+    /**
+     * 모집글 작성자 탈퇴로 '이의제기' 피드백을 어드민 검토 없이 인용 처리
+     */
+    public void acceptObjectionByWriterWithdrawal(Integer rewardAcorn) {
+        if (this.status != FeedbackStatus.OBJECTED) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_OBJECTED);
+        }
+        this.rewardAcorn = rewardAcorn;
+        this.objectResult = "모집글 작성자 탈퇴로 이의제기가 자동 인용되었습니다.";
+        this.status = FeedbackStatus.OBJECTION_ACCEPTED;
+    }
+
     /** 제출 기한이 지난 '작성중' 피드백을 만료 처리 (스케줄러 전용) */
     public void expire(LocalDateTime now) {
         if (this.status != FeedbackStatus.WRITING) {

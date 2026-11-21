@@ -31,6 +31,10 @@ public interface FeedbackPostRepository extends JpaRepository<FeedbackPost, UUID
     @Query("select f from FeedbackPost f where f.id = :id")
     Optional<FeedbackPost> findByIdIncludingDeletedForUpdate(@Param("id") UUID id);
 
+    /** 작성자의 모든 모집글 id (소프트 삭제 포함). 락 순서를 고정하기 위해 id 순으로 정렬한다 */
+    @Query("select f.id from FeedbackPost f where f.writerId = :writerId order by f.id")
+    List<UUID> findIdsByWriterIdIncludingDeleted(@Param("writerId") UUID writerId);
+
     /**
      * 물리 삭제 대상 모집글 id.
      * 소프트 삭제된 지 threshold 이전 + 정산(완료) 상태 + 미해결(작성중/검토 대기/이의제기) 피드백 없음
