@@ -109,6 +109,13 @@ public class ProjectService {
         return toDetailResponse(project, viewerId);
     }
 
+    public Project getProjectForCreatingFeedbackPost(UUID projectId, UUID memberId) {
+        Project project = getProject(projectId);
+        project.validateOwner(memberId);
+        validateHasFeedbackPost(project.getId());
+        return project;
+    }
+
     // 프로젝트 엔티티 찾기
     public Project getProject(UUID projectId) {
         return projectRepository.findForUpdate(projectId, ProjectStatus.PUBLISHED)

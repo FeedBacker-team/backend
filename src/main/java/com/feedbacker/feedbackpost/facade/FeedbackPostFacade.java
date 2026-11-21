@@ -1,7 +1,7 @@
 package com.feedbacker.feedbackpost.facade;
 
 import com.feedbacker.feedback.domain.Feedback;
-import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.acorn.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
@@ -15,7 +15,7 @@ import com.feedbacker.feedbackpost.domain.dto.response.FeedbackResultResponse;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
 import com.feedbacker.feedbackpost.service.FeedbackPostService;
 import com.feedbacker.feedbackpost.service.FeedbackPostCompleteService;
-import com.feedbacker.feedbackpost.service.ImageService;
+import com.feedbacker.global.image.ImageService;
 import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.member.AcornWalletService;
 import com.feedbacker.member.Member;
@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -48,13 +47,11 @@ public class FeedbackPostFacade {
     @Transactional
     public FeedbackPostCreateResponse create(UUID memberId, FeedbackPostCreateRequest request) {
         Member member = memberService.getMember(memberId);
-        Project project = projectService.getProject(request.projectId());
-        project.validateOwner(member.getId());
-        projectService.validateHasFeedbackPost(project.getId());
+        Project project = projectService.getProjectForCreatingFeedbackPost(request.projectId(), member.getId());
         acornWalletService.withdraw(member.getId(), request.depositAcorn());
-        UUID feedbackPostId = feedbackPostService.save(request.toEntity(project));
-        acornHistoryService.saveDeposit(member, feedbackPostId, request.depositAcorn());
-        return new FeedbackPostCreateResponse(feedbackPostId);
+        UUID newFeedbackPostId = feedbackPostService.create(request.toEntity(project));
+        acornHistoryService.recordDeposit(member, newFeedbackPostId, request.depositAcorn());
+        return new FeedbackPostCreateResponse(newFeedbackPostId);
     }
 
     @Transactional(readOnly = true)
@@ -72,8 +69,7 @@ public class FeedbackPostFacade {
     public void participate(UUID memberId, UUID feedbackPostId) {
         Member member = memberService.getMember(memberId);
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
-        feedbackPostService.validateParticipation(feedbackPost, member.getId());
-        feedbackPost.minusRemainSlotCount();
+        feedbackPost.reserveSlot(member.getId());
         feedbackService.participate(feedbackPost, member);
     }
 
@@ -88,13 +84,10 @@ public class FeedbackPostFacade {
     public FeedbackPostProgressResponse getProgress(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriter(feedbackPostId, memberId);
         List<Feedback> feedbacks = feedbackService.getAllByFeedbackPostId(feedbackPost.getId());
-        Map<UUID, String> profileImageUrls = memberService.getProfileImageUrls(
-                feedbacks.stream().map(feedback -> feedback.getTester().getId()).toList()
-        );
         List<FeedbackProgressResponse> feedbackProgress = feedbacks.stream()
                 .map(feedback -> FeedbackProgressResponse.from(
                         feedback,
-                        profileImageUrls.get(feedback.getTester().getId())
+                        memberService.toImageUrl(feedback.getTester().getProfileImage())
                 ))
                 .toList();
         return FeedbackPostProgressResponse.from(
@@ -111,26 +104,6 @@ public class FeedbackPostFacade {
         feedbackPostCompleteService.complete(feedbackPost);
     }
 
-    /** 모집 기간이 끝난 모집글을 자동 완료·환급 (스케줄러 전용). 완료 처리했으면 true */
-    @Transactional
-    public boolean autoCompleteEnded(UUID feedbackPostId) {
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
-        // 락을 잡은 뒤 다시 확인해서, 그 사이 작성자가 직접 완료한 모집글은 건너뛴다
-        if (feedbackPost.getStatus() == FeedbackPostStatus.COMPLETED
-                || LocalDateTime.now().isBefore(feedbackPost.getEndAt())) {
-            return false;
-        }
-        // 작성중인 참여·검토 대기 피드백이 남아 있으면 만료/자동 승인된 뒤 다음 주기에 완료한다
-        if (feedbackService.hasWritingFeedback(feedbackPost.getId())
-                || feedbackService.hasSubmittedFeedback(feedbackPost.getId())) {
-            // 완료는 미루되, 모집 기간은 끝났으므로 모집마감으로 바꿔 둔다
-            feedbackPost.close();
-            return false;
-        }
-        feedbackPostCompleteService.complete(feedbackPost);
-        return true;
-    }
-
     @Transactional(readOnly = true)
     public FeedbackPostResultResponse getResult(UUID memberId, UUID feedbackPostId) {
         FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostAsWriter(feedbackPostId, memberId);
@@ -144,4 +117,24 @@ public class FeedbackPostFacade {
                 images
         );
     }
+
+    /** 모집 기간이 끝난 모집글을 자동 완료·환급 (스케줄러 전용). 완료 처리했으면 true */
+    @Transactional
+    public boolean autoCompleteEnded(UUID feedbackPostId) {
+        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostIncludingDeletedForUpdate(feedbackPostId);
+        // 락을 잡은 뒤 다시 확인해서, 그 사이 작성자가 직접 완료한 모집글은 건너뛴다
+        if (feedbackPost.getStatus() == FeedbackPostStatus.COMPLETED
+                || LocalDateTime.now().isBefore(feedbackPost.getEndAt())) {
+            return false;
+        }
+        // 작성중인 참여·검토 대기 피드백이 남아 있으면 만료/자동 승인된 뒤 다음 주기에 완료한다
+        if (feedbackService.hasPendingFeedback(feedbackPost.getId())) {
+            // 완료는 미루되, 모집 기간은 끝났으므로 모집마감으로 바꿔 둔다
+            feedbackPost.close();
+            return false;
+        }
+        feedbackPostCompleteService.complete(feedbackPost);
+        return true;
+    }
+
 }

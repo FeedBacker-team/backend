@@ -1,6 +1,5 @@
 package com.feedbacker.global.image;
 
-import com.feedbacker.feedbackpost.domain.type.ImageType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;

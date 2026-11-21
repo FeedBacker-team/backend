@@ -1,7 +1,7 @@
-package com.feedbacker.feedback.domain.dto.response;
+package com.feedbacker.acorn.domain.dto;
 
-import com.feedbacker.feedback.domain.AcornHistory;
-import com.feedbacker.feedback.domain.type.AcornHistoryType;
+import com.feedbacker.acorn.domain.AcornHistory;
+import com.feedbacker.acorn.domain.type.AcornHistoryType;
 
 import java.time.LocalDateTime;
 

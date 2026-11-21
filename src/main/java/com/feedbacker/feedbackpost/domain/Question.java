@@ -49,6 +49,7 @@ public class Question extends BaseTimeEntity {
     // 객관식 전용 보기 목록
     @ElementCollection
     @CollectionTable(name = "question_options", joinColumns = @JoinColumn(name = "question_id"))
+    @OrderColumn(name = "option_order")
     @Column(name = "option_text")
     private List<String> optionTexts = new ArrayList<>();
 
