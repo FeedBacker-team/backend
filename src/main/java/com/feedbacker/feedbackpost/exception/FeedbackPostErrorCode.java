@@ -20,7 +20,8 @@ public enum FeedbackPostErrorCode implements ErrorCode {
     SELF_PARTICIPATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "본인 게시글에는 참여할 수 없습니다."),
     SLOT_FULL(HttpStatus.CONFLICT, "참여 가능한 슬롯이 없습니다."),
     FEEDBACK_POST_ALREADY_DELETED(HttpStatus.CONFLICT, "이미 삭제된 게시글입니다."),
-    FEEDBACK_POST_NOT_DELETED(HttpStatus.CONFLICT, "삭제된 게시글이 아닙니다.");
+    FEEDBACK_POST_NOT_DELETED(HttpStatus.CONFLICT, "삭제된 게시글이 아닙니다."),
+    FEEDBACK_POST_RESTORE_EXPIRED(HttpStatus.CONFLICT, "보관 기간이 지나 원복할 수 없는 게시글입니다.");
 
     private final HttpStatus status;
     private final String message;

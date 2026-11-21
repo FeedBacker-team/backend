@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -89,9 +90,20 @@ public class FeedbackService {
         return feedbackRepository.existsByFeedbackPostIdAndStatusIn(feedbackPostId, FeedbackStatus.PENDING);
     }
 
+    /** 작성중, 검토 대기, 이의제기 중인 피드백이 남아 있으면 true (모집글 물리 삭제 검증용) */
+    public boolean hasUnresolvedFeedback(UUID feedbackPostId) {
+        return feedbackRepository.existsByFeedbackPostIdAndStatusIn(feedbackPostId, FeedbackStatus.UNRESOLVED);
+    }
+
     /** 작성중이거나 검토 대기 중인 피드백을 락 걸어 조회 (모집글 강제 삭제 정산용) */
     public List<Feedback> getPendingFeedbacksForUpdate(UUID feedbackPostId) {
         return feedbackRepository.findAllByFeedbackPostIdAndStatusInForUpdate(feedbackPostId, FeedbackStatus.PENDING);
+    }
+
+    /** 이의제기 중인 피드백을 락 걸어 조회 (작성자 탈퇴 정산용) */
+    public List<Feedback> getObjectedFeedbacksForUpdate(UUID feedbackPostId) {
+        return feedbackRepository.findAllByFeedbackPostIdAndStatusInForUpdate(
+                feedbackPostId, EnumSet.of(FeedbackStatus.OBJECTED));
     }
 
     public List<UUID> getFeedbackPostIdsWithOverdueFeedback(LocalDateTime now) {
@@ -115,7 +127,7 @@ public class FeedbackService {
             Feedback feedback,
             FeedbackPost feedbackPost
     ) {
-        boolean isTester = memberId.equals(feedback.getTester().getId());
+        boolean isTester = feedback.isTester(memberId);
         boolean isWriter = memberId.equals(feedbackPost.getWriterId());
         if (!isTester && !(isWriter && feedback.isSubmitted())) {   // 제출 이후 상태(SUBMITTED/ACCEPTED/REJECTED/OBJECTED*)만
             throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCESS_DENIED);
@@ -144,6 +156,18 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findByFeedbackPostIdAndTesterIdForUpdate(feedbackPostId, memberId)
                 .orElseThrow(() -> new BusinessException(FeedbackErrorCode.PARTICIPATION_NOT_FOUND));
         feedback.cancel();
+    }
+
+    /** 테스터 탈퇴 시 정리할(작성중·이의제기) 피드백이 있는 모집글 id (id 순) */
+    public List<UUID> getFeedbackPostIdsToSettleForTesterDelete(UUID testerId) {
+        return feedbackRepository.findFeedbackPostIdsByTesterIdAndStatusIn(
+                testerId, EnumSet.of(FeedbackStatus.WRITING, FeedbackStatus.OBJECTED));
+    }
+
+    /** 모집글에 대한 테스터의 피드백을 락 걸어 조회. 없으면 null */
+    public Feedback findMyFeedbackForUpdate(UUID feedbackPostId, UUID testerId) {
+        return feedbackRepository.findByFeedbackPostIdAndTesterIdForUpdate(feedbackPostId, testerId)
+                .orElse(null);
     }
 
     public void validateExistActive(UUID feedbackPostId) {

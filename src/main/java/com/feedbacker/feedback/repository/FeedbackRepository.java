@@ -45,7 +45,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
     @Query("select distinct f.feedbackPost.id from Feedback f "
-            + "where f.status = :status and f.responseDeadLineAt <= :now")
+            + "where f.feedbackPost is not null "
+            + "and f.status = :status and f.responseDeadLineAt <= :now")
     List<UUID> findFeedbackPostIdsWithOverdue(
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
@@ -62,7 +63,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     );
 
     @Query("select distinct f.feedbackPost.id from Feedback f "
-            + "where f.status = :status and f.expireAt <= :now")
+            + "where f.feedbackPost is not null "
+            + "and f.status = :status and f.expireAt <= :now")
     List<UUID> findFeedbackPostIdsWithExpired(
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
@@ -76,6 +78,15 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("feedbackPostId") UUID feedbackPostId,
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
+    );
+
+    /** 테스터의 피드백 중 해당 상태인 피드백의 모집글 id. 락 순서를 고정하기 위해 id 순으로 정렬한다 */
+    @Query("select distinct f.feedbackPost.id from Feedback f "
+            + "where f.tester.id = :testerId and f.feedbackPost is not null and f.status in :statuses "
+            + "order by f.feedbackPost.id")
+    List<UUID> findFeedbackPostIdsByTesterIdAndStatusIn(
+            @Param("testerId") UUID testerId,
+            @Param("statuses") Collection<FeedbackStatus> statuses
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
