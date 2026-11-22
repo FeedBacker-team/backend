@@ -7,23 +7,19 @@ import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
 import com.feedbacker.feedbackpost.service.mapper.FeedbackFormMapper;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.feedbackpost.repository.FeedbackPostRepository;
+import com.feedbacker.global.image.ImageService;
 import com.feedbacker.project.domain.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
 import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.project.domain.ProjectTag;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -42,10 +38,10 @@ public class FeedbackPostService {
 
     @Transactional(readOnly = true)
     public List<FeedbackSimpleResponse> getMine(UUID memberId) {
-        return feedbackPostRepository.findAllByWriterId(memberId).stream()
+        return feedbackPostRepository.findAllByWriterIdAndDeletedFalse(memberId).stream()
                 .map(post -> FeedbackSimpleResponse.from(
                         post,
-                        imageService.toThumbnailResponse(post.getImages())
+                        getThumbnail(post)
                 ))
                 .toList();
     }
@@ -67,7 +63,8 @@ public class FeedbackPostService {
         validateSearchCondition(tags, sort, page, size);
 
         Specification<FeedbackPost> specification =
-                isCurrentlyRecruiting(LocalDateTime.now());
+                isCurrentlyRecruiting(LocalDateTime.now())
+                        .and(isNotDeleted());
 
         if (keyword != null && !keyword.isBlank()) {
             specification = specification.and(
@@ -87,29 +84,12 @@ public class FeedbackPostService {
                 createSort(sort)
         );
 
-        Page<FeedbackPostCardResponse> feedbackPostPage =
-                feedbackPostRepository
-                        .findAll(specification, pageRequest)
-                        .map(feedbackPost -> {
-                            ImageResponse thumbnail =
-                                    imageService.toThumbnailResponse(
-                                            feedbackPost.getImages()
-                                    );
-
-                            String thumbnailUrl =
-                                    thumbnail != null
-                                            ? thumbnail.url()
-                                            : feedbackPost
-                                            .getProject()
-                                            .getThumbnailImage();
-
-                            return FeedbackPostCardResponse.from(
-                                    feedbackPost,
-                                    thumbnailUrl
-                            );
-                        });
-
-        return FeedbackPostListResponse.from(feedbackPostPage);
+        return FeedbackPostListResponse.from(
+                feedbackPostRepository.findAll(specification, pageRequest)
+                        .map(feedbackPost -> FeedbackPostCardResponse.from(
+                                feedbackPost,
+                                getThumbnailUrl(feedbackPost)
+                        )));
     }
 
     private Sort createSort(FeedbackPostSort sort) {
@@ -159,6 +139,11 @@ public class FeedbackPostService {
                     )
             );
         };
+    }
+
+    private Specification<FeedbackPost> isNotDeleted() {
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.isFalse(root.get("deleted"));
     }
 
     private Specification<FeedbackPost> isCurrentlyRecruiting(LocalDateTime now) {
@@ -226,27 +211,28 @@ public class FeedbackPostService {
         );
     }
 
-    /** 피드백을 조회하면서 동시에 피드백 모집글 작성자 본인인지 검사 */
+    /** 피드백을 조회 & 피드백 모집글 작성자 본인인지 검사 */
     public FeedbackPost getFeedbackPostAsWriter(UUID feedbackPostId, UUID memberId) {
         FeedbackPost feedbackPost = getFeedbackPost(feedbackPostId);
-        feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateIsWriter(memberId);
         return feedbackPost;
     }
 
-    /** 락을 건 피드백을 조회하면서 동시에 피드백 모집글 작성자 본인인지 검사 */
+    /** 락을 건 피드백을 조회 & 피드백 모집글 작성자 본인인지 검사 */
     public FeedbackPost getFeedbackPostAsWriterForUpdate(UUID feedbackPostId, UUID memberId) {
         FeedbackPost feedbackPost = getFeedbackPostForUpdate(feedbackPostId);
-        feedbackPost.validateAccessAuth(memberId);
+        feedbackPost.validateIsWriter(memberId);
         return feedbackPost;
     }
 
     public FeedbackPost getFeedbackPost(UUID feedbackPostId) {
-        return feedbackPostRepository.findById(feedbackPostId)
+        return feedbackPostRepository.findByIdAndDeletedFalse(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));
     }
 
+    /** 락을 건 피드백을 조회 */
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
         return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
@@ -254,14 +240,17 @@ public class FeedbackPostService {
                 ));
     }
 
-    public Map<UUID, FeedbackPost> getFeedbackPostMap(Collection<UUID> feedbackPostIds) {
-        return feedbackPostRepository.findAllById(feedbackPostIds).stream()
-                .collect(Collectors.toMap(FeedbackPost::getId, Function.identity()));
+    /** 삭제된 모집글도 포함해서 락 조회. 참여자 만료·자동 승인·자동 완료 정산이 끝까지 돌아야 해서 스케줄러에서만 사용 */
+    public FeedbackPost getFeedbackPostIncludingDeletedForUpdate(UUID feedbackPostId) {
+        return feedbackPostRepository.findByIdIncludingDeletedForUpdate(feedbackPostId)
+                .orElseThrow(() -> new BusinessException(
+                        FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
+                ));
     }
 
     /** 모집글 썸네일. 썸네일 이미지가 없으면 null */
     public ImageResponse getThumbnail(FeedbackPost feedbackPost) {
-        return imageService.toThumbnailResponse(feedbackPost.getImages());
+        return imageService.toPostThumbnailResponse(feedbackPost.getImages());
     }
 
     /** 모집글 썸네일의 공개 URL. 썸네일 이미지가 없으면 null */
@@ -278,19 +267,8 @@ public class FeedbackPostService {
         );
     }
 
-    public void validateFeedbackSubmit(FeedbackPost feedbackPost, UUID memberId) {
-        feedbackPost.validateIsWriter(memberId);
-        feedbackPost.validateNotCompleted();
-    }
-
-    public void validateParticipation(FeedbackPost feedbackPost, UUID memberId) {
-        feedbackPost.validateIsWriter(memberId);
-        feedbackPost.validateRecruiting();
-        feedbackPost.validateRecruitingPeriod(LocalDateTime.now());
-    }
-
-    public UUID save(FeedbackPost feedbackPost) {
-        FeedbackPost savedFeedback = feedbackPostRepository.save(feedbackPost);
-        return savedFeedback.getId();
+    public UUID create(FeedbackPost feedbackPost) {
+        FeedbackPost newFeedbackPost = feedbackPostRepository.save(feedbackPost);
+        return newFeedbackPost.getId();
     }
 }

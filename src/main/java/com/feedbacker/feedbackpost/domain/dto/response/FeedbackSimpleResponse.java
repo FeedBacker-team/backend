@@ -2,9 +2,7 @@ package com.feedbacker.feedbackpost.domain.dto.response;
 
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
-import com.feedbacker.feedbackpost.domain.type.ImageType;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
-import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.global.image.ImageResponse;
 import com.feedbacker.project.domain.ProjectTag;
 import java.time.LocalDateTime;

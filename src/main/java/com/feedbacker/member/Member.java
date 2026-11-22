@@ -1,6 +1,6 @@
 package com.feedbacker.member;
 
-import com.feedbacker.feedback.domain.AcornHistory;
+import com.feedbacker.acorn.domain.AcornHistory;
 import com.feedbacker.global.common.BaseTimeEntity;
 import com.feedbacker.project.domain.ProjectTag;
 import jakarta.persistence.*;
@@ -23,6 +23,9 @@ public class Member extends BaseTimeEntity {
 
     public static final BigDecimal DEFAULT_HUMIDITY = new BigDecimal("30.00");
 
+    // 영구 정지는 정지 종료 시각을 이 값으로 고정
+    public static final LocalDateTime PERMANENT_BAN_UNTIL = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
@@ -41,6 +44,11 @@ public class Member extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private Role role;
+
+    // 관리자 지정은 DB에서 직접 변경
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Authority authority = Authority.USER;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -79,11 +87,15 @@ public class Member extends BaseTimeEntity {
 
     private LocalDateTime deactivatedAt;
 
+    // 이 시각 전까지 이용 정지 (null이면 정지 이력 없음)
+    private LocalDateTime bannedUntil;
+
     private Member(String email, String password, AuthProvider provider, String providerId) {
         this.email = email;
         this.password = password;
         this.provider = provider;
         this.providerId = providerId;
+        this.authority = Authority.USER;
         this.humidity = DEFAULT_HUMIDITY;
         this.grade = TreeGrade.fromHumidity(DEFAULT_HUMIDITY);
     }
@@ -120,6 +132,67 @@ public class Member extends BaseTimeEntity {
     public void changeHumidity(BigDecimal humidity) {
         this.humidity = humidity;
         this.grade = TreeGrade.fromHumidity(humidity);
+    }
+
+    /** 습도 감소 (0 미만으로는 내려가지 않음). 실제로 감소한 양을 반환 */
+    public BigDecimal decreaseHumidity(BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("감소할 습도는 양수여야 합니다.");
+        }
+        BigDecimal before = this.humidity;
+        changeHumidity(before.subtract(amount).max(BigDecimal.ZERO));
+        return before.subtract(this.humidity);
+    }
+
+    /** 습도 증가 (제재 원복용) */
+    public void increaseHumidity(BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("증가할 습도는 양수여야 합니다.");
+        }
+        changeHumidity(this.humidity.add(amount));
+    }
+
+    /**
+     * days일 동안 이용 정지 (이미 정지 중이면 남은 기간에 이어서 연장).
+     * 영구 정지 중이면 연장하지 않고 false 반환
+     */
+    public boolean ban(int days, LocalDateTime now) {
+        if (days <= 0) {
+            throw new IllegalArgumentException("정지 일수는 양수여야 합니다.");
+        }
+        if (isPermanentlyBanned()) {
+            return false;
+        }
+        LocalDateTime base = isBanned(now) ? this.bannedUntil : now;
+        this.bannedUntil = base.plusDays(days);
+        return true;
+    }
+
+    /** 영구 정지. 이미 영구 정지 중이면 false 반환 */
+    public boolean banPermanently() {
+        if (isPermanentlyBanned()) {
+            return false;
+        }
+        this.bannedUntil = PERMANENT_BAN_UNTIL;
+        return true;
+    }
+
+    /** 정지 종료 시각을 다시 계산한 값으로 바꿈 (제재 원복용, null이면 정지 해제) */
+    public void changeBannedUntil(LocalDateTime bannedUntil) {
+        this.bannedUntil = bannedUntil;
+    }
+
+    public boolean isBanned(LocalDateTime now) {
+        return bannedUntil != null && bannedUntil.isAfter(now);
+    }
+
+    public boolean isPermanentlyBanned() {
+        return isPermanentBanUntil(bannedUntil);
+    }
+
+    /** 정지 종료 시각이 영구 정지를 뜻하는지 */
+    public static boolean isPermanentBanUntil(LocalDateTime bannedUntil) {
+        return PERMANENT_BAN_UNTIL.equals(bannedUntil);
     }
 
     /** 필수 프로필(닉네임, 직군)을 입력했는지 */

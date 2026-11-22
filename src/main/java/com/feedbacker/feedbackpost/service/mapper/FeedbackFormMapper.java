@@ -5,7 +5,7 @@ import com.feedbacker.feedbackpost.domain.dto.response.ChoiceQuestionResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.FeedbackFormResponse;
 import com.feedbacker.feedbackpost.domain.dto.response.SubjectiveQuestionResponse;
 import com.feedbacker.feedbackpost.domain.type.QuestionType;
-import com.feedbacker.feedbackpost.service.ImageService;
+import com.feedbacker.global.image.ImageService;
 import com.feedbacker.global.image.ImageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

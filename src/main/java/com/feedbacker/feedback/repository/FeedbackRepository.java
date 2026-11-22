@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +23,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     @Query("select f from Feedback f where f.id = :id")
     Optional<Feedback> findByIdForUpdate(@Param("id") UUID id);
 
+    @EntityGraph(attributePaths = "feedbackPost")
     List<Feedback> findAllByTesterId(UUID testerId);
 
     Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);
@@ -37,6 +39,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
 
     boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+
+    boolean existsByFeedbackPostIdAndStatusIn(UUID feedbackPostId, Collection<FeedbackStatus> statuses);
 
     int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
@@ -72,5 +76,13 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("feedbackPostId") UUID feedbackPostId,
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Feedback f "
+            + "where f.feedbackPost.id = :feedbackPostId and f.status in :statuses")
+    List<Feedback> findAllByFeedbackPostIdAndStatusInForUpdate(
+            @Param("feedbackPostId") UUID feedbackPostId,
+            @Param("statuses") Collection<FeedbackStatus> statuses
     );
 }
