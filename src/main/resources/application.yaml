@@ -61,6 +61,8 @@ kakao:
   redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/oauth/kakao/callback}
   # 요청에서 받을 수 있는 redirect_uri 목록 (쉼표로 구분, 비밀값 아님)
   allowed-redirect-uris: ${KAKAO_ALLOWED_REDIRECT_URIS:http://localhost:3000/oauth/kakao/callback,https://feedbacker-team-dev.vercel.app/oauth/kakao/callback,https://feedbacker-team.vercel.app/oauth/kakao/callback}
+  # 회원 탈퇴 시 카카오 연결 끊기에 사용 (비밀값! 파일에 직접 적지 말고 환경변수로만 설정)
+  admin-key: ${KAKAO_ADMIN_KEY:}
 
 cors:
   # 여러 개면 쉼표로 구분 (예: http://localhost:3000,https://feedbaker.vercel.app)
