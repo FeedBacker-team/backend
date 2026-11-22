@@ -27,8 +27,8 @@ public class Project extends BaseTimeEntity {
             nullable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "owner_id", nullable = true)
     private Member owner;
 
     @Enumerated(EnumType.STRING)
@@ -158,7 +158,7 @@ public class Project extends BaseTimeEntity {
     }
 
     public void validateOwner(UUID memberId) {
-        if (memberId == null || !this.owner.getId().equals(memberId)) {
+        if (memberId == null || owner == null || !memberId.equals(owner.getId())) {
             throw new CustomException(HttpStatus.FORBIDDEN, "프로젝트에 접근 권한이 없습니다.");
         }
     }
