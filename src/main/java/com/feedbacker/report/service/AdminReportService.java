@@ -165,38 +165,43 @@ public class AdminReportService {
                 reportSanctionRepository.findAllByReportIdAndRevertedAtIsNullOrderByCreatedAtDesc(reportId);
         validateContentRestorable(report, sanctions);
         Member suspect = null;
+        boolean banReverted = false;
 
         for (ReportSanction sanction : sanctions) {
-            if (sanction.hasHumidityDecrease() || sanction.hasBan()) {
+            if (sanction.hasHumidityDecrease()) {
                 if (suspect == null) {
                     suspect = findSuspect(report);
                 }
-                if (sanction.hasHumidityDecrease()) {
-                    suspect.increaseHumidity(sanction.getHumidityDecreased());
-                }
-                if (sanction.isBanApplied()) {
-                    revertBan(suspect, sanction, now);
-                }
+                suspect.increaseHumidity(sanction.getHumidityDecreased());
+            }
+            if (sanction.hasBan()) {
+                banReverted = true;
             }
             if (sanction.getAction() == ReportAction.CONTENT_DELETED) {
                 restoreContent(report, sanction);
             }
             sanction.revert(adminId, now);
         }
+
+        if (banReverted) {
+            if (suspect == null) {
+                suspect = findSuspect(report);
+            }
+            recalculateBan(suspect, now);
+        }
     }
 
-    /** 영구 정지는 적용 직전 시각으로 되돌리고, 기간 정지는 부여한 일수만큼 단축한다 */
-    private void revertBan(Member suspect, ReportSanction sanction, LocalDateTime now) {
-        if (sanction.isPermanent()) {
-            if (suspect.isPermanentlyBanned()) {
-                suspect.restoreBan(sanction.getBannedUntilBefore());
-            }
-            return;
-        }
-        // 이미 기간이 끝난 정지는 되돌릴 게 없음 (영구 정지 중이면 shortenBan이 무시한다)
-        if (sanction.getBanEndAt().isAfter(now)) {
-            suspect.shortenBan(sanction.getBanDays(), now);
-        }
+    /**
+     * 남아 있는(원복되지 않은) 정지 제재만으로 정지 종료 시각을 다시 계산한다.
+     * 일수를 빼거나 저장해 둔 이전 값으로 되돌리는 방식은 원복 순서에 따라
+     * 이미 원복된 정지가 되살아날 수 있어서 쓰지 않는다
+     */
+    private void recalculateBan(Member suspect, LocalDateTime now) {
+        // 방금 원복 표시한 제재가 아직 flush 전이어도 빠지도록 메모리 상태로 한 번 더 거른다
+        List<ReportSanction> activeBans = reportSanctionRepository.findActiveBans(suspect.getId()).stream()
+                .filter(sanction -> sanction.getRevertedAt() == null)
+                .toList();
+        suspect.changeBannedUntil(ReportSanction.calculateBannedUntil(activeBans, now));
     }
 
     @Transactional

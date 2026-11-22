@@ -3,6 +3,9 @@ package com.feedbacker.project.controller;
 import com.feedbacker.global.jwt.JwtAuthenticationEntryPoint;
 import com.feedbacker.global.jwt.JwtTokenProvider;
 import com.feedbacker.global.security.SecurityConfig;
+import com.feedbacker.member.Authority;
+import com.feedbacker.member.Member;
+import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.service.ProjectService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ class ProjectViewHttpTest {
     @Autowired MockMvc mvc;
     @MockitoBean ProjectService service;
     @MockitoBean JwtTokenProvider tokens;
+    @MockitoBean MemberRepository members;
     final UUID project = UUID.randomUUID();
     final String detail = "/api/projects/" + project;
 
@@ -62,12 +66,16 @@ class ProjectViewHttpTest {
 
     @Test
     void authenticatedPostIgnoresGuestCookie() throws Exception {
-        UUID member = UUID.randomUUID();
-        when(tokens.parseAccessToken("valid")).thenReturn(Optional.of(member));
+        UUID memberId = UUID.randomUUID();
+        Member member = mock(Member.class);
+        when(member.getId()).thenReturn(memberId);
+        when(member.getAuthority()).thenReturn(Authority.USER);
+        when(tokens.parseAccessToken("valid")).thenReturn(Optional.of(memberId));
+        when(members.findById(memberId)).thenReturn(Optional.of(member));
         mvc.perform(post(detail + "/views").header("Authorization", "Bearer valid")
                 .cookie(new Cookie("guest_view_id", UUID.randomUUID().toString())))
                 .andExpect(status().isOk()).andExpect(header().doesNotExist("Set-Cookie"));
-        verify(service).recordProjectView(project, member, null);
+        verify(service).recordProjectView(project, memberId, null);
         verifyNoMoreInteractions(service);
     }
 

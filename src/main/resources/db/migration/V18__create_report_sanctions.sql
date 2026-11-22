@@ -10,7 +10,7 @@ CREATE TABLE report_sanctions (
     reverted_by UUID,
     created_at TIMESTAMP(6),
     updated_at TIMESTAMP(6),
-    CONSTRAINT fk_report_sanctions_report FOREIGN KEY (report_id) REFERENCES reports (report_id)
+    CONSTRAINT fk_report_sanctions_report FOREIGN KEY (report_id) REFERENCES reports (report_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_report_sanctions_report_id ON report_sanctions (report_id);

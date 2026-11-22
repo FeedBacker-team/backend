@@ -1,6 +1,7 @@
 package com.feedbacker.report.domain;
 
 import com.feedbacker.global.common.BaseTimeEntity;
+import com.feedbacker.member.Member;
 import com.feedbacker.report.domain.type.ReportAction;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /** 신고 처리 시 실제로 적용된 제재 기록 (원복할 때 이 기록만큼 되돌림, 차등 제재 횟수 계산에도 사용) */
@@ -24,6 +26,7 @@ public class ReportSanction extends BaseTimeEntity {
     @Column(name = "report_sanction_id", updatable = false, nullable = false, columnDefinition = "uuid")
     private UUID id;
 
+    // 제재 대상 신고 (DB FK: report 삭제 시 CASCADE로 ReportSanction도 삭제)
     @Column(nullable = false)
     private UUID reportId;
 
@@ -47,7 +50,7 @@ public class ReportSanction extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean permanent;
 
-    // 이 제재 적용 직전의 정지 종료 시각 (영구 정지 원복용)
+    // 이 제재 적용 직전의 정지 종료 시각 (기록용. 원복은 calculateBannedUntil로 다시 계산한다)
     @Column
     private LocalDateTime bannedUntilBefore;
 
@@ -101,9 +104,29 @@ public class ReportSanction extends BaseTimeEntity {
         return banDays != null || permanent;
     }
 
-    /** 정지가 회원에게 실제로 적용됐는지 (이미 영구 정지 중이었으면 false) */
-    public boolean isBanApplied() {
-        return hasBan() && banEndAt != null;
+    /**
+     * 원복되지 않은 정지 제재들로 회원의 정지 종료 시각을 다시 계산한다.
+     * - 하나라도 영구 정지면 영구 정지
+     * - 기간 정지는 생성 순서대로, 앞선 정지가 끝나지 않았으면 그 뒤에 이어 붙인다 (ban()과 같은 규칙)
+     * - 계산 결과가 now 이전이면 정지 해제(null)
+     * 원복 순서와 상관없이 남은 제재만으로 결과가 정해진다.
+     *
+     * @param sanctions 원복되지 않은 정지 제재 (생성 시각 오름차순)
+     */
+    public static LocalDateTime calculateBannedUntil(List<ReportSanction> sanctions, LocalDateTime now) {
+        LocalDateTime end = null;
+        for (ReportSanction sanction : sanctions) {
+            if (sanction.isPermanent()) {
+                return Member.PERMANENT_BAN_UNTIL;
+            }
+            if (sanction.getBanDays() == null) {
+                continue;
+            }
+            LocalDateTime start = sanction.getCreatedAt();
+            LocalDateTime base = end != null && end.isAfter(start) ? end : start;
+            end = base.plusDays(sanction.getBanDays());
+        }
+        return end != null && end.isAfter(now) ? end : null;
     }
 
     public void revert(UUID adminId, LocalDateTime now) {
