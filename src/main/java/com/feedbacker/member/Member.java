@@ -177,18 +177,9 @@ public class Member extends BaseTimeEntity {
         return true;
     }
 
-    /** 정지 종료 시각을 지정한 값으로 되돌림 (영구 정지 원복용) */
-    public void restoreBan(LocalDateTime bannedUntil) {
+    /** 정지 종료 시각을 다시 계산한 값으로 바꿈 (제재 원복용, null이면 정지 해제) */
+    public void changeBannedUntil(LocalDateTime bannedUntil) {
         this.bannedUntil = bannedUntil;
-    }
-
-    /** 정지 기간을 days일 단축 (제재 원복용). 남은 기간이 없으면 정지 해제, 영구 정지 중이면 변경 없음 */
-    public void shortenBan(int days, LocalDateTime now) {
-        if (!isBanned(now) || isPermanentlyBanned()) {
-            return;
-        }
-        LocalDateTime shortened = this.bannedUntil.minusDays(days);
-        this.bannedUntil = shortened.isAfter(now) ? shortened : null;
     }
 
     public boolean isBanned(LocalDateTime now) {
