@@ -9,6 +9,7 @@ import com.feedbacker.member.dto.KakaoAuthResponse;
 import com.feedbacker.member.dto.KakaoLoginRequest;
 import com.feedbacker.member.dto.LoginRequest;
 import com.feedbacker.member.dto.MessageResponse;
+import com.feedbacker.member.dto.PasswordResetRequest;
 import com.feedbacker.member.dto.SignUpRequest;
 import com.feedbacker.member.dto.TokenRefreshResponse;
 import jakarta.validation.Valid;
@@ -30,6 +31,7 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
     private final AuthService authService;
     private final KakaoAuthService kakaoAuthService;
+    private final PasswordResetService passwordResetService;
     private final RefreshTokenCookieFactory cookieFactory;
 
     // 1-1. 이메일 인증번호 발송
@@ -88,5 +90,19 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieFactory.expire().toString())
                 .body(new MessageResponse("성공적으로 로그아웃되었습니다."));
+    }
+
+    // 2-4. 비밀번호 재설정 인증번호 발송
+    @PostMapping("/password/reset-request")
+    public ResponseEntity<EmailVerificationResponse> sendPasswordResetCode(
+            @Valid @RequestBody EmailVerificationRequest request) {
+        return ResponseEntity.ok(passwordResetService.sendResetCode(request.email()));
+    }
+
+    // 2-5. 비밀번호 재설정 (변경 후 모든 기기 로그아웃)
+    @PostMapping("/password/reset")
+    public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        passwordResetService.resetPassword(request.email(), request.code(), request.newPassword());
+        return ResponseEntity.ok(new MessageResponse("비밀번호가 변경되었습니다. 다시 로그인해 주세요."));
     }
 }
