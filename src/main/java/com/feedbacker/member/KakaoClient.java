@@ -22,25 +22,28 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** 카카오 서버와 통신 (인가 코드 → 토큰 → 사용자 정보) */
+/** 카카오 서버와 통신 (인가 코드 → 토큰 → 사용자 정보, 탈퇴 시 연결 끊기) */
 @Slf4j
 @Component
 public class KakaoClient {
 
     private static final String TOKEN_URL = "https://kauth.kakao.com/oauth/token";
     private static final String USER_INFO_URL = "https://kapi.kakao.com/v2/user/me";
+    private static final String UNLINK_URL = "https://kapi.kakao.com/v1/user/unlink";
 
     private final RestClient restClient;
     private final String clientId;
     private final String clientSecret;
     private final String defaultRedirectUri;
     private final Set<String> allowedRedirectUris;
+    private final String adminKey;
 
     public KakaoClient(
             @Value("${kakao.client-id}") String clientId,
             @Value("${kakao.client-secret}") String clientSecret,
             @Value("${kakao.redirect-uri}") String defaultRedirectUri,
-            @Value("${kakao.allowed-redirect-uris}") String allowedRedirectUris) {
+            @Value("${kakao.allowed-redirect-uris}") String allowedRedirectUris,
+            @Value("${kakao.admin-key:}") String adminKey) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
         factory.setReadTimeout(Duration.ofSeconds(5));
@@ -54,6 +57,7 @@ public class KakaoClient {
                 .filter(StringUtils::hasText)
                 .collect(Collectors.toCollection(HashSet::new));
         this.allowedRedirectUris.add(defaultRedirectUri);
+        this.adminKey = adminKey;
     }
 
     public KakaoUserInfoResponse getUserInfo(String authorizationCode, String redirectUri) {
@@ -71,6 +75,34 @@ public class KakaoClient {
         } catch (RestClientException e) {
             log.warn("Kakao user info request failed: {}", e.getMessage());
             throw kakaoFailed();
+        }
+    }
+
+    /**
+     * 4-4 회원 탈퇴: 우리 앱과 카카오 계정의 연결 끊기 (Admin 키 방식).
+     * 회원 삭제가 이미 끝난 뒤에 호출하므로, 실패해도 탈퇴를 되돌리지 않고 로그만 남긴다
+     */
+    public void unlink(String kakaoId) {
+        if (!StringUtils.hasText(adminKey)) {
+            log.warn("KAKAO_ADMIN_KEY is not set. Skip Kakao unlink: kakaoId={}", kakaoId);
+            return;
+        }
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("target_id_type", "user_id");
+        form.add("target_id", kakaoId);
+        try {
+            restClient.post()
+                    .uri(UNLINK_URL)
+                    .header("Authorization", "KakaoAK " + adminKey)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(form)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException e) {
+            log.warn("Kakao unlink failed: status={}, body={}, kakaoId={}",
+                    e.getStatusCode(), e.getResponseBodyAsString(), kakaoId);
+        } catch (RestClientException e) {
+            log.warn("Kakao unlink failed: {}, kakaoId={}", e.getMessage(), kakaoId);
         }
     }
 
