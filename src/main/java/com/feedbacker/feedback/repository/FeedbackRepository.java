@@ -5,7 +5,9 @@ import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -98,4 +100,25 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("feedbackPostId") UUID feedbackPostId,
             @Param("statuses") Collection<FeedbackStatus> statuses
     );
+
+    /** 모집글과 테스터가 모두 삭제되고 미해결 상태가 아닌 피드백 id (물리 삭제 대상). id 순으로 정렬한다 */
+    @Query("select f.id from Feedback f "
+            + "where f.feedbackPost is null and f.tester is null and f.status not in :unresolvedStatuses "
+            + "order by f.id")
+    List<UUID> findOrphanIds(
+            @Param("unresolvedStatuses") Collection<FeedbackStatus> unresolvedStatuses,
+            Pageable pageable
+    );
+
+    /** 주어진 id 중 물리 삭제 조건을 여전히 만족하는 피드백 id */
+    @Query("select f.id from Feedback f "
+            + "where f.id in :ids and f.feedbackPost is null and f.tester is null and f.status not in :unresolvedStatuses")
+    List<UUID> findOrphanIdsIn(
+            @Param("ids") Collection<UUID> ids,
+            @Param("unresolvedStatuses") Collection<FeedbackStatus> unresolvedStatuses
+    );
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from Feedback f where f.id in :ids")
+    int deleteAllByIdIn(@Param("ids") Collection<UUID> ids);
 }
