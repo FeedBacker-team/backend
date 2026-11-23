@@ -62,6 +62,9 @@ public class FeedbackFacade {
                 .sorted(Comparator.comparing(Feedback::getParticipateAt).reversed())
                 .map(feedback -> {
                     FeedbackPost feedbackPost = feedback.getFeedbackPost();
+                    if (feedbackPost != null && feedbackPost.isDeleted()) {
+                        feedbackPost = null;
+                    }
                     return FeedbackResponse.from(
                             feedback,
                             feedbackPost,
