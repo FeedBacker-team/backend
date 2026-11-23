@@ -27,6 +27,7 @@ public enum FeedbackErrorCode implements ErrorCode {
     CANNOT_GIVE_UP(HttpStatus.CONFLICT, "작성 중인 피드백만 포기할 수 있습니다."),
     FEEDBACK_NOT_WRITING(HttpStatus.CONFLICT, "작성 중인 피드백만 만료 처리할 수 있습니다."),
     SUBMISSION_DEADLINE_NOT_REACHED(HttpStatus.CONFLICT, "아직 제출 기한이 지나지 않았습니다."),
+    FEEDBACK_ACCEPTED_BY_WRITER_WITHDRAWAL(HttpStatus.CONFLICT, "모집글 작성자가 탈퇴하여 작성 중이던 피드백이 자동 승인되었습니다."),
 
     // 피드백 모집글 관련
     FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK(HttpStatus.CONFLICT, "승인 또는 거절하지 않은 피드백이 있어 모집글을 완료할 수 없습니다."),

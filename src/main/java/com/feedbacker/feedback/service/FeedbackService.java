@@ -77,6 +77,11 @@ public class FeedbackService {
         return feedbackRepository.countByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.ACCEPTED);
     }
 
+    /** 모집글 작성자 탈퇴로 승인된 피드백이 테스터에게 있으면 true */
+    public boolean hasAcceptedByWriterWithdrawal(UUID testerId) {
+        return feedbackRepository.existsByTesterIdAndStatus(testerId, FeedbackStatus.ACCEPT_BY_WRITER_WITHDRAWAL);
+    }
+
     public boolean hasSubmittedFeedback(UUID feedbackPostId) {
         return feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED);
     }
@@ -149,6 +154,7 @@ public class FeedbackService {
                  OBJECTED, OBJECTION_ACCEPTED, OBJECTION_REJECTED -> FeedbackErrorCode.ALREADY_PARTICIPATED;
             case CANCELED -> FeedbackErrorCode.ABANDONED_PARTICIPATION;
             case EXPIRED -> FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED;
+            case ACCEPT_BY_WRITER_WITHDRAWAL -> FeedbackErrorCode.FEEDBACK_ACCEPTED_BY_WRITER_WITHDRAWAL;
         };
     }
 

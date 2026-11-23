@@ -74,7 +74,8 @@ public class FeedbackPostDeleteService {
     /**
      * 작성자(회원)를 삭제하기 전에 작성자의 모든 모집글을 정산하고 물리 삭제한다 (이미지는 커밋 후 스토리지에서 삭제).
      * 회원 삭제와 같은 트랜잭션에서, 회원 삭제보다 먼저 호출한다
-     * - 완료 전 모집글은 강제 삭제와 같은 방식으로 정산하고 완료 처리 (남은 예치 도토리는 환급하지 않고 소멸)
+     * - 완료 전 모집글은 정산하고 완료 처리 (남은 예치 도토리는 환급하지 않고 소멸)
+     *   제출된 피드백은 승인, 작성중 피드백은 작성자 탈퇴 승인(ACCEPT_BY_WRITER_WITHDRAWAL) 처리하고 테스터에게 보상 지급
      * - 이의제기 중인 피드백은 어드민 검토 없이 인용 처리하고 보상 지급 (모집글이 물리 삭제되어 이후 검토할 수 없다).
      *   소프트 삭제된 모집글은 이미 정산(완료)됐지만 강제 삭제가 이의제기를 그대로 두므로, 이를 처리하기 위해 조회 대상에 포함한다
      */
@@ -91,7 +92,7 @@ public class FeedbackPostDeleteService {
             }
             List<Feedback> settled = new ArrayList<>();
             if (feedbackPost.getStatus() != FeedbackPostStatus.COMPLETED) {
-                settled.addAll(settlePendingFeedbacks(feedbackPost, now));
+                settled.addAll(acceptPendingFeedbacksByWriterWithdrawal(feedbackPost, now)); // 작성중이던 피드백 모두 수락 처리
                 feedbackPost.complete();
             }
             settled.addAll(acceptObjections(feedbackPost));
@@ -194,6 +195,24 @@ public class FeedbackPostDeleteService {
                 feedback.cancelByForceDelete(now);
                 feedbackPost.plusRemainSlotCount();
             }
+        }
+        return feedbacks;
+    }
+
+    /**
+     * 작성중·검토 대기 피드백을 모두 승인하고 보상 지급 (작성자 삭제 정산용). 모집글 락을 잡은 트랜잭션 안에서 호출한다
+     * - 제출된 피드백은 승인 처리
+     * - 작성중 피드백은 제출 없이 작성자 탈퇴 승인 처리
+     */
+    private List<Feedback> acceptPendingFeedbacksByWriterWithdrawal(FeedbackPost feedbackPost, LocalDateTime now) {
+        List<Feedback> feedbacks = feedbackService.getPendingFeedbacksForUpdate(feedbackPost.getId());
+        for (Feedback feedback : feedbacks) {
+            if (feedback.getStatus() == FeedbackStatus.SUBMITTED) {
+                feedback.autoAccept(feedbackPost.getRewardAcorn());
+            } else {
+                feedback.acceptByWriterWithdrawal(feedbackPost.getRewardAcorn(), now);
+            }
+            feedbackRewardService.payReward(feedback, feedbackPost);
         }
         return feedbacks;
     }

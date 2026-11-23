@@ -44,6 +44,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
     int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
+    boolean existsByTesterIdAndStatus(UUID testerId, FeedbackStatus status);
+
     @Query("select distinct f.feedbackPost.id from Feedback f "
             + "where f.feedbackPost is not null "
             + "and f.status = :status and f.responseDeadLineAt <= :now")

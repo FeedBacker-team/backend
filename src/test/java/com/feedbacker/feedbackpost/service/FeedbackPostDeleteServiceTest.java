@@ -80,7 +80,7 @@ class FeedbackPostDeleteServiceTest {
     }
 
     @Test
-    @DisplayName("미처리 피드백을 정산하고 이의제기를 인용한 뒤 모집글을 지우며, 피드백 기록은 남는다")
+    @DisplayName("미처리 피드백(작성중 포함)을 승인하고 이의제기를 인용한 뒤 모집글을 지우며, 피드백 기록은 남는다")
     void deleteAllByWriter() {
         FeedbackPost recruiting = savePost("모집중");
         FeedbackPost withObjection = savePost("이의제기");
@@ -100,11 +100,12 @@ class FeedbackPostDeleteServiceTest {
         Feedback objected = feedbackRepository.findById(objectedId).orElseThrow();
         assertThat(submitted.getStatus()).isEqualTo(FeedbackStatus.ACCEPTED);
         assertThat(submitted.getRewardAcorn()).isEqualTo(REWARD);
-        assertThat(writing.getStatus()).isEqualTo(FeedbackStatus.CANCELED);
+        assertThat(writing.getStatus()).isEqualTo(FeedbackStatus.ACCEPT_BY_WRITER_WITHDRAWAL);
+        assertThat(writing.getRewardAcorn()).isEqualTo(REWARD);
         assertThat(objected.getStatus()).isEqualTo(FeedbackStatus.OBJECTION_ACCEPTED);
         assertThat(objected.getRewardAcorn()).isEqualTo(REWARD);
         assertThat(List.of(submitted, writing, objected)).allMatch(feedback -> !feedback.hasFeedbackPost());
-        verify(feedbackRewardService, times(2)).payReward(any(), any());
+        verify(feedbackRewardService, times(3)).payReward(any(), any());
     }
 
     @Test

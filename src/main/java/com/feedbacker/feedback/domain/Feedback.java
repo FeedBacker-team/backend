@@ -226,6 +226,7 @@ public class Feedback extends BaseTimeEntity {
                  OBJECTED, OBJECTION_ACCEPTED, OBJECTION_REJECTED -> throw new BusinessException(FeedbackErrorCode.FEEDBACK_ALREADY_SUBMITTED);
             case CANCELED -> throw new BusinessException(FeedbackErrorCode.ABANDONED_PARTICIPATION);
             case EXPIRED -> throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
+            case ACCEPT_BY_WRITER_WITHDRAWAL -> throw new BusinessException(FeedbackErrorCode.FEEDBACK_ACCEPTED_BY_WRITER_WITHDRAWAL);
         }
         if (!now.isBefore(this.expireAt)) {
             throw new BusinessException(FeedbackErrorCode.SUBMISSION_DEADLINE_EXPIRED);
@@ -251,6 +252,16 @@ public class Feedback extends BaseTimeEntity {
         }
         this.status = FeedbackStatus.CANCELED;
         this.cancelAt = now;
+    }
+
+    /** 모집글 작성자 탈퇴로 '작성중' 피드백을 제출 없이 승인 처리 (기한 검증 없음) */
+    public void acceptByWriterWithdrawal(Integer rewardAcorn, LocalDateTime now) {
+        if (this.status != FeedbackStatus.WRITING) {
+            throw new BusinessException(FeedbackErrorCode.FEEDBACK_NOT_WRITING);
+        }
+        this.rewardAcorn = rewardAcorn;
+        this.responseAt = now;
+        this.status = FeedbackStatus.ACCEPT_BY_WRITER_WITHDRAWAL;
     }
 
     /**

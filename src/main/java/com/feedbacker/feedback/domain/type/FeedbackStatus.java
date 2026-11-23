@@ -12,7 +12,8 @@ public enum FeedbackStatus {
     EXPIRED,    // 만료됨 (제출 기한이 지난 상태)
     OBJECTED,   // 이의제기됨 (어드민 검토 대기 상태)
     OBJECTION_ACCEPTED, // 이의제기 인용됨 (검토 완료, 거절 번복)
-    OBJECTION_REJECTED; // 이의제기 기각됨 (검토 완료, 거절 확정)
+    OBJECTION_REJECTED, // 이의제기 기각됨 (검토 완료, 거절 확정)
+    ACCEPT_BY_WRITER_WITHDRAWAL; // 모집글 작성자 탈퇴로 작성중이던 피드백이 승인됨
 
     /** 모집글 완료를 막는 상태 (작성중 또는 검토 대기) */
     public static final Set<FeedbackStatus> PENDING = EnumSet.of(WRITING, SUBMITTED);

@@ -13,6 +13,7 @@ import com.feedbacker.feedback.service.FeedbackRewardService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedback.service.QuestionAnswerService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
+import com.feedbacker.feedback.exception.FeedbackErrorCode;
 import com.feedbacker.feedbackpost.exception.FeedbackPostErrorCode;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
@@ -197,9 +198,25 @@ public class FeedbackFacade {
     }
 
     private FeedbackPost getFeedbackPostForSubmit(UUID feedbackPostId, UUID testerId) {
-        FeedbackPost feedbackPost = feedbackPostService.getFeedbackPostForUpdate(feedbackPostId);
+        FeedbackPost feedbackPost = feedbackPostService.findFeedbackPostForUpdate(feedbackPostId)
+                .orElseThrow(() -> feedbackPostNotFoundForSubmit(feedbackPostId, testerId));
         feedbackPost.validateSubmittable(testerId);
         return feedbackPost;
+    }
+
+    /**
+     * 제출할 모집글이 없을 때의 예외.
+     * 작성 중에 모집글 작성자가 탈퇴해서 모집글이 물리 삭제됐으면, 작성중 피드백은 이미 자동 승인됐으므로 이를 알린다.
+     * 모집글이 지워지면 피드백과의 연결(feedback_post_id)이 끊기므로,
+     * 모집글 행이 없고 테스터에게 작성자 탈퇴 승인 피드백이 있으면 그 경우로 본다.
+     * 락 조회 뒤에 검사해야, 작성자 삭제 트랜잭션을 기다렸다가 조회에 실패한 경우도 잡을 수 있다
+     */
+    private BusinessException feedbackPostNotFoundForSubmit(UUID feedbackPostId, UUID testerId) {
+        if (!feedbackPostService.existsIncludingDeleted(feedbackPostId)
+                && feedbackService.hasAcceptedByWriterWithdrawal(testerId)) {
+            return new BusinessException(FeedbackErrorCode.FEEDBACK_ACCEPTED_BY_WRITER_WITHDRAWAL);
+        }
+        return new BusinessException(FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND);
     }
 
 }
