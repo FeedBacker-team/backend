@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * 피드백 모집글 삭제 (신고 제재 강제 삭제·원복, 보관 기간 후 물리 삭제, 작성자 삭제).
@@ -227,15 +228,25 @@ public class FeedbackPostDeleteService {
         return feedbacks;
     }
 
-    /** 모집글 물리 삭제 (질문은 JPA cascade로 함께 삭제). 모집글 이미지는 커밋 후 스토리지에서 지운다 */
+    /** 모집글 물리 삭제 (질문은 JPA cascade로 함께 삭제). 모집글·질문 이미지는 커밋 후 스토리지에서 지운다 */
     private void hardDelete(FeedbackPost feedbackPost) {
         UUID feedbackPostId = feedbackPost.getId();
-        List<String> imagePaths = feedbackPost.getImages().stream()
+        // 행이 지워지면 경로를 읽을 수 없으므로 삭제 전에 모아 둔다
+        List<String> imagePaths = Stream.concat(
+                        imagesOf(feedbackPost.getImages()),
+                        feedbackPost.getQuestions().stream()
+                                .flatMap(question -> imagesOf(question.getImages())))
                 .map(ImageInfo::path)
                 .filter(StringUtils::hasText)
+                .distinct()
                 .toList();
         feedbackPostRepository.delete(feedbackPost);
         deleteImagesAfterCommit(feedbackPostId, imagePaths);
+    }
+
+    /** JSONB 컬럼이 NULL이면 컬렉션이 null일 수 있으므로 빈 스트림으로 처리 */
+    private Stream<ImageInfo> imagesOf(List<ImageInfo> images) {
+        return images == null ? Stream.empty() : images.stream();
     }
 
     /**
