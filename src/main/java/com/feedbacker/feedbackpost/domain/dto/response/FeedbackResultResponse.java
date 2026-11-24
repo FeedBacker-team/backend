@@ -21,8 +21,8 @@ public record FeedbackResultResponse(
     ) {
         return new FeedbackResultResponse(
                 feedback.getId(),
-                feedback.getTester().getNickname(),
-                feedback.getTester().getProfileImage(),
+                feedback.getTesterNickname(),
+                feedback.getTesterProfileImage(),
                 feedback.getSubmitAt(),
                 feedback.statusForFeedbackPostWriter(),
                 questionAnswer

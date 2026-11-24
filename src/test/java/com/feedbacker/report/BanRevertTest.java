@@ -1,6 +1,6 @@
 package com.feedbacker.report;
 
-import com.feedbacker.feedbackpost.service.FeedbackPostForceDeleteService;
+import com.feedbacker.feedbackpost.service.FeedbackPostDeleteService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.repository.ProjectRepository;
@@ -31,7 +31,7 @@ class BanRevertTest {
     private final ReportSanctionRepository sanctions = mock(ReportSanctionRepository.class);
     private final MemberRepository members = mock(MemberRepository.class);
     private final AdminReportService service = new AdminReportService(reports, sanctions, members,
-            mock(ProjectRepository.class), mock(FeedbackPostForceDeleteService.class));
+            mock(ProjectRepository.class), mock(FeedbackPostDeleteService.class));
 
     private final UUID suspectId = UUID.randomUUID();
     private final UUID admin = UUID.randomUUID();

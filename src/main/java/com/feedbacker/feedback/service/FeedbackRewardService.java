@@ -19,7 +19,11 @@ public class FeedbackRewardService {
 
     /** 테스터 보상 지급 + 테스터 도토리 내역 저장. 작성자는 등록 시 예치 내역으로 이미 차감이 기록되어 있다 */
     public void payReward(Feedback feedback, FeedbackPost feedbackPost) {
-        Member tester = memberService.getMember(feedback.getTester().getId());
+        // 테스터(회원)가 삭제된 피드백은 지급 대상이 없다
+        if (!feedback.hasTester()) {
+            return;
+        }
+        Member tester = memberService.getMember(feedback.getTesterId());
         acornWalletService.earn(tester.getId(), feedbackPost.getRewardAcorn());
         acornHistoryService.recordReward(tester, feedback, feedbackPost);
     }

@@ -1,6 +1,6 @@
 package com.feedbacker.report.service;
 
-import com.feedbacker.feedbackpost.service.FeedbackPostForceDeleteService;
+import com.feedbacker.feedbackpost.service.FeedbackPostDeleteService;
 import com.feedbacker.global.exception.BusinessException;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberRepository;
@@ -16,6 +16,7 @@ import com.feedbacker.report.domain.dto.response.ReportDetailResponse;
 import com.feedbacker.report.domain.dto.response.ReportListResponse;
 import com.feedbacker.report.domain.dto.response.ReportSummaryResponse;
 import com.feedbacker.report.domain.type.ReportAction;
+import com.feedbacker.report.domain.type.ReportType;
 import com.feedbacker.report.exception.ReportErrorCode;
 import com.feedbacker.report.repository.ReportRepository;
 import com.feedbacker.report.repository.ReportSanctionRepository;
@@ -41,7 +42,7 @@ public class AdminReportService {
     private final ReportSanctionRepository reportSanctionRepository;
     private final MemberRepository memberRepository;
     private final ProjectRepository projectRepository;
-    private final FeedbackPostForceDeleteService feedbackPostForceDeleteService;
+    private final FeedbackPostDeleteService feedbackPostDeleteService;
 
     public ReportListResponse getReports(Boolean isProcessed, int page, int size) {
         if (page < 0 || size <= 0 || size > 100) {
@@ -141,7 +142,7 @@ public class AdminReportService {
         Integer acornForfeited = null;
         switch (report.getType()) {
             case PROJECT_POST -> findProject(report).delete();
-            case FEEDBACK_POST -> acornForfeited = feedbackPostForceDeleteService.forceDelete(report.getTargetId());
+            case FEEDBACK_POST -> acornForfeited = feedbackPostDeleteService.forceDelete(report.getTargetId());
             case MEMBER -> throw new BusinessException(ReportErrorCode.CONTENT_DELETION_NOT_SUPPORTED);
             // TODO: 댓글 기능 추가후 추가
             case COMMENT -> throw new BusinessException(ReportErrorCode.REPORT_TYPE_NOT_SUPPORTED);
@@ -162,6 +163,7 @@ public class AdminReportService {
         LocalDateTime now = LocalDateTime.now();
         List<ReportSanction> sanctions =
                 reportSanctionRepository.findAllByReportIdAndRevertedAtIsNullOrderByCreatedAtDesc(reportId);
+        validateContentRestorable(report, sanctions);
         Member suspect = null;
         boolean banReverted = false;
 
@@ -222,10 +224,22 @@ public class AdminReportService {
                 .orElseThrow(() -> new BusinessException(ReportErrorCode.REPORT_TARGET_NOT_FOUND));
     }
 
+    /**
+     * 습도·정지를 되돌리기 전에 컨텐츠 원복 가능 여부를 먼저 확인한다.
+     * 보관 기간이 지났거나 물리 삭제된 모집글이면 원복 전체를 막는다
+     */
+    private void validateContentRestorable(Report report, List<ReportSanction> sanctions) {
+        boolean hasContentDeleted = sanctions.stream()
+                .anyMatch(sanction -> sanction.getAction() == ReportAction.CONTENT_DELETED);
+        if (hasContentDeleted && report.getType() == ReportType.FEEDBACK_POST) {
+            feedbackPostDeleteService.validateRestorable(report.getTargetId());
+        }
+    }
+
     private void restoreContent(Report report, ReportSanction sanction) {
         switch (report.getType()) {
             case PROJECT_POST -> findProject(report).restore();
-            case FEEDBACK_POST -> feedbackPostForceDeleteService.restore(report.getTargetId(), sanction.getAcornForfeited());
+            case FEEDBACK_POST -> feedbackPostDeleteService.restore(report.getTargetId(), sanction.getAcornForfeited());
             case COMMENT -> { } // TODO: 신고 당한 사람에게 알림 전송
             case MEMBER -> { } // 멤버는 삭제되지 않음
         }

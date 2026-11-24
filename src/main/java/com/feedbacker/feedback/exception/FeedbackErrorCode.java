@@ -16,6 +16,7 @@ public enum FeedbackErrorCode implements ErrorCode {
     FEEDBACK_ACCESS_DENIED(HttpStatus.FORBIDDEN, "이 피드백에 접근할 권한이 없습니다."),
     FEEDBACK_NOT_REJECTED(HttpStatus.CONFLICT, "거절된 피드백만 이의제기할 수 있습니다."),
     OBJECTION_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 이의제기를 신청한 피드백입니다."),
+    FEEDBACK_NOT_OBJECTED(HttpStatus.CONFLICT, "이의제기 중인 피드백만 처리할 수 있습니다."),
     FEEDBACK_REJECT_DETAIL_TOO_SHORT(HttpStatus.BAD_REQUEST, "거부 사유의 글자수가 맞지 않습니다."),
     FEEDBACK_PROCESS_EXPIRED(HttpStatus.BAD_REQUEST, "피드백 처리 기한이 지났습니다."),
     ALREADY_PARTICIPATED(HttpStatus.CONFLICT, "이미 참여한 게시글입니다."),
@@ -26,6 +27,7 @@ public enum FeedbackErrorCode implements ErrorCode {
     CANNOT_GIVE_UP(HttpStatus.CONFLICT, "작성 중인 피드백만 포기할 수 있습니다."),
     FEEDBACK_NOT_WRITING(HttpStatus.CONFLICT, "작성 중인 피드백만 만료 처리할 수 있습니다."),
     SUBMISSION_DEADLINE_NOT_REACHED(HttpStatus.CONFLICT, "아직 제출 기한이 지나지 않았습니다."),
+    FEEDBACK_ACCEPTED_BY_WRITER_WITHDRAWAL(HttpStatus.CONFLICT, "모집글 작성자가 탈퇴하여 작성 중이던 피드백이 자동 승인되었습니다."),
 
     // 피드백 모집글 관련
     FEEDBACK_POST_HAS_SUBMITTED_FEEDBACK(HttpStatus.CONFLICT, "승인 또는 거절하지 않은 피드백이 있어 모집글을 완료할 수 없습니다."),

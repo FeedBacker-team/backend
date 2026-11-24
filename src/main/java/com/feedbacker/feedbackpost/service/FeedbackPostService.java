@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostSort;
@@ -232,9 +233,19 @@ public class FeedbackPostService {
                 ));
     }
 
+    /** 모집글 행이 있으면 true (소프트 삭제 포함). 물리 삭제됐으면 false */
+    public boolean existsIncludingDeleted(UUID feedbackPostId) {
+        return feedbackPostRepository.existsById(feedbackPostId);
+    }
+
+    /** 락을 건 피드백을 조회. 없으면 빈 값 */
+    public Optional<FeedbackPost> findFeedbackPostForUpdate(UUID feedbackPostId) {
+        return feedbackPostRepository.findByIdForUpdate(feedbackPostId);
+    }
+
     /** 락을 건 피드백을 조회 */
     public FeedbackPost getFeedbackPostForUpdate(UUID feedbackPostId) {
-        return feedbackPostRepository.findByIdForUpdate(feedbackPostId)
+        return findFeedbackPostForUpdate(feedbackPostId)
                 .orElseThrow(() -> new BusinessException(
                         FeedbackPostErrorCode.FEEDBACK_POST_NOT_FOUND
                 ));
@@ -253,8 +264,11 @@ public class FeedbackPostService {
         return imageService.toPostThumbnailResponse(feedbackPost.getImages());
     }
 
-    /** 모집글 썸네일의 공개 URL. 썸네일 이미지가 없으면 null */
+    /** 모집글 썸네일의 공개 URL. 모집글이 없거나(삭제) 썸네일 이미지가 없으면 null */
     public String getThumbnailUrl(FeedbackPost feedbackPost) {
+        if (feedbackPost == null) {
+            return null;
+        }
         ImageResponse thumbnail = getThumbnail(feedbackPost);
         return thumbnail != null ? thumbnail.url() : null;
     }

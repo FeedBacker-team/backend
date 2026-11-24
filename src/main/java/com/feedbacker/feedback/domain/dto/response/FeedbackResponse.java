@@ -27,6 +27,22 @@ public record FeedbackResponse(
             String thumbnail,
             LocalDateTime now
     ) {
+        // feedbackPost가 null(모집글 삭제)이면 제목은 대체 문구, 나머지 모집글 관련 필드는 null로 채운다
+        if (feedbackPost == null) {
+            return new FeedbackResponse(
+                    feedback.getId(),
+                    null,
+                    Feedback.DELETED_FEEDBACK_POST_TITLE,
+                    toDisplayStatus(feedback, now),
+                    feedback.getRewardAcorn(),
+                    feedback.getRejectType(),
+                    feedback.getSubmitAt() == null ? feedback.getExpireAt() : null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
         return new FeedbackResponse(
                 feedback.getId(),
                 feedbackPost.getId(),

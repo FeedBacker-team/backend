@@ -5,7 +5,9 @@ import com.feedbacker.feedback.domain.type.FeedbackStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -24,9 +26,9 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     Optional<Feedback> findByIdForUpdate(@Param("id") UUID id);
 
     @EntityGraph(attributePaths = "feedbackPost")
-    List<Feedback> findAllByTesterId(UUID testerId);
+    List<Feedback> findAllByTester_Id(UUID testerId);
 
-    Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);
+    Optional<Feedback> findByFeedbackPost_IdAndTester_Id(UUID feedbackPostId, UUID memberId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Feedback f where f.feedbackPost.id = :feedbackPostId and f.tester.id = :testerId")
@@ -36,16 +38,19 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     );
 
     @EntityGraph(attributePaths = "tester")
-    List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
+    List<Feedback> findAllByFeedbackPost_Id(UUID feedbackPostId);
 
-    boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+    boolean existsByFeedbackPost_IdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
-    boolean existsByFeedbackPostIdAndStatusIn(UUID feedbackPostId, Collection<FeedbackStatus> statuses);
+    boolean existsByFeedbackPost_IdAndStatusIn(UUID feedbackPostId, Collection<FeedbackStatus> statuses);
 
-    int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+    int countByFeedbackPost_IdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+
+    boolean existsByTester_IdAndStatus(UUID testerId, FeedbackStatus status);
 
     @Query("select distinct f.feedbackPost.id from Feedback f "
-            + "where f.status = :status and f.responseDeadLineAt <= :now")
+            + "where f.feedbackPost is not null "
+            + "and f.status = :status and f.responseDeadLineAt <= :now")
     List<UUID> findFeedbackPostIdsWithOverdue(
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
@@ -62,7 +67,8 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     );
 
     @Query("select distinct f.feedbackPost.id from Feedback f "
-            + "where f.status = :status and f.expireAt <= :now")
+            + "where f.feedbackPost is not null "
+            + "and f.status = :status and f.expireAt <= :now")
     List<UUID> findFeedbackPostIdsWithExpired(
             @Param("status") FeedbackStatus status,
             @Param("now") LocalDateTime now
@@ -78,6 +84,15 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("now") LocalDateTime now
     );
 
+    /** 테스터의 피드백 중 해당 상태인 피드백의 모집글 id. 락 순서를 고정하기 위해 id 순으로 정렬한다 */
+    @Query("select distinct f.feedbackPost.id from Feedback f "
+            + "where f.tester.id = :testerId and f.feedbackPost is not null and f.status in :statuses "
+            + "order by f.feedbackPost.id")
+    List<UUID> findFeedbackPostIdsByTesterIdAndStatusIn(
+            @Param("testerId") UUID testerId,
+            @Param("statuses") Collection<FeedbackStatus> statuses
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Feedback f "
             + "where f.feedbackPost.id = :feedbackPostId and f.status in :statuses")
@@ -85,4 +100,25 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
             @Param("feedbackPostId") UUID feedbackPostId,
             @Param("statuses") Collection<FeedbackStatus> statuses
     );
+
+    /** 모집글과 테스터가 모두 삭제되고 미해결 상태가 아닌 피드백 id (물리 삭제 대상). id 순으로 정렬한다 */
+    @Query("select f.id from Feedback f "
+            + "where f.feedbackPost is null and f.tester is null and f.status not in :unresolvedStatuses "
+            + "order by f.id")
+    List<UUID> findOrphanIds(
+            @Param("unresolvedStatuses") Collection<FeedbackStatus> unresolvedStatuses,
+            Pageable pageable
+    );
+
+    /** 주어진 id 중 물리 삭제 조건을 여전히 만족하는 피드백 id */
+    @Query("select f.id from Feedback f "
+            + "where f.id in :ids and f.feedbackPost is null and f.tester is null and f.status not in :unresolvedStatuses")
+    List<UUID> findOrphanIdsIn(
+            @Param("ids") Collection<UUID> ids,
+            @Param("unresolvedStatuses") Collection<FeedbackStatus> unresolvedStatuses
+    );
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from Feedback f where f.id in :ids")
+    int deleteAllByIdIn(@Param("ids") Collection<UUID> ids);
 }

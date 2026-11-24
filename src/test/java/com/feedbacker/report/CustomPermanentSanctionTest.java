@@ -1,6 +1,6 @@
 package com.feedbacker.report;
 
-import com.feedbacker.feedbackpost.service.FeedbackPostForceDeleteService;
+import com.feedbacker.feedbackpost.service.FeedbackPostDeleteService;
 import com.feedbacker.member.Member;
 import com.feedbacker.member.MemberRepository;
 import com.feedbacker.project.repository.ProjectRepository;
@@ -45,7 +45,7 @@ class CustomPermanentSanctionTest {
         var sanctions = mock(ReportSanctionRepository.class);
         var members = mock(MemberRepository.class);
         var service = new AdminReportService(reports, sanctions, members,
-                mock(ProjectRepository.class), mock(FeedbackPostForceDeleteService.class));
+                mock(ProjectRepository.class), mock(FeedbackPostDeleteService.class));
         UUID reportId = UUID.randomUUID();
         UUID suspectId = UUID.randomUUID();
         var report = mock(Report.class);

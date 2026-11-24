@@ -27,6 +27,9 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
     @EntityGraph(attributePaths = {"owner", "tags"})
     List<Project> findByOwner_IdAndStatusOrderByCreatedAtDesc(UUID ownerId, ProjectStatus status);
 
+    /** 회원의 모든 프로젝트 (삭제 상태 포함) */
+    List<Project> findAllByOwner_Id(UUID ownerId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select p

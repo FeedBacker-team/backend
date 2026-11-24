@@ -41,7 +41,7 @@ public record FeedbackDetailResponse(
         return new FeedbackDetailResponse(
                 feedbackPost.getTitle(),
                 feedbackPost.getId(),
-                feedback.getTester().getNickname(),
+                feedback.getTesterNickname(),
                 testerProfileImageUrl,
                 feedback.getStatus(),
                 feedbackPost.getTargetType(),
