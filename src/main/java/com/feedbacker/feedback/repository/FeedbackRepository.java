@@ -26,9 +26,9 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     Optional<Feedback> findByIdForUpdate(@Param("id") UUID id);
 
     @EntityGraph(attributePaths = "feedbackPost")
-    List<Feedback> findAllByTesterId(UUID testerId);
+    List<Feedback> findAllByTester_Id(UUID testerId);
 
-    Optional<Feedback> findByFeedbackPostIdAndTesterId(UUID feedbackPostId, UUID memberId);
+    Optional<Feedback> findByFeedbackPost_IdAndTester_Id(UUID feedbackPostId, UUID memberId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Feedback f where f.feedbackPost.id = :feedbackPostId and f.tester.id = :testerId")
@@ -38,15 +38,15 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     );
 
     @EntityGraph(attributePaths = "tester")
-    List<Feedback> findAllByFeedbackPostId(UUID feedbackPostId);
+    List<Feedback> findAllByFeedbackPost_Id(UUID feedbackPostId);
 
-    boolean existsByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+    boolean existsByFeedbackPost_IdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
-    boolean existsByFeedbackPostIdAndStatusIn(UUID feedbackPostId, Collection<FeedbackStatus> statuses);
+    boolean existsByFeedbackPost_IdAndStatusIn(UUID feedbackPostId, Collection<FeedbackStatus> statuses);
 
-    int countByFeedbackPostIdAndStatus(UUID feedbackPostId, FeedbackStatus status);
+    int countByFeedbackPost_IdAndStatus(UUID feedbackPostId, FeedbackStatus status);
 
-    boolean existsByTesterIdAndStatus(UUID testerId, FeedbackStatus status);
+    boolean existsByTester_IdAndStatus(UUID testerId, FeedbackStatus status);
 
     @Query("select distinct f.feedbackPost.id from Feedback f "
             + "where f.feedbackPost is not null "

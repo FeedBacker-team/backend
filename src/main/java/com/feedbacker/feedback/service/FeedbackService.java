@@ -43,7 +43,7 @@ public class FeedbackService {
     }
 
     public List<Feedback> getMyFeedbacks(UUID memberId) {
-        return feedbackRepository.findAllByTesterId(memberId);
+        return feedbackRepository.findAllByTester_Id(memberId);
     }
 
     public Feedback getFeedback(UUID feedbackId) {
@@ -61,43 +61,43 @@ public class FeedbackService {
     }
 
     public List<Feedback> getAllByFeedbackPostId(UUID feedbackPostId) {
-        return feedbackRepository.findAllByFeedbackPostId(feedbackPostId).stream()
+        return feedbackRepository.findAllByFeedbackPost_Id(feedbackPostId).stream()
                 .filter(Feedback::isSubmitted)
                 .toList();
     }
 
     public Feedback findMyFeedback(UUID feedbackPostId, UUID memberId) {
         return feedbackRepository
-                .findByFeedbackPostIdAndTesterId(feedbackPostId, memberId)
+                .findByFeedbackPost_IdAndTester_Id(feedbackPostId, memberId)
                 .orElse(null);
     }
 
     /** 모집글에서 승인된 피드백 수 (지급된 보상·환급 계산에 사용) */
     public int countAcceptedFeedbacks(UUID feedbackPostId) {
-        return feedbackRepository.countByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.ACCEPTED);
+        return feedbackRepository.countByFeedbackPost_IdAndStatus(feedbackPostId, FeedbackStatus.ACCEPTED);
     }
 
     /** 모집글 작성자 탈퇴로 승인된 피드백이 테스터에게 있으면 true */
     public boolean hasAcceptedByWriterWithdrawal(UUID testerId) {
-        return feedbackRepository.existsByTesterIdAndStatus(testerId, FeedbackStatus.ACCEPT_BY_WRITER_WITHDRAWAL);
+        return feedbackRepository.existsByTester_IdAndStatus(testerId, FeedbackStatus.ACCEPT_BY_WRITER_WITHDRAWAL);
     }
 
     public boolean hasSubmittedFeedback(UUID feedbackPostId) {
-        return feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED);
+        return feedbackRepository.existsByFeedbackPost_IdAndStatus(feedbackPostId, FeedbackStatus.SUBMITTED);
     }
 
     public boolean hasWritingFeedback(UUID feedbackPostId) {
-        return feedbackRepository.existsByFeedbackPostIdAndStatus(feedbackPostId, FeedbackStatus.WRITING);
+        return feedbackRepository.existsByFeedbackPost_IdAndStatus(feedbackPostId, FeedbackStatus.WRITING);
     }
 
     /** 작성중이거나 검토 대기 중인 피드백이 남아 있으면 true */
     public boolean hasPendingFeedback(UUID feedbackPostId) {
-        return feedbackRepository.existsByFeedbackPostIdAndStatusIn(feedbackPostId, FeedbackStatus.PENDING);
+        return feedbackRepository.existsByFeedbackPost_IdAndStatusIn(feedbackPostId, FeedbackStatus.PENDING);
     }
 
     /** 작성중, 검토 대기, 이의제기 중인 피드백이 남아 있으면 true (모집글 물리 삭제 검증용) */
     public boolean hasUnresolvedFeedback(UUID feedbackPostId) {
-        return feedbackRepository.existsByFeedbackPostIdAndStatusIn(feedbackPostId, FeedbackStatus.UNRESOLVED);
+        return feedbackRepository.existsByFeedbackPost_IdAndStatusIn(feedbackPostId, FeedbackStatus.UNRESOLVED);
     }
 
     /** 작성중이거나 검토 대기 중인 피드백을 락 걸어 조회 (모집글 강제 삭제 정산용) */
@@ -141,7 +141,7 @@ public class FeedbackService {
 
     /** 해당 피드백 모집글에 이미 참여했는지 검사 */
     private void validateAlreadyParticipate(UUID feedbackPostId, UUID testerId) {
-        feedbackRepository.findByFeedbackPostIdAndTesterId(feedbackPostId, testerId)
+        feedbackRepository.findByFeedbackPost_IdAndTester_Id(feedbackPostId, testerId)
                 .ifPresent(feedback -> {
                     throw new BusinessException(toAlreadyParticipatedError(feedback.getStatus()));
                 });
