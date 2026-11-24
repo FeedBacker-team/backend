@@ -121,7 +121,7 @@ class ProjectServiceTest {
                     new ProjectCreateRequest(
                             "",
                             "프로젝트 설명",
-                            List.of(ProjectTag.WEB),
+                            List.of(ProjectTag.COMMERCE),
                             "https://example.com",
                             THUMBNAIL_PATH
                     );
@@ -171,7 +171,7 @@ class ProjectServiceTest {
                     new ProjectCreateRequest(
                             "프로젝트 제목",
                             "프로젝트 설명",
-                            List.of(ProjectTag.WEB, ProjectTag.WEB),
+                            List.of(ProjectTag.COMMERCE, ProjectTag.COMMERCE),
                             "https://example.com",
                             THUMBNAIL_PATH
                     );
@@ -212,7 +212,7 @@ class ProjectServiceTest {
             when(project.getTitle()).thenReturn("프로젝트 제목");
             when(project.getDescription()).thenReturn("프로젝트 설명");
             when(project.getTags())
-                    .thenReturn(List.of(ProjectTag.WEB));
+                    .thenReturn(List.of(ProjectTag.COMMERCE));
             when(project.getThumbnailImage()).thenReturn(THUMBNAIL_PATH);
             when(project.getViewCount()).thenReturn(11L);
             when(storageService.createPublicUrl(THUMBNAIL_PATH))
@@ -668,7 +668,7 @@ class ProjectServiceTest {
         return new ProjectCreateRequest(
                 "피드배커 온보딩 리디자인",
                 "온보딩 흐름 사용성 개선 프로젝트입니다.",
-                List.of(ProjectTag.WEB, ProjectTag.UX),
+                List.of(ProjectTag.COMMERCE, ProjectTag.LIFESTYLE),
                 "https://example.com",
                 THUMBNAIL_PATH
         );
@@ -678,7 +678,7 @@ class ProjectServiceTest {
         return new ProjectUpdateRequest(
                 "수정된 프로젝트 제목",
                 "수정된 프로젝트 설명",
-                List.of(ProjectTag.WEB, ProjectTag.B2B),
+                List.of(ProjectTag.COMMERCE, ProjectTag.PRODUCTIVITY),
                 "https://example.com/updated",
                 THUMBNAIL_PATH
         );

@@ -18,6 +18,9 @@ import java.util.UUID;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Project extends BaseTimeEntity {
+
+    public static final int CURRENT_TAG_SCHEMA_VERSION = 2;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
@@ -40,6 +43,9 @@ public class Project extends BaseTimeEntity {
 
     @Column(length = 2048, nullable = false)
     private String description;
+
+    @Column(name = "tag_schema_version", nullable = false)
+    private int tagSchemaVersion = CURRENT_TAG_SCHEMA_VERSION;
 
     @ElementCollection
     @CollectionTable(
@@ -105,6 +111,28 @@ public class Project extends BaseTimeEntity {
                 thumbnailImage
         );
     }
+
+
+    public boolean needsTagReselection() {
+        return tagSchemaVersion < CURRENT_TAG_SCHEMA_VERSION;
+    }
+
+    public void updateTags(List<ProjectTag> tags) {
+        validateNotDeleted();
+
+        if (tags == null) {
+            throw new IllegalArgumentException("태그 목록은 필수입니다.");
+        }
+
+        validateTags(tags);
+
+        List<ProjectTag> selectedTags = new ArrayList<>(tags);
+
+        this.tags.clear();
+        this.tags.addAll(selectedTags);
+        this.tagSchemaVersion = CURRENT_TAG_SCHEMA_VERSION;
+    }
+
 
     public void update(
             String title,
@@ -200,9 +228,11 @@ public class Project extends BaseTimeEntity {
         if (tags == null) {
             return;
         }
-        if (tags.size() > 5) {
-            throw new IllegalArgumentException("태그는 최대 5개까지 선택할 수 있습니다");
+
+        if (tags.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new IllegalArgumentException("태그는 null일 수 없습니다.");
         }
+
         if (new HashSet<>(tags).size() != tags.size()) {
             throw new IllegalArgumentException("중복된 태그를 선택할 수 없습니다.");
         }

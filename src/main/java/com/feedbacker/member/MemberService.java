@@ -28,7 +28,6 @@ import java.util.regex.Pattern;
 public class MemberService {
 
     private static final Pattern NICKNAME_PATTERN = Pattern.compile("^\\S{1,10}$");
-    private static final int MAX_INTERESTS = 5;
 
     private final MemberRepository memberRepository;
     private final SupabaseStorageService storageService;
@@ -92,9 +91,7 @@ public class MemberService {
         if (values == null || values.isEmpty()) {
             return List.of();
         }
-        if (values.size() > MAX_INTERESTS) {
-            throw new CustomException(HttpStatus.BAD_REQUEST, "관심 분야는 최대 5개까지 선택할 수 있습니다.");
-        }
+
         List<ProjectTag> result = new ArrayList<>();
         for (String value : values) {
             try {
