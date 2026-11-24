@@ -2,10 +2,7 @@ package com.feedbacker.member;
 
 import com.feedbacker.global.common.CustomException;
 import com.feedbacker.global.storage.SupabaseStorageService;
-import com.feedbacker.member.dto.NicknameCheckResponse;
-import com.feedbacker.member.dto.ProfileResponse;
-import com.feedbacker.member.dto.ProfileUpdateResponse;
-import com.feedbacker.member.dto.ProfileUpdateRequest;
+import com.feedbacker.member.dto.*;
 import com.feedbacker.project.domain.ProjectTag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -124,6 +121,29 @@ public class MemberService {
     public ProfileResponse getProfile(UUID memberId) {
         Member member = getMember(memberId);
         return ProfileResponse.from(member, toImageUrl(member.getProfileImage()));
+    }
+
+    @Transactional
+    public void updateInterests(
+            UUID memberId,
+            InterestsUpdateRequest request
+    ){
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(
+                HttpStatus.NOT_FOUND,
+                "회원 정보를 찾을 수 없습니다."
+        ));
+
+        if (request.interests() == null) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST,
+                    "관심 분야 목록은 필수입니다."
+            );
+        }
+
+        List<ProjectTag> interests = parseInterests(request.interests());
+        member.updateInterests(interests);
+
     }
 
     /** DB에 저장된 이미지 path → 프론트에 줄 URL (미등록이면 null → 프론트에서 기본 아바타) */

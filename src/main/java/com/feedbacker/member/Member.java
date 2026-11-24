@@ -26,6 +26,8 @@ public class Member extends BaseTimeEntity {
     // 영구 정지는 정지 종료 시각을 이 값으로 고정
     public static final LocalDateTime PERMANENT_BAN_UNTIL = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
 
+    public static final int CURRENT_INTEREST_SCHEMA_VERSION = 2;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
@@ -77,13 +79,16 @@ public class Member extends BaseTimeEntity {
     @OneToMany(mappedBy = "member", cascade = CascadeType.REMOVE)
     private List<AcornHistory> acornHistories = new ArrayList<>();
 
-    // 관심 분야 (0~5개)
+    // 관심 분야
     @ElementCollection
     @CollectionTable(name = "member_interest", joinColumns = @JoinColumn(name = "member_id"))
     @OrderColumn(name = "interest_order")
     @Enumerated(EnumType.STRING)
     @Column(name = "interest", nullable = false, length = 20)
     private List<ProjectTag> interests = new ArrayList<>();
+
+    @Column(name = "interest_schema_version", nullable = false)
+    private int interestSchemaVersion = CURRENT_INTEREST_SCHEMA_VERSION;
 
     private LocalDateTime deactivatedAt;
 
@@ -175,6 +180,31 @@ public class Member extends BaseTimeEntity {
         }
         this.bannedUntil = PERMANENT_BAN_UNTIL;
         return true;
+    }
+
+    public boolean needsInterestReselection() {
+        return interestSchemaVersion < CURRENT_INTEREST_SCHEMA_VERSION;
+    }
+
+
+    public void updateInterests(List<ProjectTag> interests) {
+        if (interests == null) {
+            throw new IllegalArgumentException("관심 분야 목록은 필수입니다.");
+        }
+
+        if (interests.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new IllegalArgumentException("관심 분야는 null일 수 없습니다.");
+        }
+
+        if (new java.util.HashSet<>(interests).size() != interests.size()) {
+            throw new IllegalArgumentException("중복된 관심 분야를 선택할 수 없습니다.");
+        }
+
+        List<ProjectTag> selectedInterests = new ArrayList<>(interests);
+
+        this.interests.clear();
+        this.interests.addAll(selectedInterests);
+        this.interestSchemaVersion = CURRENT_INTEREST_SCHEMA_VERSION;
     }
 
     /** 정지 종료 시각을 다시 계산한 값으로 바꿈 (제재 원복용, null이면 정지 해제) */

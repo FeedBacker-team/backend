@@ -18,8 +18,10 @@ public record ProfileResponse(
         List<ProjectTag> interests,
         @JsonProperty("is_profile_completed") boolean profileCompleted,
         Integer acorn,
-        BigDecimal humidity
-) {
+        BigDecimal humidity,
+        @JsonProperty("needs_interest_reselection")
+        boolean needsInterestReselection
+        ) {
 
     public static ProfileResponse from(Member member, String profileImageUrl) {
         return new ProfileResponse(
@@ -31,7 +33,9 @@ public record ProfileResponse(
                 member.getInterests(),
                 member.isProfileCompleted(),
                 member.getAcornWallet().getBalance(),
-                member.getHumidity()
+                member.getHumidity(),
+                member.needsInterestReselection()
         );
     }
+
 }
