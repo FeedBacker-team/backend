@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.feedbackpost.domain.Question;
 import com.feedbacker.feedbackpost.domain.type.FeedbackPostStatus;
-import com.feedbacker.feedbackpost.domain.type.ImageType;
+import com.feedbacker.global.image.ImageType;
 import com.feedbacker.feedbackpost.domain.type.TargetType;
 import com.feedbacker.global.image.ImageInfo;
 import com.feedbacker.global.image.ImageRequest;
@@ -154,7 +154,6 @@ public record FeedbackPostCreateRequest(
                 .images(newImages)
                 .questions(questions)
                 .slotCapacity(this.slotCapacity)
-                .remainSlotCount(this.slotCapacity)
                 .depositAcorn(this.depositAcorn)
                 .rewardAcorn(this.rewardAcorn)
                 .startAt(resolveStartAt())

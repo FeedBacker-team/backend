@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +69,9 @@ public class Project extends BaseTimeEntity {
 
     @Column(name = "is_pinned", nullable = false)
     private boolean pinned = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
 
     private Project(
@@ -169,7 +173,15 @@ public class Project extends BaseTimeEntity {
     public void delete() {
         validateNotDeleted();
         this.status = ProjectStatus.DELETED;
+        this.deletedAt = LocalDateTime.now();
+    }
 
+    public void restore() {
+        if (status != ProjectStatus.DELETED) {
+            throw new IllegalStateException("삭제된 프로젝트가 아닙니다.");
+        }
+        this.status = ProjectStatus.PUBLISHED;
+        this.deletedAt = null;
     }
 
     public void increaseViewCount() {

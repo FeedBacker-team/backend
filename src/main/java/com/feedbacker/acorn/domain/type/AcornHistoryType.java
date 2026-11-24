@@ -1,4 +1,4 @@
-package com.feedbacker.feedback.domain.type;
+package com.feedbacker.acorn.domain.type;
 
 public enum AcornHistoryType {
     FEEDBACK_ACCEPT,

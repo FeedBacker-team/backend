@@ -3,11 +3,14 @@ package com.feedbacker.global.security;
 import com.feedbacker.global.jwt.JwtAuthenticationEntryPoint;
 import com.feedbacker.global.jwt.JwtAuthenticationFilter;
 import com.feedbacker.global.jwt.JwtTokenProvider;
+import com.feedbacker.member.MemberRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -30,6 +33,7 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final MemberRepository memberRepository;
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
@@ -47,7 +51,14 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(e -> e.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write("{\"message\": \"접근 권한이 없습니다.\"}");
+                        }))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
@@ -70,10 +81,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/feedback-posts/mine").authenticated()
                         // 모집글 상세는 비로그인 열람 가능
                         .requestMatchers(HttpMethod.GET, "/api/feedback-posts/{feedbackPostId}").permitAll()
+                        // 관리자 API는 ADMIN 권한 필수
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
 
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, memberRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

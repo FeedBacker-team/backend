@@ -1,14 +1,18 @@
 package com.feedbacker.member;
 
 import com.feedbacker.global.security.CustomUserDetails;
+import com.feedbacker.member.dto.MessageResponse;
 import com.feedbacker.member.dto.NicknameCheckResponse;
 import com.feedbacker.member.dto.ProfileResponse;
 import com.feedbacker.member.dto.ProfileUpdateResponse;
 import com.feedbacker.member.dto.ProfileUpdateRequest;
+import com.feedbacker.member.dto.WithdrawRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final MemberService memberService;
+    private final WithdrawService withdrawService;
+    private final RefreshTokenCookieFactory cookieFactory;
 
     // 4-1. 닉네임 중복 확인 (로그인 전/후 모두 가능)
     @GetMapping("/check-nickname")
@@ -44,6 +50,17 @@ public class UserController {
             @AuthenticationPrincipal CustomUserDetails user
     )  {
         return ResponseEntity.ok(memberService.getProfile(user.getMemberId()));
+    }
+
+    // 4-4. 회원 탈퇴 (로그인 필수). 성공하면 refreshToken 쿠키도 삭제
+    @DeleteMapping("/me")
+    public ResponseEntity<MessageResponse> withdraw(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody(required = false) WithdrawRequest request) {
+        withdrawService.withdraw(user.getMemberId(), request == null ? null : request.password());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookieFactory.expire().toString())
+                .body(new MessageResponse("회원 탈퇴가 완료되었습니다."));
     }
 
 }

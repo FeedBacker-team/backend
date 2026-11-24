@@ -1,6 +1,6 @@
 package com.feedbacker.feedbackpost.service;
 
-import com.feedbacker.feedback.service.AcornHistoryService;
+import com.feedbacker.acorn.service.AcornHistoryService;
 import com.feedbacker.feedback.service.FeedbackService;
 import com.feedbacker.feedbackpost.domain.FeedbackPost;
 import com.feedbacker.member.AcornWalletService;
@@ -22,12 +22,12 @@ public class FeedbackPostCompleteService {
     /** 모집글 완료 처리 + 작성자에게 남은 예치 도토리 환급. 모집글 락을 잡은 트랜잭션 안에서 호출한다 */
     public void complete(FeedbackPost feedbackPost) {
         UUID writerId = feedbackPost.getWriterId();
-        feedbackPost.complete(writerId);
+        feedbackPost.complete();
         // 환급 = 예치 - (승인 수 * 건당 보상)
         int refundAcorn = feedbackPost.getDepositAcorn() - getPaidAcorn(feedbackPost);
         if (refundAcorn > 0) {
             acornWalletService.earn(writerId, refundAcorn);
-            acornHistoryService.saveRefund(memberService.getMember(writerId), feedbackPost.getId(), refundAcorn);
+            acornHistoryService.recordRefund(memberService.getMember(writerId), feedbackPost.getId(), refundAcorn);
         }
     }
 
@@ -39,8 +39,7 @@ public class FeedbackPostCompleteService {
         if (feedbackPost.getRemainSlotCount() > 0) {
             return false;
         }
-        if (feedbackService.hasWritingFeedback(feedbackPost.getId())
-                || feedbackService.hasSubmittedFeedback(feedbackPost.getId())) {
+        if (feedbackService.hasPendingFeedback(feedbackPost.getId())) {
             return false;
         }
         complete(feedbackPost);
