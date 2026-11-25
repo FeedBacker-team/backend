@@ -174,11 +174,6 @@ public class FeedbackPostService {
     }
 
     private void validateSearchCondition(List<ProjectTag> tags, FeedbackPostSort sort, int page, int size) {
-        if (tags != null && tags.size() > 5) {
-            throw badRequest(
-                    "태그는 최대 5개까지 선택할 수 있습니다."
-            );
-        }
 
         if (tags != null
                 && tags.stream().distinct().count() != tags.size()) {

@@ -58,13 +58,13 @@ class ProjectTagFilterTest {
         );
         owner = memberRepository.save(Member.createEmailMember("tags@example.com", "test-password"));
 
-        save("웹 전용", WEB);
-        save("앱 전용", APP);
-        save("웹 앱", WEB, APP);
-        save("웹 앱 AI", WEB, APP, AI);
-        save("AI 전용", AI);
+        save("커머스 전용", COMMERCE);
+        save("금융 전용", FINTECH);
+        save("커머스 금융", COMMERCE, FINTECH);
+        save("커머스 금융 교육", COMMERCE, FINTECH, EDUCATION);
+        save("교육 전용", EDUCATION);
         save("태그 없음");
-        Project deleted = save("삭제된 웹 앱", WEB, APP);
+        Project deleted = save("삭제된 커머스 금융", COMMERCE, FINTECH);
         deleted.delete();
         entityManager.flush();
         entityManager.clear();
@@ -76,12 +76,12 @@ class ProjectTagFilterTest {
     }
 
     @Test
-    @DisplayName("웹과 앱 선택 시 둘 다 포함한 프로젝트만 반환하고 추가 태그는 허용한다")
+    @DisplayName("커머스와 금융 선택 시 둘 다 포함한 프로젝트만 반환하고 추가 태그는 허용한다")
     void allSelectedTagsMustMatch() {
-        ProjectListResponse result = search(List.of(WEB, APP));
+        ProjectListResponse result = search(List.of(COMMERCE, FINTECH));
 
         assertThat(result.projects()).extracting(ProjectCardResponse::title)
-                .containsExactlyInAnyOrder("웹 앱", "웹 앱 AI");
+                .containsExactlyInAnyOrder("커머스 금융", "커머스 금융 교육");
         assertThat(result.totalCount()).isEqualTo(2);
         assertThat(result.hasNext()).isFalse();
     }
@@ -89,28 +89,28 @@ class ProjectTagFilterTest {
     @Test
     @DisplayName("태그 하나를 선택하면 그 태그를 가진 모든 공개 프로젝트를 반환한다")
     void singleTag() {
-        assertThat(search(List.of(WEB)).projects()).extracting(ProjectCardResponse::title)
-                .containsExactlyInAnyOrder("웹 전용", "웹 앱", "웹 앱 AI");
+        assertThat(search(List.of(COMMERCE)).projects()).extracting(ProjectCardResponse::title)
+                .containsExactlyInAnyOrder("커머스 전용", "커머스 금융", "커머스 금융 교육");
     }
 
     @Test
     @DisplayName("태그 세 개를 선택하면 세 개 모두 포함해야 한다")
     void threeTags() {
-        assertThat(search(List.of(WEB, APP, AI)).projects()).extracting(ProjectCardResponse::title)
-                .containsExactly("웹 앱 AI");
+        assertThat(search(List.of(COMMERCE, FINTECH, EDUCATION)).projects()).extracting(ProjectCardResponse::title)
+                .containsExactly("커머스 금융 교육");
     }
 
     @Test
     @DisplayName("선택 태그 순서는 조회 결과에 영향을 주지 않는다")
     void tagOrderDoesNotMatter() {
-        assertThat(search(List.of(APP, WEB)).projects())
-                .isEqualTo(search(List.of(WEB, APP)).projects());
+        assertThat(search(List.of(FINTECH, COMMERCE)).projects())
+                .isEqualTo(search(List.of(COMMERCE, FINTECH)).projects());
     }
 
     @Test
     @DisplayName("모든 태그를 만족하는 프로젝트가 없으면 빈 목록을 반환한다")
     void noMatchingProject() {
-        ProjectListResponse result = search(List.of(WEB, CLOUD));
+        ProjectListResponse result = search(List.of(COMMERCE, SPORTS));
 
         assertThat(result.projects()).isEmpty();
         assertThat(result.totalCount()).isZero();
@@ -123,7 +123,7 @@ class ProjectTagFilterTest {
         for (ProjectListResponse result : List.of(search(null), search(List.of()))) {
             assertThat(result.projects()).extracting(ProjectCardResponse::title)
                     .containsExactlyInAnyOrder(
-                            "웹 전용", "앱 전용", "웹 앱", "웹 앱 AI", "AI 전용", "태그 없음"
+                            "커머스 전용", "금융 전용", "커머스 금융", "커머스 금융 교육", "교육 전용", "태그 없음"
                     );
             assertThat(result.totalCount()).isEqualTo(6);
         }
@@ -133,11 +133,11 @@ class ProjectTagFilterTest {
     @DisplayName("키워드 조건과 태그 AND 조건을 동시에 적용한다")
     void keywordAndTags() {
         ProjectListResponse result = projectService.getProjects(
-                "AI", List.of(WEB, APP), ProjectSort.LATEST, 0, 12
+                "교육", List.of(COMMERCE, FINTECH), ProjectSort.LATEST, 0, 12
         );
 
         assertThat(result.projects()).extracting(ProjectCardResponse::title)
-                .containsExactly("웹 앱 AI");
+                .containsExactly("커머스 금융 교육");
         assertThat(result.totalCount()).isEqualTo(1);
     }
 
@@ -145,11 +145,11 @@ class ProjectTagFilterTest {
     @DisplayName("페이지 전체 건수와 다음 페이지 여부도 모든 태그를 만족하는 프로젝트 기준이다")
     void paginationCountsOnlyMatchingProjects() {
         ProjectListResponse first = projectService.getProjects(
-                null, List.of(WEB, APP), ProjectSort.LATEST, 0, 1);
+                null, List.of(COMMERCE, FINTECH), ProjectSort.LATEST, 0, 1);
         ProjectListResponse second = projectService.getProjects(
-                null, List.of(WEB, APP), ProjectSort.LATEST, 1, 1);
+                null, List.of(COMMERCE, FINTECH), ProjectSort.LATEST, 1, 1);
         ProjectListResponse beyondLast = projectService.getProjects(
-                null, List.of(WEB, APP), ProjectSort.LATEST, 2, 1);
+                null, List.of(COMMERCE, FINTECH), ProjectSort.LATEST, 2, 1);
 
         assertThat(first.totalCount()).isEqualTo(2);
         assertThat(second.totalCount()).isEqualTo(2);
@@ -162,7 +162,7 @@ class ProjectTagFilterTest {
         assertThat(second.hasNext()).isFalse();
         assertThat(Stream.concat(first.projects().stream(), second.projects().stream())
                 .map(ProjectCardResponse::title).toList())
-                .containsExactlyInAnyOrder("웹 앱", "웹 앱 AI");
+                .containsExactlyInAnyOrder("커머스 금융", "커머스 금융 교육");
         assertThat(beyondLast.projects()).isEmpty();
         assertThat(beyondLast.totalCount()).isEqualTo(2);
         assertThat(beyondLast.hasNext()).isFalse();

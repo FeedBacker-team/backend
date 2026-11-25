@@ -31,9 +31,12 @@ public record MyProjectResponse(
         boolean hasActiveQa,
 
         @JsonProperty("active_feedback_post_id")
-        UUID activeFeedbackPostId
+        UUID activeFeedbackPostId,
 
-) {
+        @JsonProperty("needs_tag_reselection")
+        boolean needsTagReselection
+
+        ) {
 
     public static MyProjectResponse from(
             Project project,
@@ -49,7 +52,9 @@ public record MyProjectResponse(
                 project.getViewCount(),
                 project.getCreatedAt(),
                 activeFeedbackPostId != null,
-                activeFeedbackPostId
+                activeFeedbackPostId,
+                project.needsTagReselection()
         );
     }
+
 }

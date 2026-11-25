@@ -2,10 +2,7 @@ package com.feedbacker.member;
 
 import com.feedbacker.global.common.CustomException;
 import com.feedbacker.global.storage.SupabaseStorageService;
-import com.feedbacker.member.dto.NicknameCheckResponse;
-import com.feedbacker.member.dto.ProfileResponse;
-import com.feedbacker.member.dto.ProfileUpdateResponse;
-import com.feedbacker.member.dto.ProfileUpdateRequest;
+import com.feedbacker.member.dto.*;
 import com.feedbacker.project.domain.ProjectTag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,7 +25,6 @@ import java.util.regex.Pattern;
 public class MemberService {
 
     private static final Pattern NICKNAME_PATTERN = Pattern.compile("^\\S{1,10}$");
-    private static final int MAX_INTERESTS = 5;
 
     private final MemberRepository memberRepository;
     private final SupabaseStorageService storageService;
@@ -92,9 +88,7 @@ public class MemberService {
         if (values == null || values.isEmpty()) {
             return List.of();
         }
-        if (values.size() > MAX_INTERESTS) {
-            throw new CustomException(HttpStatus.BAD_REQUEST, "관심 분야는 최대 5개까지 선택할 수 있습니다.");
-        }
+
         List<ProjectTag> result = new ArrayList<>();
         for (String value : values) {
             try {
@@ -127,6 +121,29 @@ public class MemberService {
     public ProfileResponse getProfile(UUID memberId) {
         Member member = getMember(memberId);
         return ProfileResponse.from(member, toImageUrl(member.getProfileImage()));
+    }
+
+    @Transactional
+    public void updateInterests(
+            UUID memberId,
+            InterestsUpdateRequest request
+    ){
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(
+                HttpStatus.NOT_FOUND,
+                "회원 정보를 찾을 수 없습니다."
+        ));
+
+        if (request.interests() == null) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST,
+                    "관심 분야 목록은 필수입니다."
+            );
+        }
+
+        List<ProjectTag> interests = parseInterests(request.interests());
+        member.updateInterests(interests);
+
     }
 
     /** DB에 저장된 이미지 path → 프론트에 줄 URL (미등록이면 null → 프론트에서 기본 아바타) */

@@ -1,12 +1,7 @@
 package com.feedbacker.member;
 
 import com.feedbacker.global.security.CustomUserDetails;
-import com.feedbacker.member.dto.MessageResponse;
-import com.feedbacker.member.dto.NicknameCheckResponse;
-import com.feedbacker.member.dto.ProfileResponse;
-import com.feedbacker.member.dto.ProfileUpdateResponse;
-import com.feedbacker.member.dto.ProfileUpdateRequest;
-import com.feedbacker.member.dto.WithdrawRequest;
+import com.feedbacker.member.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -61,6 +56,15 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookieFactory.expire().toString())
                 .body(new MessageResponse("회원 탈퇴가 완료되었습니다."));
+    }
+
+    @PatchMapping("/me/interests")
+    public ResponseEntity<Void> updateInterests(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @Valid @RequestBody InterestsUpdateRequest request
+    ) {
+        memberService.updateInterests(user.getMemberId(), request);
+        return ResponseEntity.noContent().build();
     }
 
 }

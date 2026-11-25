@@ -4,6 +4,7 @@ import com.feedbacker.global.security.CustomUserDetails;
 import com.feedbacker.project.domain.ProjectSort;
 import com.feedbacker.project.domain.ProjectTag;
 import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
+import com.feedbacker.project.domain.dto.request.ProjectTagsUpdateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
 import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.service.ProjectService;
@@ -157,6 +158,19 @@ public class ProjectController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/api/projects/{projectId}/tags")
+    public ResponseEntity<Void> updateProjectTags(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ProjectTagsUpdateRequest request
+    ) {
+        projectService.updateProjectTags(
+                projectId,
+                userDetails.getMemberId(),
+                request
+        );
+        return ResponseEntity.noContent().build();
+    }
 
 
     //프로젝트 수정
@@ -166,6 +180,7 @@ public class ProjectController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody ProjectUpdateRequest request
     ) {
+
         projectService.updateProject(projectId, userDetails.getMemberId(), request);
         return ResponseEntity.noContent().build();
     }

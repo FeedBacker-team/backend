@@ -17,7 +17,6 @@ public record ProjectUpdateRequest (
         @Size(max = 2048, message = "설명은 최대 2048자까지 가능합니다.")
         String description,
 
-        @Size(max = 5, message = "태그는 최대 5개까지 선택할 수 있습니다.")
         List<@NotNull(message = "태그는 null일 수 없습니다.") ProjectTag> tags,
 
         @NotBlank(message = "프로젝트 URL은 필수입니다.")

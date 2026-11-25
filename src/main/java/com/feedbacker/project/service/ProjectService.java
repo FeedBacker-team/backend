@@ -10,6 +10,7 @@ import com.feedbacker.project.domain.ProjectSort;
 import com.feedbacker.project.domain.ProjectStatus;
 import com.feedbacker.project.domain.ProjectTag;
 import com.feedbacker.project.domain.dto.request.ProjectCreateRequest;
+import com.feedbacker.project.domain.dto.request.ProjectTagsUpdateRequest;
 import com.feedbacker.project.domain.dto.request.ProjectUpdateRequest;
 import com.feedbacker.project.domain.dto.response.*;
 import com.feedbacker.project.repository.ProjectRepository;
@@ -173,6 +174,16 @@ public class ProjectService {
     }
 
     @Transactional
+    public void updateProjectTags(UUID projectId, UUID memberId, ProjectTagsUpdateRequest request) {
+        validateLogin(memberId);
+
+        Project project = findProjectForUpdate(projectId);
+        validateOwner(project, memberId);
+        project.updateTags(request.tags());
+        
+    }
+
+    @Transactional
     public void deleteProject(UUID projectId, UUID memberId) {
         validateLogin(memberId);
         Project project = findProjectForUpdate(projectId);
@@ -225,9 +236,7 @@ public class ProjectService {
     }
 
     private void validateProjectSearch(List<ProjectTag> tags, ProjectSort sort, int page, int size) {
-        if (tags != null && tags.size() > 5) {
-            throw badRequest("태그는 최대 5개까지 선택할 수 있습니다.");
-        }
+
         if (tags != null && tags.stream().distinct().count() != tags.size()) {
             throw badRequest("중복된 태그를 선택할 수 없습니다.");
         }

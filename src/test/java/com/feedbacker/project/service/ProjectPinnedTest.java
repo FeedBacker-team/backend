@@ -27,8 +27,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static com.feedbacker.project.domain.ProjectTag.APP;
-import static com.feedbacker.project.domain.ProjectTag.WEB;
+import static com.feedbacker.project.domain.ProjectTag.FINTECH;
+import static com.feedbacker.project.domain.ProjectTag.COMMERCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -61,11 +61,11 @@ class ProjectPinnedTest {
                 mock(SupabaseStorageService.class), mock(ProjectViewRepository.class)
         );
         owner = memberRepository.save(Member.createEmailMember("pinned@example.com", "test-password"));
-        olderPinnedId = saveFixture("고정 이전", true, 1, 10, WEB, APP);
-        newerPinnedId = saveFixture("고정 최신", true, 2, 5, WEB, APP);
-        saveFixture("일반 이전", false, 3, 200, WEB, APP);
-        saveFixture("일반 최신", false, 4, 100, WEB);
-        UUID deletedId = saveFixture("삭제 고정", true, 5, 300, WEB, APP);
+        olderPinnedId = saveFixture("고정 이전", true, 1, 10, COMMERCE, FINTECH);
+        newerPinnedId = saveFixture("고정 최신", true, 2, 5, COMMERCE, FINTECH);
+        saveFixture("일반 이전", false, 3, 200, COMMERCE, FINTECH);
+        saveFixture("일반 최신", false, 4, 100, COMMERCE);
+        UUID deletedId = saveFixture("삭제 고정", true, 5, 300, COMMERCE, FINTECH);
         projectRepository.findById(deletedId).orElseThrow().delete();
         entityManager.flush();
         entityManager.clear();
@@ -100,11 +100,11 @@ class ProjectPinnedTest {
     @EnumSource(ProjectSort.class)
     @DisplayName("태그 AND 필터와 고정 정렬을 함께 적용한다")
     void pinnedWithAllTagsFilter(ProjectSort sort) {
-        // WEB만 가진 프로젝트를 고정해도 WEB+APP 검색에는 나타나지 않아야 한다.
+        // WEB만 가진 프로젝트를 고정해도 COMMERCE+FINTECH 검색에는 나타나지 않아야 한다.
         entityManager.createQuery("update Project p set p.pinned = true where p.title = :title")
                 .setParameter("title", "일반 최신").executeUpdate();
         entityManager.clear();
-        ProjectListResponse result = search(null, List.of(WEB, APP), sort, 0, 12);
+        ProjectListResponse result = search(null, List.of(COMMERCE, FINTECH), sort, 0, 12);
         assertThat(result.projects()).extracting(ProjectCardResponse::title)
                 .containsExactlyElementsOf(expectedOrder(sort).stream()
                         .filter(title -> !title.equals("일반 최신")).toList());
@@ -145,7 +145,7 @@ class ProjectPinnedTest {
     @DisplayName("새 프로젝트의 고정 여부는 기본 false로 저장된다")
     void newProjectDefaultsToNotPinned() {
         Project project = projectRepository.save(Project.create(
-                owner, "새 프로젝트", "설명", List.of(WEB),
+                owner, "새 프로젝트", "설명", List.of(COMMERCE),
                 "https://example.com", "https://example.com/thumbnail.png"));
         entityManager.flush();
         entityManager.clear();
